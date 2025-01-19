@@ -1,7 +1,5 @@
 #include <QGuiApplication>
-
 #include <QQmlApplicationEngine>
-
 #include <image_reader.h>
 
 int main(int argc, char *argv[])
@@ -14,7 +12,7 @@ int main(int argc, char *argv[])
         &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
 
-    engine.loadFromModule("UI", "Main");
+    engine.loadFromModule("TraderUI", "Main");
 
     show_image();
 

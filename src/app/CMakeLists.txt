@@ -9,10 +9,10 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 )
 
 qt_add_qml_module(${CMAKE_PROJECT_NAME}
-    URI UI 
-    VERSION 1.0
+    URI TraderUI
+    VERSION 0.1
     QML_FILES
-        Main.qml
+        qml/Main.qml
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
