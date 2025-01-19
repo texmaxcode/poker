@@ -1,14 +1,22 @@
-#include "mainwindow.h"
+#include <QGuiApplication>
 
-#include <QApplication>
+#include <QQmlApplicationEngine>
 
 #include <image_reader.h>
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    MainWindow w;
+    QGuiApplication app(argc, argv);
+
+    QQmlApplicationEngine engine;
+    QObject::connect(
+        &engine, &QQmlApplicationEngine::objectCreationFailed,
+        &app, []() { QCoreApplication::exit(-1); },
+        Qt::QueuedConnection);
+    engine.loadFromModule("com.musclecomputing.UI", "Main");
+
     show_image();
-    w.show();
-    return a.exec();
+
+    return app.exec();
 }
+
