@@ -1,10 +1,15 @@
 import QtQuick
 import QtQuick.Controls
+import com.musclecomputing 1.0
 
 ApplicationWindow {
     width: 900
     height: 900
     visible: true
+
+    ImageReader {
+        id: reader
+    }
 
     Button {
         id: button
@@ -17,5 +22,7 @@ ApplicationWindow {
             border.width: 1
             radius: 4
         }
+
+        onClicked: reader.show_image()
     }
 }
