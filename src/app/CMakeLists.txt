@@ -1,5 +1,5 @@
 set(PROJECT_SOURCES
-        main.cpp
+    main.cpp
 )
 
 add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})

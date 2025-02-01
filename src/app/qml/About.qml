@@ -10,6 +10,10 @@ Page {
     Button {
         anchors.centerIn: parent
         text: "Back to Dashboard"
-        onClicked: stackView.pop()
+
+        onClicked: {
+          stackView.pop()
+          simulator.test_orm()
+        }
     }
 }

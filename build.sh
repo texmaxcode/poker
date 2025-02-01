@@ -7,7 +7,7 @@ QT_LIBS=/home/max-gloom/Qt/6.8.1/gcc_64
 SOURCE=.
 DESTINATION=./build
 
-rm -rf build && mkdir build;
+rm -rf build && mkdir build && rm poker_simulator.data;
 
 cmake \
   -DCMAKE_BUILD_TYPE:STRING=$MODE \

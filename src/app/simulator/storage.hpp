@@ -26,7 +26,7 @@ inline auto initStorage(const std::string &path)
 // Just getting the type here.
 using Storage = decltype(initStorage(""));
 
-#define DATA_FILE "game_view_studio.data"
+#define DATA_FILE "poker_simulator.data"
 
 class simulator_storage
 {
