@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     qmlRegisterType<ImageReader>("com.musclecomputing", 1, 0, "ImageReader");
+    app.setApplicationName(QString("Hold'em Solver"));
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed,

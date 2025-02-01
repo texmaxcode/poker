@@ -13,6 +13,10 @@ qt_add_qml_module(${CMAKE_PROJECT_NAME}
     VERSION 0.1
     QML_FILES
         qml/Main.qml
+        qml/Dashboard.qml
+        qml/About.qml
+    RESOURCES
+        qml/assets/images/poker_table.jpg
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE

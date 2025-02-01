@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(Trader VERSION 0.1 LANGUAGES CXX)
+project(PokerSolver VERSION 0.1 LANGUAGES CXX)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick)
 
