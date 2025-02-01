@@ -20,4 +20,8 @@ cmake \
   -B$DESTINATION \
   -G Ninja
 
-cd build && ninja
+cd build && ninja && cd ..
+
+./build/src/app/simulator/tests/Test -l all -r short
+
+./build/src/app/PokerSolver

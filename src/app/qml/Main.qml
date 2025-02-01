@@ -9,8 +9,8 @@ ApplicationWindow {
     minimumHeight: 900
     visible: true
 
-    ImageReader {
-        id: reader
+    Simulator {
+        id: simulator
     }
 
     StackView {

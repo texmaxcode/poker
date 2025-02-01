@@ -9,7 +9,7 @@ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
 )
 
 qt_add_qml_module(${CMAKE_PROJECT_NAME}
-    URI TraderUI
+    URI SolverUI
     VERSION 0.1
     QML_FILES
         qml/Main.qml
@@ -19,8 +19,11 @@ qt_add_qml_module(${CMAKE_PROJECT_NAME}
         qml/assets/images/poker_table.jpg
 )
 
+include_directories(simulator)
+add_subdirectory(simulator)
+
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-    image_reader
+    simulator
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Quick

@@ -1,21 +1,21 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <image_reader.h>
+#include "poker_simulator.hpp"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 
-    qmlRegisterType<ImageReader>("com.musclecomputing", 1, 0, "ImageReader");
-    app.setApplicationName(QString("Hold'em Solver"));
+    qmlRegisterType<simulator>("com.musclecomputing", 1, 0, "Simulator");
+    app.setApplicationName(QString("Texas Hold'em Solver"));
 
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed,
         &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
 
-    engine.loadFromModule("TraderUI", "Main");
+    engine.loadFromModule("SolverUI", "Main");
 
     return app.exec();
 }
