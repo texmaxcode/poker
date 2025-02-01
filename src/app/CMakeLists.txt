@@ -22,8 +22,12 @@ qt_add_qml_module(${CMAKE_PROJECT_NAME}
 include_directories(simulator)
 add_subdirectory(simulator)
 
+include_directories(poker)
+add_subdirectory(poker)
+
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     simulator
+    poker
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::Quick
