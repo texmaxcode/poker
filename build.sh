@@ -20,4 +20,4 @@ cmake \
   -B$DESTINATION \
   -G Ninja
 
-cd build && ninja 
+cd build && ninja
