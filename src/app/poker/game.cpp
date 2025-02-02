@@ -5,7 +5,7 @@ bool game::is_game_in_progress()
     return in_progress;
 }
 
-void game::join_table(player &player)
+void game::join_table(player player)
 {
     bool more_than_ten_blinds = (player.stack >= 10 * big_blind);
     bool less_than_hundrad_blinds = (player.stack <= 100 * big_blind);
@@ -60,17 +60,35 @@ void game::deal_hold_cards()
     }
 }
 
+void game::deal_flop()
+{
+    card burn_card = deck.get_card();
+    for (auto i = 0; i < 3; ++i)
+    {
+        flop.push_back(deck.get_card());
+    }
+}
+
+void game::deal_turn() {
+    card burn_card = deck.get_card();
+    turn = deck.get_card();
+}
+
 void game::start()
 {
     in_progress = true;
+    street == Street::PRE_FLOP;
     collect_blinds();
     deal_hold_cards();
     take_bets();
-    /*
+    street == Street::FLOP;
     deal_flop();
     take_bets();
+    street == Street::TURN;
     deal_turn();
+    /*
     take_bets();
+    street == Street::RIVER;
     deal_river();
     take_bets();
     decide_the_payout();

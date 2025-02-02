@@ -194,4 +194,46 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_deal_hold_cards)
   BOOST_CHECK(typeid(game.table[1].second_card) == typeid(test_card));
 }
 
+BOOST_AUTO_TEST_CASE(test_that_game_can_deal_flop)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  game.join_table(player_one);
+  BOOST_CHECK(game.players_count() == 1);
+
+  player player_two;
+  player_two.stack = 100;
+  game.join_table(player_two);
+  BOOST_CHECK(game.players_count() == 2);
+
+  card test_card{Rank::ACE, Suite::DIAMONDS};
+
+  game.deal_flop();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.flop[0]) == typeid(test_card));
+  BOOST_CHECK(typeid(game.flop[1]) == typeid(test_card));
+  BOOST_CHECK(typeid(game.flop[2]) == typeid(test_card));
+}
+
+BOOST_AUTO_TEST_CASE(test_that_game_can_deal_turn)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  game.join_table(player_one);
+  BOOST_CHECK(game.players_count() == 1);
+
+  player player_two;
+  player_two.stack = 100;
+  game.join_table(player_two);
+  BOOST_CHECK(game.players_count() == 2);
+
+  card test_card{Rank::ACE, Suite::DIAMONDS};
+
+  game.deal_turn();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.turn) == typeid(test_card));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

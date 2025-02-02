@@ -23,18 +23,26 @@ class game
     card_deck deck;
 
 public:
-    // TODO: Make this private, 
+    bool is_game_in_progress();
+    void join_table(player player);
+    int players_count();
+    // TODO: Make this private,
     // when you figure out how to test better.
     int pot = 0;
+    std::vector<card> flop;
+    card turn;
+    card river;
     std::vector<player> table;
-
-    bool is_game_in_progress();
-    void join_table(player& player);
-    int players_count();
     void start();
-    //TODO: Make this private
     void collect_blinds();
     void take_bets();
     void deal_hold_cards();
+    void deal_flop();
+
+    void deal_turn();
+    void deal_river();
+    void decide_the_payout();
+    void do_payouts();
+    void switch_button();
 };
 #endif // MUSCLE_COMPUTING_GAME_H
