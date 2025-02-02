@@ -2,5 +2,6 @@
 #define MUSCLE_COMPUTING_POKER_SIMULATOR_H
 
 #include "cards.hpp"
+#include "player.hpp"
 
 #endif //MUSCLE_COMPUTING_POKER_SIMULATOR_H
