@@ -33,6 +33,18 @@ enum class Rank
     ACE
 };
 
+enum class HAND_RANKING {
+    HIGH_CARD = 1,
+    PAIR,
+    TWO_PAIR,
+    THREE_OF_A_KIND,
+    STRAIGHT,
+    FLUSH,
+    FULL_HOUSE,
+    FOUR_OF_A_KIND,
+    STRAIGHT_FLUSH,
+    ROYAL_FLUSH
+};
 
 class card
 {
@@ -44,7 +56,7 @@ public:
     bool operator>(const card &) const;
     bool operator==(const card &) const;
     bool operator!=(const card &) const;
-    friend std::ostream& operator<<(std::ostream &out, const card& card);
+    friend std::ostream &operator<<(std::ostream &out, const card &card);
 };
 
 class card_deck
