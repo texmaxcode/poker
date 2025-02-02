@@ -68,11 +68,11 @@ class card_deck
     std::vector<card> cards;
     std::vector<Rank> ranks{Rank::TWO, Rank::THREE, Rank::FOUR, Rank::FIVE, Rank::SIX, Rank::SEVEN, Rank::EIGHT, Rank::NINE, Rank::TEN, Rank::JACK, Rank::QUIN, Rank::KING, Rank::ACE};
     std::vector<Suite> suites{Suite::CLUBS, Suite::DIAMONDS, Suite::HEARTS, Suite::SPADES};
+    void shuffle();
 
 public:
     card_deck();
     card get_card();
-    void shuffle();
 };
 
 #endif // MUSCLE_COMPUTING_CARDS_H

@@ -2,6 +2,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "poker.hpp"
+#include "player.hpp"
 
 BOOST_AUTO_TEST_SUITE(SMOKE_TEST_SUITE)
 
@@ -46,9 +47,27 @@ BOOST_AUTO_TEST_CASE(check_that_you_can_get_a_card_from_a_deck)
 BOOST_AUTO_TEST_CASE(print_deck_contents_to_output_stream)
 {
   card_deck deck;
-  for (int i=1; i<=52; ++i) {
+  for (int i = 1; i <= 52; ++i)
+  {
     std::cout << "#" << i << " " << deck.get_card() << std::endl;
   }
+}
+
+BOOST_AUTO_TEST_CASE(test_that_player_can_hold_two_hold_cards)
+{
+  card_deck deck;
+  auto first_card = deck.get_card();
+  auto second_card = deck.get_card();
+  auto third_card = deck.get_card();
+  auto fourth_card = deck.get_card();
+
+  player player_one{first_card, second_card};
+  player player_two{third_card, fourth_card};
+
+  BOOST_CHECK(player_one.first_card == first_card);
+  BOOST_CHECK(player_one.second_card == second_card);
+  BOOST_CHECK(player_two.first_card == third_card);
+  BOOST_CHECK(player_two.second_card == fourth_card);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

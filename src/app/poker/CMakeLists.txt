@@ -11,6 +11,7 @@ add_definitions(-DBOOST_TEST_DYN_LINK)
 set(code
   cards.cpp
   utils.hpp
+  player.cpp
 )
 
 add_subdirectory(tests)
