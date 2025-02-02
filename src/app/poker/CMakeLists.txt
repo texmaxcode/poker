@@ -12,6 +12,7 @@ set(code
   utils.hpp
   cards.cpp
   player.cpp
+  game.cpp
 )
 
 add_subdirectory(tests)

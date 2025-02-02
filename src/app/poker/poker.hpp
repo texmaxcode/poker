@@ -3,5 +3,6 @@
 
 #include "cards.hpp"
 #include "player.hpp"
+#include "game.hpp"
 
 #endif //MUSCLE_COMPUTING_POKER_SIMULATOR_H

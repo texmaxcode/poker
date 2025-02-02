@@ -97,4 +97,101 @@ BOOST_AUTO_TEST_CASE(test_player_with_cards_constructor)
   BOOST_CHECK(player_four.second_card == first_card);
 }
 
+BOOST_AUTO_TEST_CASE(test_that_game_can_be_created)
+{
+
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  player player_two;
+  player_two.stack = 100;
+
+  game.join_table(player_one);
+  game.join_table(player_two);
+  BOOST_CHECK_EQUAL(game.players_count(), 2);
+  BOOST_CHECK_EQUAL(game.is_game_in_progress(), false);
+}
+
+BOOST_AUTO_TEST_CASE(test_that_game_can_started)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  player player_two;
+  player_two.stack = 100;
+
+  game.join_table(player_one);
+  game.join_table(player_two);
+  game.start();
+  BOOST_CHECK_EQUAL(game.players_count(), 2);
+  BOOST_CHECK_EQUAL(game.is_game_in_progress(), true);
+}
+
+BOOST_AUTO_TEST_CASE(test_that_game_can_collect_blinds)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  game.join_table(player_one);
+  BOOST_CHECK(game.players_count() == 1);
+
+  player player_two;
+  player_two.stack = 100;
+  game.join_table(player_two);
+  BOOST_CHECK(game.players_count() == 2);
+
+  game.collect_blinds();
+  // TODO: Ugly stuff -- fix it.
+  BOOST_CHECK_EQUAL(game.table[0].stack, 97);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 99);
+  BOOST_CHECK_EQUAL(game.pot, 4);
+}
+
+BOOST_AUTO_TEST_CASE(test_that_game_can_take_bets)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  game.join_table(player_one);
+  BOOST_CHECK(game.players_count() == 1);
+
+  player player_two;
+  player_two.stack = 100;
+  game.join_table(player_two);
+  BOOST_CHECK(game.players_count() == 2);
+
+  game.collect_blinds();
+  // TODO: Ugly stuff -- fix it.
+  BOOST_CHECK_EQUAL(game.table[0].stack, 97);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 99);
+  BOOST_CHECK_EQUAL(game.pot, 4);
+  game.take_bets();
+  BOOST_CHECK_EQUAL(game.table[0].stack, 88);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 90);
+  BOOST_CHECK_EQUAL(game.pot, 22);
+}
+
+BOOST_AUTO_TEST_CASE(test_that_game_can_deal_hold_cards)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  game.join_table(player_one);
+  BOOST_CHECK(game.players_count() == 1);
+
+  player player_two;
+  player_two.stack = 100;
+  game.join_table(player_two);
+  BOOST_CHECK(game.players_count() == 2);
+
+  card test_card{Rank::ACE, Suite::DIAMONDS};
+
+  game.deal_hold_cards();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.table[0].first_card) == typeid(test_card));
+  BOOST_CHECK(typeid(game.table[0].second_card) == typeid(test_card));
+  BOOST_CHECK(typeid(game.table[1].first_card) == typeid(test_card));
+  BOOST_CHECK(typeid(game.table[1].second_card) == typeid(test_card));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
