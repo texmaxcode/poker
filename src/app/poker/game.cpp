@@ -74,6 +74,11 @@ void game::deal_turn() {
     turn = deck.get_card();
 }
 
+void game::deal_river() {
+    card burn_card = deck.get_card();
+    river = deck.get_card();
+}
+
 void game::start()
 {
     in_progress = true;
@@ -86,9 +91,9 @@ void game::start()
     take_bets();
     street == Street::TURN;
     deal_turn();
-    /*
     take_bets();
     street == Street::RIVER;
+    /*
     deal_river();
     take_bets();
     decide_the_payout();

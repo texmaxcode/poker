@@ -236,4 +236,24 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_deal_turn)
   BOOST_CHECK(typeid(game.turn) == typeid(test_card));
 }
 
+BOOST_AUTO_TEST_CASE(test_that_game_can_deal_river)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  game.join_table(player_one);
+  BOOST_CHECK(game.players_count() == 1);
+
+  player player_two;
+  player_two.stack = 100;
+  game.join_table(player_two);
+  BOOST_CHECK(game.players_count() == 2);
+
+  card test_card{Rank::ACE, Suite::DIAMONDS};
+
+  game.deal_river();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.river) == typeid(test_card));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
