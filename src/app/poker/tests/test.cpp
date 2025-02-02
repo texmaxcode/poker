@@ -46,8 +46,9 @@ BOOST_AUTO_TEST_CASE(check_that_you_can_get_a_card_from_a_deck)
 BOOST_AUTO_TEST_CASE(print_deck_contents_to_output_stream)
 {
   card_deck deck;
+  deck.shuffle();
   for (int i=1; i<=52; ++i) {
-    std::cout << deck.get_card() << std::endl;
+    std::cout << "#" << i << " " << deck.get_card() << std::endl;
   }
 }
 

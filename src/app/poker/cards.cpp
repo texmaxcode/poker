@@ -26,15 +26,23 @@ card_deck::card_deck()
     {
         for (const auto &rank : ranks)
         {
-            cards.push({rank, suite});
+            cards.push_back({rank, suite});
         }
     }
+    shuffle();
+}
+
+void card_deck::shuffle()
+{
+    auto random_engine = std::default_random_engine{};
+    std::mt19937 generator(random_engine());
+    std::shuffle(cards.begin(), cards.begin(), generator);
 }
 
 card card_deck::get_card()
 {
-    auto a_card = cards.top();
-    cards.pop();
+    auto a_card = cards.back();
+    cards.pop_back();
     return a_card;
 }
 
@@ -69,6 +77,7 @@ std::string rank_to_string(Rank rank)
     case 14:
         return "A";
     }
+    return UNKNOWN;
 }
 
 std::string suite_to_string(Suite suite)
@@ -84,6 +93,7 @@ std::string suite_to_string(Suite suite)
     case 4:
         return "d";
     }
+    return UNKNOWN;
 }
 
 std::string stringify(Rank rank, Suite suite)

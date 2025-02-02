@@ -2,11 +2,14 @@
 #define MUSCLE_COMPUTING_CARDS_H
 
 #include <vector>
-#include <stack>
 #include <iostream>
 #include <string>
 
 #include "utils.hpp"
+#include <algorithm>
+#include <random>
+
+#define UNKNOWN "Unknown"
 
 enum class Suite
 {
@@ -33,7 +36,8 @@ enum class Rank
     ACE
 };
 
-enum class HAND_RANKING {
+enum class HandRank
+{
     HIGH_CARD = 1,
     PAIR,
     TWO_PAIR,
@@ -61,13 +65,14 @@ public:
 
 class card_deck
 {
-    std::stack<card> cards;
+    std::vector<card> cards;
     std::vector<Rank> ranks{Rank::TWO, Rank::THREE, Rank::FOUR, Rank::FIVE, Rank::SIX, Rank::SEVEN, Rank::EIGHT, Rank::NINE, Rank::TEN, Rank::JACK, Rank::QUIN, Rank::KING, Rank::ACE};
     std::vector<Suite> suites{Suite::CLUBS, Suite::DIAMONDS, Suite::HEARTS, Suite::SPADES};
 
 public:
     card_deck();
     card get_card();
+    void shuffle();
 };
 
 #endif // MUSCLE_COMPUTING_CARDS_H
