@@ -1,6 +1,6 @@
 #include "player.hpp"
 
-void player::take_hold_cards(card first_card, card second_card) {
-  first_card = first_card;
-  second_card = second_card;
+void player::take_hold_cards(card f_card, card s_card) {
+  first_card = f_card;
+  second_card = s_card;
 }

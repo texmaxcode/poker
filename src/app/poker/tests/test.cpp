@@ -73,10 +73,10 @@ BOOST_AUTO_TEST_CASE(test_that_player_can_hold_two_hold_cards) {
   player player_three{third_card, fourth_card};
   player player_four{second_card, first_card};
 
-  BOOST_CHECK(player_three.first_card == first_card);
-  BOOST_CHECK(player_four.second_card == second_card);
   BOOST_CHECK(player_three.first_card == third_card);
-  BOOST_CHECK(player_four.second_card == fourth_card);
+  BOOST_CHECK(player_three.second_card == fourth_card);
+  BOOST_CHECK(player_four.first_card == second_card);
+  BOOST_CHECK(player_four.second_card == first_card);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
