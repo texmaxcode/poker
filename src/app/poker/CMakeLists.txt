@@ -9,8 +9,8 @@ include_directories(${TEST_SOURCE_DIR}/src ${Boost_INCLUDE_DIRS})
 add_definitions(-DBOOST_TEST_DYN_LINK)
 
 set(code
-  cards.cpp
   utils.hpp
+  cards.cpp
   player.cpp
 )
 

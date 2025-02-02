@@ -55,6 +55,7 @@ class card
 public:
     Rank rank;
     Suite suite;
+    card() {};
     card(Rank rank, Suite suite) : rank(rank), suite(suite) {};
     bool operator<(const card &) const;
     bool operator>(const card &) const;
