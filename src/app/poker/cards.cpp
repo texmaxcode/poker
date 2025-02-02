@@ -34,9 +34,11 @@ card_deck::card_deck()
 
 void card_deck::shuffle()
 {
-    auto random_engine = std::default_random_engine{};
-    std::mt19937 generator(random_engine());
-    std::shuffle(cards.begin(), cards.begin(), generator);
+    // Might be good for testing.
+    // auto random_engine = std::default_random_engine{};
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::shuffle(cards.begin(), cards.end(), generator);
 }
 
 card card_deck::get_card()
