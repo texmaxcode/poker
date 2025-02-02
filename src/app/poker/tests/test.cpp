@@ -256,4 +256,72 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_deal_river)
   BOOST_CHECK(typeid(game.river) == typeid(test_card));
 }
 
+BOOST_AUTO_TEST_CASE(test_that_game_can_decide_the_winner)
+{
+  game game;
+  player player_one;
+  player_one.stack = 100;
+  game.join_table(player_one);
+  BOOST_CHECK(game.players_count() == 1);
+
+  player player_two;
+  player_two.stack = 100;
+  game.join_table(player_two);
+  BOOST_CHECK(game.players_count() == 2);
+
+  game.collect_blinds();
+  // TODO: Ugly stuff -- fix it.
+  BOOST_CHECK_EQUAL(game.table[0].stack, 97);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 99);
+  BOOST_CHECK_EQUAL(game.pot, 4);
+  game.take_bets();
+  BOOST_CHECK_EQUAL(game.table[0].stack, 88);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 90);
+  BOOST_CHECK_EQUAL(game.pot, 22);
+
+  card test_card{Rank::ACE, Suite::DIAMONDS};
+
+  game.deal_hold_cards();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.table[0].first_card) == typeid(test_card));
+  BOOST_CHECK(typeid(game.table[0].second_card) == typeid(test_card));
+  BOOST_CHECK(typeid(game.table[1].first_card) == typeid(test_card));
+  BOOST_CHECK(typeid(game.table[1].second_card) == typeid(test_card));
+
+  game.take_bets();
+  BOOST_CHECK_EQUAL(game.table[0].stack, 79);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 81);
+  BOOST_CHECK_EQUAL(game.pot, 40);
+
+  game.deal_flop();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.flop[0]) == typeid(test_card));
+  BOOST_CHECK(typeid(game.flop[1]) == typeid(test_card));
+  BOOST_CHECK(typeid(game.flop[2]) == typeid(test_card));
+
+  game.take_bets();
+  BOOST_CHECK_EQUAL(game.table[0].stack, 70);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 72);
+  BOOST_CHECK_EQUAL(game.pot, 58);
+
+  game.deal_turn();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.turn) == typeid(test_card));
+
+  game.take_bets();
+  BOOST_CHECK_EQUAL(game.table[0].stack, 61);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 63);
+  BOOST_CHECK_EQUAL(game.pot, 76);
+
+  game.deal_river();
+  // TODO: Those are horrible and pointless, but better than nothing.
+  BOOST_CHECK(typeid(game.river) == typeid(test_card));
+
+  game.take_bets();
+  BOOST_CHECK_EQUAL(game.table[0].stack, 52);
+  BOOST_CHECK_EQUAL(game.table[1].stack, 54);
+  BOOST_CHECK_EQUAL(game.pot, 94);
+  game.decide_the_payout();
+}
+
 BOOST_AUTO_TEST_SUITE_END()

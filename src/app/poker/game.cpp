@@ -79,6 +79,25 @@ void game::deal_river() {
     river = deck.get_card();
 }
 
+std::string get_hand_for_player(player player, std::vector<card> flop, card turn, card river) {
+    std::string hand = "";
+    hand += to_string(player.first_card);
+    hand += to_string(player.second_card);
+    hand += to_string(flop[0]);
+    hand += to_string(flop[1]);
+    hand += to_string(flop[2]);
+    hand += to_string(turn);
+    hand += to_string(river);
+    return hand;
+}
+
+void game::decide_the_payout() {
+    std::string hand_one = get_hand_for_player(table[button], flop, turn, river);
+    std::string hand_two = get_hand_for_player(table[button + 1], flop, turn, river);
+    std::cout << hand_one << std::endl;
+    std::cout << hand_two << std::endl;
+}
+
 void game::start()
 {
     in_progress = true;
@@ -93,10 +112,10 @@ void game::start()
     deal_turn();
     take_bets();
     street == Street::RIVER;
-    /*
     deal_river();
     take_bets();
     decide_the_payout();
+    /*
     do_payouts();
     switch_button();
     */

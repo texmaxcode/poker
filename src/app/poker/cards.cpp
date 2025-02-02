@@ -105,5 +105,5 @@ std::string stringify(Rank rank, Suite suite)
 
 std::ostream &operator<<(std::ostream &out, const card &card)
 {
-    return out << "Card(" << stringify(card.rank, card.suite) << ")";
+    return out << stringify(card.rank, card.suite);
 }
