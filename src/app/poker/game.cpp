@@ -116,7 +116,6 @@ std::string game::evaluator(std::vector<card> hand)
     int dimonds = 0;
     int spades = 0;
     int hearts = 0;
-
     int two = 0;
     int three = 0;
     int four = 0;
@@ -150,8 +149,8 @@ std::string game::evaluator(std::vector<card> hand)
         }
     }
 
-    for (auto card : hand) {
-
+    for (auto card : hand)
+    {
         switch (as_integer(card.rank))
         {
         case 2:
