@@ -2,6 +2,8 @@
 #define MUSCLE_COMPUTING_GAME_H
 
 #include <vector>
+#include <algorithm>
+
 #include "cards.hpp"
 #include "player.hpp"
 
@@ -21,6 +23,7 @@ class game
     bool in_progress = false;
     Street street;
     card_deck deck;
+    std::vector<card> get_hand_vector(int);
 
 public:
     bool is_game_in_progress();

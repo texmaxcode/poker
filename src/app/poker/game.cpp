@@ -69,33 +69,51 @@ void game::deal_flop()
     }
 }
 
-void game::deal_turn() {
+void game::deal_turn()
+{
     card burn_card = deck.get_card();
     turn = deck.get_card();
 }
 
-void game::deal_river() {
+void game::deal_river()
+{
     card burn_card = deck.get_card();
     river = deck.get_card();
 }
 
-std::string get_hand_for_player(player player, std::vector<card> flop, card turn, card river) {
+std::string string_representation(std::vector<card> card_vector)
+{
     std::string hand = "";
-    hand += to_string(player.first_card);
-    hand += to_string(player.second_card);
-    hand += to_string(flop[0]);
-    hand += to_string(flop[1]);
-    hand += to_string(flop[2]);
-    hand += to_string(turn);
-    hand += to_string(river);
+    hand += to_string(card_vector[0]);
+    hand += to_string(card_vector[1]);
+    hand += to_string(card_vector[2]);
+    hand += to_string(card_vector[3]);
+    hand += to_string(card_vector[4]);
+    hand += to_string(card_vector[5]);
+    hand += to_string(card_vector[6]);
     return hand;
 }
 
-void game::decide_the_payout() {
-    std::string hand_one = get_hand_for_player(table[button], flop, turn, river);
-    std::string hand_two = get_hand_for_player(table[button + 1], flop, turn, river);
-    std::cout << hand_one << std::endl;
-    std::cout << hand_two << std::endl;
+std::vector<card> game::get_hand_vector(int idx)
+{
+    std::vector<card> return_vector;
+
+    return_vector.push_back(table[idx].first_card);
+    return_vector.push_back(table[idx].second_card);
+    return_vector.push_back(flop[0]);
+    return_vector.push_back(flop[1]);
+    return_vector.push_back(flop[2]);
+    return_vector.push_back(turn);
+    return_vector.push_back(river);
+    std::sort(return_vector.begin(), return_vector.end());
+
+    return return_vector;
+}
+
+void game::decide_the_payout()
+{
+    std::cout << string_representation(get_hand_vector(button)) << std::endl;
+    std::cout << string_representation(get_hand_vector(button + 1)) << std::endl;
 }
 
 void game::start()
