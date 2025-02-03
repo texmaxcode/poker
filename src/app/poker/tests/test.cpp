@@ -324,4 +324,18 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_decide_the_winner)
   game.decide_the_payout();
 }
 
+BOOST_AUTO_TEST_CASE(test_hand_evaluator) {
+  game game;
+  std::vector<card> hand;
+  hand.push_back({Rank::ACE, Suite::DIAMONDS});
+  hand.push_back({Rank::ACE, Suite::HEARTS});
+  hand.push_back({Rank::TWO, Suite::HEARTS});
+  hand.push_back({Rank::THREE, Suite::SPADES});
+  hand.push_back({Rank::NINE, Suite::CLUBS});
+  hand.push_back({Rank::JACK, Suite::CLUBS});
+  hand.push_back({Rank::SIX, Suite::CLUBS});
+
+  game.evaluator(hand);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

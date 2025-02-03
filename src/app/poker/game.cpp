@@ -81,7 +81,7 @@ void game::deal_river()
     river = deck.get_card();
 }
 
-std::string string_representation(std::vector<card> card_vector)
+std::string stringify(std::vector<card> card_vector)
 {
     std::string hand = "";
     hand += to_string(card_vector[0]);
@@ -91,13 +91,13 @@ std::string string_representation(std::vector<card> card_vector)
     hand += to_string(card_vector[4]);
     hand += to_string(card_vector[5]);
     hand += to_string(card_vector[6]);
+
     return hand;
 }
 
 std::vector<card> game::get_hand_vector(int idx)
 {
     std::vector<card> return_vector;
-
     return_vector.push_back(table[idx].first_card);
     return_vector.push_back(table[idx].second_card);
     return_vector.push_back(flop[0]);
@@ -110,10 +110,100 @@ std::vector<card> game::get_hand_vector(int idx)
     return return_vector;
 }
 
+std::string game::evaluator(std::vector<card> hand)
+{
+    int clubs = 0;
+    int dimonds = 0;
+    int spades = 0;
+    int hearts = 0;
+
+    int two = 0;
+    int three = 0;
+    int four = 0;
+    int five = 0;
+    int six = 0;
+    int seven = 0;
+    int eight = 0;
+    int nine = 0;
+    int ten = 0;
+    int jack = 0;
+    int qeen = 0;
+    int king = 0;
+    int ace = 0;
+
+    for (auto card : hand)
+    {
+        switch (as_integer(card.suite))
+        {
+        case 1:
+            clubs++;
+            break;
+        case 2:
+            spades++;
+            break;
+        case 3:
+            hearts++;
+            break;
+        case 4:
+            dimonds++;
+            break;
+        }
+    }
+
+    for (auto card : hand) {
+
+        switch (as_integer(card.rank))
+        {
+        case 2:
+            two++;
+            break;
+        case 3:
+            three++;
+            break;
+        case 4:
+            four++;
+            break;
+        case 5:
+            five++;
+            break;
+        case 6:
+            six++;
+            break;
+        case 7:
+            seven++;
+            break;
+        case 8:
+            eight++;
+            break;
+        case 9:
+            nine++;
+            break;
+        case 10:
+            ten++;
+            break;
+        case 11:
+            jack++;
+            break;
+        case 12:
+            qeen++;
+            break;
+        case 13:
+            king++;
+            break;
+        case 14:
+            ace++;
+            break;
+        }
+    }
+    return "Some lucky type";
+}
+
 void game::decide_the_payout()
 {
-    std::cout << string_representation(get_hand_vector(button)) << std::endl;
-    std::cout << string_representation(get_hand_vector(button + 1)) << std::endl;
+    auto hand_one = get_hand_vector(button);
+    auto hand_two = get_hand_vector(button + 1);
+    std::cout << stringify(hand_one) << " " << evaluator(hand_one) << std::endl;
+    std::cout << stringify(hand_two) << " " << evaluator(hand_two) << std::endl;
 }
 
 void game::start()

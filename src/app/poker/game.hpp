@@ -41,11 +41,13 @@ public:
     void take_bets();
     void deal_hold_cards();
     void deal_flop();
-
     void deal_turn();
     void deal_river();
     void decide_the_payout();
+
     void do_payouts();
     void switch_button();
+
+    std::string evaluator(std::vector<card>);
 };
 #endif // MUSCLE_COMPUTING_GAME_H
