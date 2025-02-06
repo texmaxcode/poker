@@ -19,10 +19,7 @@ qt_add_qml_module(${CMAKE_PROJECT_NAME}
         qml/assets/images/poker_table.jpg
 )
 
-include_directories(simulator)
 add_subdirectory(simulator)
-
-include_directories(poker)
 add_subdirectory(poker)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE

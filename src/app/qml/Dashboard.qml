@@ -48,7 +48,6 @@ Page {
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.alignment: Qt.AlignCenter
                 Rectangle {
                     anchors.centerIn: parent
                     radius: 30
@@ -61,6 +60,13 @@ Page {
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+
+                Rectangle {
+                    anchors.fill: parent
+                    opacity: 0.2
+                    color: "black"
+                }
+
                 Button {
                     anchors.centerIn: parent
                     text: "About"
@@ -102,13 +108,9 @@ Page {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    radius: 30
-                    opacity: 0.3
+                    anchors.fill: parent
+                    opacity: 0.1
                     color: "black"
-                    width: 230
-                    height: 230
                 }
             }
         }
