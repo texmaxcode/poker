@@ -1,14 +1,12 @@
-set(PROJECT_SOURCES
+add_executable(PokerSolver
     main.cpp
 )
 
-add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCES})
-
-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+set_target_properties(PokerSolver PROPERTIES
     WIN32_EXECUTABLE ON 
 )
 
-qt_add_qml_module(${CMAKE_PROJECT_NAME}
+qt_add_qml_module(PokerSolver
     URI SolverUI
     VERSION 0.1
     QML_FILES
@@ -22,7 +20,7 @@ qt_add_qml_module(${CMAKE_PROJECT_NAME}
 add_subdirectory(simulator)
 add_subdirectory(poker)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+target_link_libraries(PokerSolver PRIVATE
     simulator
     poker
     Qt${QT_VERSION_MAJOR}::Core
