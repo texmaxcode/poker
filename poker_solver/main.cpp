@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+
 #include "poker_simulator.hpp"
 
 int main(int argc, char *argv[])
