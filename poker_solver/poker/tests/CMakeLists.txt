@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.26)
+
 add_executable(Test_poker test.cpp)
 
 target_link_libraries(Test_poker

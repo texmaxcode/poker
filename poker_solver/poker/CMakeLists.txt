@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(poker VERSION 0.0.1)
-
 find_package(Boost COMPONENTS system filesystem log_setup log unit_test_framework REQUIRED)
 include_directories(${TEST_SOURCE_DIR}/src ${Boost_INCLUDE_DIRS})
 add_definitions(-DBOOST_TEST_DYN_LINK)

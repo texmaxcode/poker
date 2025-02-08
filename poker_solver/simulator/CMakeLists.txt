@@ -7,7 +7,7 @@ add_definitions(-DBOOST_TEST_DYN_LINK)
 
 add_subdirectory(tests)
 
-qt_add_library(simulator STATIC
+qt_add_library(simulator
   simulator.cpp
   storage.cpp
 )
