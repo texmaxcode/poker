@@ -7,8 +7,10 @@ QT_LIBS=/home/max-gloom/Qt/6.8.1/gcc_64
 SOURCE=.
 DESTINATION=./build
 
+# Clean up
 rm -rf build && mkdir build && rm poker_simulator.data;
 
+# Configure
 cmake \
   -DCMAKE_BUILD_TYPE:STRING=$MODE \
   -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE \
@@ -20,9 +22,12 @@ cmake \
   -B$DESTINATION \
   -G Ninja
 
+# Build
 cd build && ninja && cd ..
 
+# Test
 ./build/poker_solver/simulator/tests/Test_simulator -l all -r short
 ./build/poker_solver/poker/tests/Test_poker -l all -r short
 
+# Start app
 ./build/poker_solver/PokerSolver
