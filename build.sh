@@ -22,7 +22,7 @@ cmake \
 
 cd build && ninja && cd ..
 
-./build/app/simulator/tests/Test_simulator -l all -r short
-./build/app/poker/tests/Test_poker -l all -r short
+./build/poker_solver/simulator/tests/Test_simulator -l all -r short
+./build/poker_solver/poker/tests/Test_poker -l all -r short
 
-./build/app/PokerSolver
+./build/poker_solver/PokerSolver
