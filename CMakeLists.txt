@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 
-option(BUILD_SHARED_LIBS "Build shared libraries?" YES)
+option(BUILD_SHARED_LIBS "Build shared libraries?" NO)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick)
 

@@ -15,6 +15,7 @@ qt_add_qml_module(PokerSolver
         qml/Main.qml
         qml/Dashboard.qml
         qml/About.qml
+        qml/PlayerSpot.qml
     RESOURCES
         qml/assets/images/poker_table.jpg
 )
@@ -22,11 +23,11 @@ qt_add_qml_module(PokerSolver
 add_subdirectory(simulator)
 add_subdirectory(poker)
 
-target_link_libraries(PokerSolver PRIVATE
-    simulator
-    poker
-    Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::Gui
-    Qt${QT_VERSION_MAJOR}::Quick
-    Qt${QT_VERSION_MAJOR}::Qml
+target_link_libraries(PokerSolver
+    PRIVATE simulator
+    PRIVATE poker
+    PRIVATE Qt${QT_VERSION_MAJOR}::Core
+    PRIVATE Qt${QT_VERSION_MAJOR}::Gui
+    PRIVATE Qt${QT_VERSION_MAJOR}::Quick
+    PRIVATE Qt${QT_VERSION_MAJOR}::Qml
 )

@@ -13,18 +13,8 @@ Page {
     RowLayout {
         anchors.fill: parent
         ColumnLayout {
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    radius: 30
-                    opacity: 0.3
-                    color: "black"
-                    width: 230
-                    height: 230
-                }
+            PlayerSpot {
+                id: first_player
             }
             Item {
                 Layout.fillWidth: true
@@ -39,8 +29,10 @@ Page {
                     radius: 30
                     opacity: 0.3
                     color: "black"
-                    width: 230
-                    height: 230
+                    width: 20
+                    height: 20
+                    PropertyAnimation on width { to: 230}
+                    PropertyAnimation on height { to: 230}
                 }
             }
         }
@@ -53,8 +45,10 @@ Page {
                     radius: 30
                     opacity: 0.3
                     color: "black"
-                    width: 230
-                    height: 230
+                    width: 20
+                    height: 20
+                    PropertyAnimation on width { to: 230}
+                    PropertyAnimation on height { to: 230}
                 }
             }
             Item {
@@ -81,8 +75,10 @@ Page {
                     radius: 30
                     opacity: 0.3
                     color: "black"
-                    width: 230
-                    height: 230
+                    width: 20
+                    height: 20
+                    PropertyAnimation on width { to: 230}
+                    PropertyAnimation on height { to: 230}
                 }
             }
         }
@@ -96,8 +92,10 @@ Page {
                     radius: 30
                     opacity: 0.3
                     color: "black"
-                    width: 230
-                    height: 230
+                    width: 20
+                    height: 20
+                    PropertyAnimation on width { to: 230}
+                    PropertyAnimation on height { to: 230}
                 }
             }
             Item {
