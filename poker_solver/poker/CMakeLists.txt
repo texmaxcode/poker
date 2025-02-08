@@ -8,8 +8,7 @@ add_definitions(-DBOOST_TEST_DYN_LINK)
 
 add_subdirectory(tests)
 
-include_directories(include)
-add_library(poker SHARED
+add_library(poker
   utils.hpp
   cards.cpp
   player.cpp

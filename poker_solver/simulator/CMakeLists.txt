@@ -1,24 +1,16 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(simulator VERSION 0.0.1)
-
-set(PROJECT_TYPE STATIC)
-
 find_package(SqliteOrm REQUIRED)
 find_package(Boost COMPONENTS system filesystem log_setup log unit_test_framework REQUIRED)
 include_directories(${TEST_SOURCE_DIR}/src ${Boost_INCLUDE_DIRS})
 add_definitions(-DBOOST_TEST_DYN_LINK)
 
+add_subdirectory(tests)
 
-set(code
+qt_add_library(simulator STATIC
   simulator.cpp
   storage.cpp
 )
-
-add_subdirectory(tests)
-
-include_directories(include)
-qt_add_library(simulator ${PROJECT_TYPE} ${code})
 
 target_link_libraries(simulator PRIVATE
     sqlite_orm::sqlite_orm
