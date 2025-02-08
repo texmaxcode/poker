@@ -10,9 +10,9 @@ add_library(poker
   cards.cpp
   player.cpp
   game.cpp
- )
+)
 
 target_link_libraries(poker PRIVATE
-    Qt${QT_VERSION_MAJOR}::Qml
+  Qt${QT_VERSION_MAJOR}::Qml
 )
 target_include_directories(poker INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
