@@ -6,15 +6,14 @@
     Layout.fillHeight: true
     Rectangle {
         id: border
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
+        anchors.centerIn: parent
         radius: 30
         opacity: 0.5
         color: "black"
         width: 20
         height: 20
-        PropertyAnimation on width { to: 230}
-        PropertyAnimation on height { to: 290}
+        PropertyAnimation on width { to: 300}
+        PropertyAnimation on height { to: 330}
     }
 
     RowLayout {
@@ -22,30 +21,16 @@
         anchors.horizontalCenter: border.horizontalCenter
         anchors.topMargin: 20
 
-        Rectangle {
-            color: "white"
-            width: 100
-            height: 160
-            radius: 5
-            Image {
-              id: first_card 
-              width: 100 
-              height: 160 
-              source: "assets/cards_svgs/clubs_ace.svg"
-            }
+        Card {
+            id: first_card
+            card: "clubs_jack.svg"
+            flipped: true
         }
 
-        Rectangle {
-            color: "white"
-            width: 100
-            height: 160
-            radius: 5
-            Image {
-              id: second_card 
-              width: 100 
-              height: 160 
-              source: "assets/cards_svgs/spades_2.svg"
-            }
+        Card {
+            id: second_card
+            card: "spades_10.svg"
+            flipped:true
         }
     }
 
@@ -61,7 +46,7 @@
         color: "white"
         width: 20
         height: 20
-        PropertyAnimation on width { to: 200}
+        PropertyAnimation on width { to: 270}
         PropertyAnimation on height { to: 40}
 
         Text {
@@ -77,14 +62,14 @@
         id: stack_count
         anchors {
             horizontalCenter: parent.horizontalCenter
-            bottom: parent.bottom
+            bottom: border.bottom
             bottomMargin: 15
         }
         radius: 10
         color: "black"
         width: 20
         height: 20
-        PropertyAnimation on width { to: 200}
+        PropertyAnimation on width { to: 270}
         PropertyAnimation on height { to: 40}
 
         Text {

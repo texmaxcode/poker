@@ -34,32 +34,23 @@ Item {
 
         Card {
             id: first_flop
-            width: 100
-            height: 160
+            flipped: true
             card: "hearts_king.svg"
         }
         Card {
             id: second_flop
-            width: 100
-            height: 160
             card: "diamonds_10.svg"
         }
         Card {
             id: third_flop
-            width: 100
-            height: 160
             card: "spades_ace.svg"
         }
         Card {
             id: turn
-            width: 100
-            height: 160
             card: "hearts_queen.svg"
         }
         Card {
             id: river
-            width: 100
-            height: 160
             card: "clubs_2.svg"
         }
     }

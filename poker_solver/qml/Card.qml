@@ -2,6 +2,8 @@ import QtQuick
 
 Flipable {
     id: flipable
+    width: 130
+    height: 190
 
     property bool flipped: false
     property string card: "spades_ace.svg"

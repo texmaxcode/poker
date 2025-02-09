@@ -19,10 +19,6 @@ Page {
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-            }
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
