@@ -28,32 +28,28 @@ Item {
         font.pointSize: 24
     }
 
-    RowLayout {
+    Item {
         id: cards
+        width: 670
+        height: 190
         anchors.bottom: root.bottom
         anchors.horizontalCenter: root.horizontalCenter
         anchors.bottomMargin: 20
 
-        Card {
-            id: first_flop
-            flipped: true
-            card: "hearts_king.svg"
-        }
-        Card {
-            id: second_flop
-            card: "diamonds_10.svg"
-        }
-        Card {
-            id: third_flop
-            card: "spades_ace.svg"
-        }
-        Card {
-            id: turn
-            card: "hearts_queen.svg"
-        }
-        Card {
-            id: river
-            card: "clubs_2.svg"
+        RowLayout {
+            Card {
+                id: first_flop
+                flipped: true
+                card: "hearts_king.svg"
+            }
+            Card {
+                id: second_flop
+                card: "diamonds_10.svg"
+            }
+            Card {
+                id: third_flop
+                card: "spades_ace.svg"
+            }
         }
     }
 }

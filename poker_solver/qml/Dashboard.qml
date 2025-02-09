@@ -16,14 +16,14 @@ Page {
             Player {
                 id: first_player
                 name: "Bot 1"
-                position: "CO"
+                position: "UTG"
                 first_card: "hearts_ace.svg"
                 second_card: "hearts_king.svg"
             }
             Player {
                 id: second_player
                 name: "Bot 2"
-                position: "UTG"
+                position: "SB"
                 first_card: "clubs_ace.svg"
                 second_card: "clubs_king.svg"
             }
@@ -32,7 +32,7 @@ Page {
             Player {
                 id: third_player
                 name: "Bot 3"
-                position: "BB"
+                position: "CO"
                 first_card: "diamonds_ace.svg"
                 second_card: "diamonds_king.svg"
             }
@@ -41,8 +41,8 @@ Page {
             }
             Player {
                 id: fourth_player
-                position: "SB"
                 name: "Bot Four"
+                position: "BB"
                 first_card: "spades_ace.svg"
                 second_card: "spades_king.svg"
             }
