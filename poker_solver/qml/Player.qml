@@ -6,6 +6,8 @@
     Layout.fillWidth: true
     Layout.fillHeight: true
     property string name: "Default"
+    property string first_card: ""
+    property string second_card: ""
 
     Rectangle {
         id: border
@@ -26,13 +28,13 @@
 
         Card {
             id: first_card
-            card: "clubs_jack.svg"
+            card: root.first_card
             flipped: true
         }
 
         Card {
             id: second_card
-            card: "spades_10.svg"
+            card: root.second_card
             flipped:true
         }
     }
