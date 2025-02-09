@@ -17,6 +17,7 @@ qt_add_qml_module(PokerSolver
         qml/About.qml
         qml/PlayerSpot.qml
         qml/Table.qml
+        qml/Card.qml
     RESOURCES
         qml/assets/images/poker_table.jpg
         # Cards backs

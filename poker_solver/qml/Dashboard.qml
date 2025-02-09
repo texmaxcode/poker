@@ -97,6 +97,11 @@ Page {
                     opacity: 0.1
                     color: "black"
                 }
+                Button {
+                    anchors.centerIn: parent
+                    text: "About"
+                    onClicked: stackView.push("About.qml")
+                }
             }
         }
     }
