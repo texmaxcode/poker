@@ -9,7 +9,7 @@
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         radius: 30
-        opacity: 0.6
+        opacity: 0.5
         color: "black"
         width: 20
         height: 20
@@ -27,6 +27,12 @@
             width: 100
             height: 160
             radius: 5
+            Image {
+              id: first_card 
+              width: 100 
+              height: 160 
+              source: "assets/cards_svgs/clubs_ace.svg"
+            }
         }
 
         Rectangle {
@@ -34,6 +40,12 @@
             width: 100
             height: 160
             radius: 5
+            Image {
+              id: second_card 
+              width: 100 
+              height: 160 
+              source: "assets/cards_svgs/spades_2.svg"
+            }
         }
     }
 
@@ -42,10 +54,10 @@
         anchors {
             horizontalCenter: parent.horizontalCenter
             bottom: stack_count.top
-            bottomMargin: 5
+            bottomMargin: 7 
         }
-        radius: 30
-        opacity: 0.6
+        radius: 10
+        opacity: 0.8
         color: "white"
         width: 20
         height: 20
@@ -68,7 +80,7 @@
             bottom: parent.bottom
             bottomMargin: 15
         }
-        radius: 30
+        radius: 10
         color: "black"
         width: 20
         height: 20
