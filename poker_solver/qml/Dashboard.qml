@@ -13,82 +13,38 @@ Page {
     RowLayout {
         anchors.fill: parent
         ColumnLayout {
-            PlayerSpot {
+            Player {
                 id: first_player
+                name: "Bot 1"
             }
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    radius: 30
-                    opacity: 0.3
-                    color: "black"
-                    width: 20
-                    height: 20
-                    PropertyAnimation on width { to: 230}
-                    PropertyAnimation on height { to: 230}
-                }
+            Player {
+                id: second_player
+                name: "Bot 2"
             }
         }
         ColumnLayout {
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Rectangle {
-                    anchors.centerIn: parent
-                    radius: 30
-                    opacity: 0.3
-                    color: "black"
-                    width: 20
-                    height: 20
-                    PropertyAnimation on width { to: 230}
-                    PropertyAnimation on height { to: 230}
-                }
+            Player {
+                id: third_player
+                name: "Bot 3"
             }
             Table {
                 id: table
             }
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Rectangle {
-                    anchors.centerIn: parent
-                    radius: 30
-                    opacity: 0.3
-                    color: "black"
-                    width: 20
-                    height: 20
-                    PropertyAnimation on width { to: 230}
-                    PropertyAnimation on height { to: 230}
-                }
+            Player {
+                id: fourth_player
+                name: "Bot Four"
             }
         }
         ColumnLayout {
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    radius: 30
-                    opacity: 0.3
-                    color: "black"
-                    width: 20
-                    height: 20
-                    PropertyAnimation on width { to: 230}
-                    PropertyAnimation on height { to: 230}
-                }
-            }
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+            Player {
+                id: player_five
+                name: "Bot Five Lucky"
             }
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Rectangle {
+                    id: controls
                     anchors.fill: parent
                     opacity: 0.1
                     color: "black"

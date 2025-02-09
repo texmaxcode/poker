@@ -13,8 +13,9 @@ Item {
         height: 60
         color: "#00113a"
         opacity: 0.5
-        anchors.top: parent.top
+        anchors.bottom: cards.top
         anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottomMargin: 20
         radius: 10
     }
 
@@ -31,6 +32,7 @@ Item {
         id: cards
         anchors.bottom: root.bottom
         anchors.horizontalCenter: root.horizontalCenter
+        anchors.bottomMargin: 20
 
         Card {
             id: first_flop

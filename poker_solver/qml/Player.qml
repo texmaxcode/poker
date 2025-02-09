@@ -2,8 +2,11 @@
  import QtQuick.Layouts
 
  Item {
+    id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
+    property string name: "Default"
+
     Rectangle {
         id: border
         anchors.centerIn: parent
@@ -51,7 +54,7 @@
 
         Text {
             anchors.centerIn: parent
-            text: "Max Gloom"
+            text: root.name
             color: "black"
             font.pointSize: 22
             font.bold: true

@@ -15,7 +15,7 @@ qt_add_qml_module(PokerSolver
         qml/Main.qml
         qml/Dashboard.qml
         qml/About.qml
-        qml/PlayerSpot.qml
+        qml/Player.qml
         qml/Table.qml
         qml/Card.qml
     RESOURCES
