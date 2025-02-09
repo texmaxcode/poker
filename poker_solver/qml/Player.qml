@@ -10,6 +10,7 @@
     property string second_card: ""
     property string color: "black"
     property string position: ""
+    property bool show_cards: false
 
     Rectangle {
         id: border
@@ -31,13 +32,13 @@
         Card {
             id: first_card
             card: root.first_card
-            flipped: true
+            flipped: root.show_cards
         }
 
         Card {
             id: second_card
             card: root.second_card
-            flipped:true
+            flipped: root.show_cards
         }
     }
 
@@ -68,6 +69,11 @@
             color: "pink"
             width: 65
             height: 40
+
+            MouseArea {
+               anchors.fill: parent
+               onClicked: {root.show_cards = !root.show_cards;}
+            }
 
             Text {
                 anchors.centerIn: parent

@@ -42,6 +42,7 @@ Page {
             Player {
                 id: fourth_player
                 name: "Bot Four"
+                show_cards: true
                 position: "BB"
                 first_card: "spades_ace.svg"
                 second_card: "spades_king.svg"

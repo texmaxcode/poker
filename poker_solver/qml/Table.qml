@@ -39,16 +39,28 @@ Item {
         RowLayout {
             Card {
                 id: first_flop
-                flipped: true
                 card: "hearts_king.svg"
+                flipped: true
             }
             Card {
                 id: second_flop
                 card: "diamonds_10.svg"
+                flipped: true
             }
             Card {
                 id: third_flop
-                card: "spades_ace.svg"
+                card: "spades_7.svg"
+                flipped: true
+            }
+            Card {
+                id: turn
+                card: "clubs_jack.svg"
+                flipped: true
+            }
+            Card {
+                id: river
+                card: "hearts_2.svg"
+                flipped: true
             }
         }
     }
