@@ -8,13 +8,15 @@
     property string name: "Default"
     property string first_card: ""
     property string second_card: ""
+    property string color: "black"
+    property string position: ""
 
     Rectangle {
         id: border
         anchors.centerIn: parent
         radius: 30
         opacity: 0.5
-        color: "black"
+        color: root.color
         width: 20
         height: 20
         PropertyAnimation on width { to: 300}
@@ -39,27 +41,41 @@
         }
     }
 
-    Rectangle {
-        id: name
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: stack_count.top
-            bottomMargin: 7 
-        }
-        radius: 10
-        opacity: 0.8
-        color: "white"
-        width: 20
-        height: 20
-        PropertyAnimation on width { to: 270}
-        PropertyAnimation on height { to: 40}
+    RowLayout {
+        anchors.bottom: stack_count.top
+        anchors.horizontalCenter: border.horizontalCenter
+        anchors.bottomMargin: 10
+        Rectangle {
+            id: name
+            radius: 10
+            opacity: 0.8
+            color: "white"
+            width: 200
+            height: 40
 
-        Text {
-            anchors.centerIn: parent
-            text: root.name
-            color: "black"
-            font.pointSize: 22
-            font.bold: true
+            Text {
+                anchors.centerIn: parent
+                text: root.name
+                color: "black"
+                font.pointSize: 18
+            }
+        }
+
+        Rectangle {
+            id: position
+            radius: 10
+            opacity: 0.8
+            color: "pink"
+            width: 65
+            height: 40
+
+            Text {
+                anchors.centerIn: parent
+                text: root.position
+                color: "black"
+                font.pointSize: 22
+                font.bold: true
+            }
         }
     }
 
