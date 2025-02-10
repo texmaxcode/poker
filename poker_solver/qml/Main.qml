@@ -16,6 +16,6 @@ ApplicationWindow {
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: "Dashboard.qml"
+        initialItem: "Game.qml"
     }
 }

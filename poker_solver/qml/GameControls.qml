@@ -47,6 +47,9 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 onClicked: stackView.push("About.qml")
+                hoverEnabled: true
+                onPressed: { parent.opacity = 0.2; }
+                onReleased: { parent.opacity = 1; }
             }
         }
 
@@ -63,6 +66,13 @@ Item {
                 font.pointSize: 24
                 font.bold: true
             }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onPressed: { parent.opacity = 0.2;}
+                onReleased: { parent.opacity = 1;}
+            }
         }
 
         Rectangle {
@@ -77,6 +87,13 @@ Item {
                 text: "RAISE"
                 font.pointSize: 24
                 font.bold: true
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onPressed: { parent.opacity = 0.2;}
+                onReleased: { parent.opacity = 1;}
             }
         }
     }

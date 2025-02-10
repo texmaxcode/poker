@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <QObject>
 
 #include "cards.hpp"
 #include "player.hpp"
@@ -15,8 +16,10 @@ enum class Street
     RIVER
 };
 
-class game
+class game: public QObject
 {
+    Q_OBJECT
+    Q_PROPERTY(int game_pot READ get_pot NOTIFY potChanged)
     int small_blind = 1;
     int big_blind = 3;
     int button = 0;
@@ -26,6 +29,7 @@ class game
     std::vector<card> get_hand_vector(int);
 
 public:
+    explicit game(QObject *parent = 0) : QObject(parent) {}
     bool is_game_in_progress();
     void join_table(player player);
     int players_count();
@@ -36,6 +40,7 @@ public:
     card turn;
     card river;
     std::vector<player> table;
+    int get_pot() { return pot;}
     void start();
     void collect_blinds();
     void take_bets();
@@ -49,5 +54,7 @@ public:
     void switch_button();
 
     std::string evaluator(std::vector<card>);
+signals:
+    void potChanged();
 };
 #endif // MUSCLE_COMPUTING_GAME_H

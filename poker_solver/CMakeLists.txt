@@ -13,7 +13,7 @@ qt_add_qml_module(PokerSolver
     VERSION 0.1
     QML_FILES
         qml/Main.qml
-        qml/Dashboard.qml
+        qml/Game.qml
         qml/About.qml
         qml/Player.qml
         qml/Table.qml

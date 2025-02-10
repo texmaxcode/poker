@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 Item {
     id: root
+    property int pot_amount
     Layout.fillWidth: true
     Layout.fillHeight: true
 
@@ -22,7 +23,7 @@ Item {
     Text {
         anchors.centerIn: pot
         id: pot_amount
-        text: "$3000"
+        text: "$" + root.pot_amount
         color: "white"
         font.bold: true
         font.pointSize: 24

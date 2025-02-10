@@ -6,7 +6,7 @@ add_definitions(-DBOOST_TEST_DYN_LINK)
 
 add_subdirectory(tests)
 
-add_library(poker
+qt_add_library(poker
   cards.cpp
   player.cpp
   game.cpp

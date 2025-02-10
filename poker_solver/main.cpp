@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 
 #include "poker_simulator.hpp"
+#include "game.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -9,6 +10,8 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     qmlRegisterType<simulator>("com.musclecomputing", 1, 0, "Simulator");
+    qmlRegisterType<game>("com.musclecomputing", 1, 0, "Game");
+
     app.setApplicationName(QString("Texas Hold'em Solver"));
 
     QObject::connect(

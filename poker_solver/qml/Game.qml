@@ -1,8 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import com.musclecomputing
 
 Page {
+    Game {
+        id: game
+    }
+
     Image {
         id: poker_table
         fillMode: Image.PreserveAspectCrop
@@ -38,6 +43,7 @@ Page {
             }
             Table {
                 id: table
+                pot_amount: game.game_pot
             }
             Player {
                 id: fourth_player
