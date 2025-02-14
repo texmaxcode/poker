@@ -18,17 +18,18 @@
         anchors.centerIn: parent
         radius: 30
         opacity: 0.5
-        color: root.color
         width: 20
         height: 20
+        color: root.color
         PropertyAnimation on width { to: 300}
         PropertyAnimation on height { to: 330}
     }
 
-    RowLayout {
+    Row {
         anchors.top: border.top
         anchors.horizontalCenter: border.horizontalCenter
         anchors.topMargin: 20
+        spacing: 7
 
         Card {
             id: first_card
@@ -43,10 +44,11 @@
         }
     }
 
-    RowLayout {
+    Row {
         anchors.bottom: stack_count.top
         anchors.horizontalCenter: border.horizontalCenter
         anchors.bottomMargin: 10
+        spacing: 7
         Rectangle {
             id: name
             radius: 10

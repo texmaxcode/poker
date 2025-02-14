@@ -13,7 +13,7 @@ Item {
       id: message
       anchors.bottom: buttons.top
       anchors.bottomMargin: 10
-      width:  460
+      width:  465
       height: 60
       color: "white"
       radius: 20
@@ -26,10 +26,11 @@ Item {
       }
 
     }
-    RowLayout {
+    Row {
         id: buttons
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 60
+        spacing: 7
         Rectangle {
             id: fold_button
             color: "#D61F1F"
