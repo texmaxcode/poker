@@ -112,23 +112,22 @@ std::vector<card> game::get_hand_vector(int idx)
 
 std::string game::evaluator(std::vector<card> hand)
 {
-    int clubs = 0;
-    int dimonds = 0;
-    int spades = 0;
-    int hearts = 0;
-    int two = 0;
-    int three = 0;
-    int four = 0;
-    int five = 0;
-    int six = 0;
-    int seven = 0;
-    int eight = 0;
-    int nine = 0;
-    int ten = 0;
-    int jack = 0;
-    int qeen = 0;
-    int king = 0;
-    int ace = 0;
+    int clubs, dimonds {0};
+    int spades{0};
+    int hearts{0};
+    int two{0};
+    int three{0};
+    int four{0};
+    int five{0};
+    int six{0};
+    int seven{0};
+    int eight{0};
+    int nine{0};
+    int ten{0};
+    int jack{0};
+    int qeen{0};
+    int king{0};
+    int ace{0};
 
     for (auto card : hand)
     {

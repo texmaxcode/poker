@@ -23,7 +23,7 @@ Item {
     Text {
         anchors.centerIn: pot
         id: pot_amount
-        text: "$" + root.pot_amount
+        text: `$${root.pot_amount}`
         color: "white"
         font.bold: true
         font.pointSize: 24
