@@ -112,7 +112,8 @@ std::vector<card> game::get_hand_vector(int idx)
 
 std::string game::evaluator(std::vector<card> hand)
 {
-    int clubs, dimonds {0};
+    int clubs{0};
+    int dimonds {0};
     int spades{0};
     int hearts{0};
     int two{0};
