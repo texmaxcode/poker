@@ -18,50 +18,29 @@ Page {
     RowLayout {
         anchors.fill: parent
         ColumnLayout {
-            Player {
-                id: first_player
-                name: "Bot 1"
-                position: "UTG"
-                first_card: "hearts_ace.svg"
-                second_card: "hearts_king.svg"
+            Seat {
+                id: first_seat
             }
-            Player {
+            Seat {
                 id: second_player
-                name: "Bot 2"
-                position: "SB"
-                first_card: "clubs_ace.svg"
-                second_card: "clubs_king.svg"
             }
         }
         ColumnLayout {
-            Player {
+            Seat {
                 id: third_player
-                name: "Bot 3"
-                position: "CO"
-                first_card: "diamonds_ace.svg"
-                second_card: "diamonds_king.svg"
             }
             Table {
                 id: table
                 pot_amount: game.game_pot
             }
-            Player {
+            Seat {
                 id: fourth_player
-                name: "Bot Four"
-                show_cards: true
-                position: "BB"
-                first_card: "spades_ace.svg"
-                second_card: "spades_king.svg"
             }
         }
         ColumnLayout {
-            Player {
+            Seat {
                 id: player_five
                 color: "red"
-                position: "BT"
-                name: "Bot Five Lucky"
-                first_card: "spades_2.svg"
-                second_card: "clubs_2.svg"
             }
             GameControls {
                 id: game_controls

@@ -15,7 +15,7 @@ qt_add_qml_module(PokerSolver
         qml/Main.qml
         qml/Game.qml
         qml/About.qml
-        qml/Player.qml
+        qml/Seat.qml
         qml/Table.qml
         qml/Card.qml
         qml/GameControls.qml
