@@ -5,15 +5,12 @@
     id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
-    property var player
-    property string name: ""
+    property string name: "Default"
     property string first_card: ""
     property string second_card: ""
     property string color: "black"
     property string position: ""
     property bool show_cards: false
-    property bool is_empty: true
-    property int stack: 0
 
     Rectangle {
         id: border
@@ -33,19 +30,16 @@
         anchors.topMargin: 20
         spacing: 7
 
-        Item {
-            visible: !root.is_empty
-            Card {
-                id: first_card
-                card: root.first_card
-                flipped: root.show_cards
-            }
+        Card {
+            id: first_card
+            card: root.first_card
+            flipped: root.show_cards
+        }
 
-            Card {
-                id: second_card
-                card: root.second_card
-                flipped: root.show_cards
-            }
+        Card {
+            id: second_card
+            card: root.second_card
+            flipped: root.show_cards
         }
     }
 
@@ -109,7 +103,7 @@
 
         Text {
             anchors.centerIn: parent
-            text: !is_empty ? `BB ${root.stack}`: ""
+            text: "300 BB"
             color: "white"
             font.pointSize: 22
         }
