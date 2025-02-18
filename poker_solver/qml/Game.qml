@@ -60,7 +60,7 @@ Page {
             Table {
                 id: table
                 pot_amount: game.game_pot
-                model: game.table_cards
+                model: cardsModel
             }
             Player {
                 id: fourth_player
