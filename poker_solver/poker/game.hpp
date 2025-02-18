@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 #include <QObject>
+#include <QVariant>
+#include <QtQuick/QQuickItem>
 
 #include "cards.hpp"
 #include "player.hpp"
@@ -19,7 +21,7 @@ enum class Street
 class game: public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(int game_pot READ get_pot NOTIFY potChanged)
+    Q_PROPERTY(int game_pot READ get_pot NOTIFY pot_changed)
     int small_blind = 1;
     int big_blind = 3;
     int button = 0;
@@ -29,10 +31,10 @@ class game: public QObject
     std::vector<card> get_hand_vector(int);
 
 public:
-    explicit game(QObject *parent = 0) : QObject(parent) {}
-    bool is_game_in_progress();
-    void join_table(player player);
-    int players_count();
+    game(QObject *parent =0);
+    ~game();
+    void setRootObject(QQuickItem* root);
+
     // TODO: Make this private,
     // when you figure out how to test better.
     int pot = 0;
@@ -40,8 +42,13 @@ public:
     card turn;
     card river;
     std::vector<player> table;
+
+    bool is_game_in_progress();
+    void join_table(player player);
+    int players_count();
+
     int get_pot() { return pot;}
-    void start();
+    Q_INVOKABLE void start();
     void collect_blinds();
     void take_bets();
     void deal_hold_cards();
@@ -49,12 +56,23 @@ public:
     void deal_turn();
     void deal_river();
     void decide_the_payout();
+    std::string evaluator(std::vector<card>);
 
+    /*
     void do_payouts();
     void switch_button();
+    */
 
-    std::string evaluator(std::vector<card>);
 signals:
-    void potChanged();
+    void pot_changed();
+
+private slots:
+    void onPotChanged();
+
+private:
+    QQuickItem* m_root;
+    void clearAll();
+
 };
+
 #endif // MUSCLE_COMPUTING_GAME_H

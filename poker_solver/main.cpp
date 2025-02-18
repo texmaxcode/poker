@@ -1,29 +1,25 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQuickView>
 
-#include "poker_simulator.hpp"
 #include "game.hpp"
 
 int main(int argc, char *argv[])
 {
-    QGuiApplication app(argc, argv);
-    QQmlApplicationEngine engine;
-
-    qmlRegisterType<simulator>("com.musclecomputing", 1, 0, "Simulator");
     qmlRegisterType<game>("com.musclecomputing", 1, 0, "Game");
 
+    QGuiApplication app(argc, argv);
     app.setApplicationName(QString("Texas Hold'em Solver"));
 
-    QObject::connect(
-        &engine, &QQmlApplicationEngine::objectCreationFailed,
-        &app, []() { QCoreApplication::exit(-1); },
-        Qt::QueuedConnection);
+    QQuickView *view = new QQuickView;
+    view->setSource(QUrl("qrc:/Game.qml"));
+    view->setResizeMode(QQuickView::SizeRootObjectToView);
+    QObject::connect(view->engine(), &QQmlApplicationEngine::quit, view, &QQuickView::close);
 
-    engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
+    game poker_game;
+    poker_game.setRootObject(view->rootObject());
 
-    if (engine.rootObjects().isEmpty())
-        return -1;
-
+    view->show();
     return app.exec();
 
 }
