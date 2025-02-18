@@ -19,7 +19,11 @@ int main(int argc, char *argv[])
         &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
 
-    engine.loadFromModule("SolverUI", "Main");
+    engine.load(QUrl(QStringLiteral("qrc:/Main.qml")));
+
+    if (engine.rootObjects().isEmpty())
+        return -1;
 
     return app.exec();
+
 }

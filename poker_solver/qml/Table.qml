@@ -5,6 +5,7 @@ import QtQuick.Layouts
 Item {
     id: root
     property int pot_amount
+    property alias model: repeater.model
     Layout.fillWidth: true
     Layout.fillHeight: true
 
@@ -29,6 +30,7 @@ Item {
         font.pointSize: 24
     }
 
+
     Item {
         id: cards
         width: 670
@@ -38,30 +40,13 @@ Item {
         anchors.bottomMargin: 20
 
         RowLayout {
-            Card {
-                id: first_flop
-                card: "hearts_king.svg"
-                flipped: true
-            }
-            Card {
-                id: second_flop
-                card: "diamonds_10.svg"
-                flipped: true
-            }
-            Card {
-                id: third_flop
-                card: "spades_7.svg"
-                flipped: true
-            }
-            Card {
-                id: turn
-                card: "clubs_jack.svg"
-                flipped: true
-            }
-            Card {
-                id: river
-                card: "hearts_2.svg"
-                flipped: true
+            Repeater {
+                id: repeater
+                model: root.model
+                delegate: Card {
+                    card: model.card
+                    flipped: model.flipped
+                }
             }
         }
     }

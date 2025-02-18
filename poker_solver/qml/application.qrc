@@ -1,0 +1,71 @@
+<RCC>
+    <qresource prefix="/">
+        <file>About.qml</file>
+        <file>Card.qml</file>
+        <file>Game.qml</file>
+        <file>Main.qml</file>
+        <file>Player.qml</file>
+        <file>Table.qml</file>
+        <file>GameControls.qml</file>
+
+        <file>assets/images/poker_table.jpg</file>
+        <file>assets/cards_svgs/blue2.svg</file>
+        <file>assets/cards_svgs/red2.svg</file>
+
+        <file>assets/cards_svgs/clubs_ace.svg</file>
+        <file>assets/cards_svgs/clubs_king.svg</file>
+        <file>assets/cards_svgs/clubs_queen.svg</file>
+        <file>assets/cards_svgs/clubs_jack.svg</file>
+        <file>assets/cards_svgs/clubs_10.svg</file>
+        <file>assets/cards_svgs/clubs_9.svg</file>
+        <file>assets/cards_svgs/clubs_8.svg</file>
+        <file>assets/cards_svgs/clubs_7.svg</file>
+        <file>assets/cards_svgs/clubs_6.svg</file>
+        <file>assets/cards_svgs/clubs_5.svg</file>
+        <file>assets/cards_svgs/clubs_4.svg</file>
+        <file>assets/cards_svgs/clubs_3.svg</file>
+        <file>assets/cards_svgs/clubs_2.svg</file>
+
+        <file>assets/cards_svgs/spades_ace.svg</file>
+        <file>assets/cards_svgs/spades_king.svg</file>
+        <file>assets/cards_svgs/spades_queen.svg</file>
+        <file>assets/cards_svgs/spades_jack.svg</file>
+        <file>assets/cards_svgs/spades_10.svg</file>
+        <file>assets/cards_svgs/spades_9.svg</file>
+        <file>assets/cards_svgs/spades_8.svg</file>
+        <file>assets/cards_svgs/spades_7.svg</file>
+        <file>assets/cards_svgs/spades_6.svg</file>
+        <file>assets/cards_svgs/spades_5.svg</file>
+        <file>assets/cards_svgs/spades_4.svg</file>
+        <file>assets/cards_svgs/spades_3.svg</file>
+        <file>assets/cards_svgs/spades_2.svg</file>
+
+        <file>assets/cards_svgs/diamonds_ace.svg</file>
+        <file>assets/cards_svgs/diamonds_king.svg</file>
+        <file>assets/cards_svgs/diamonds_queen.svg</file>
+        <file>assets/cards_svgs/diamonds_jack.svg</file>
+        <file>assets/cards_svgs/diamonds_10.svg</file>
+        <file>assets/cards_svgs/diamonds_9.svg</file>
+        <file>assets/cards_svgs/diamonds_8.svg</file>
+        <file>assets/cards_svgs/diamonds_7.svg</file>
+        <file>assets/cards_svgs/diamonds_6.svg</file>
+        <file>assets/cards_svgs/diamonds_5.svg</file>
+        <file>assets/cards_svgs/diamonds_4.svg</file>
+        <file>assets/cards_svgs/diamonds_3.svg</file>
+        <file>assets/cards_svgs/diamonds_2.svg</file>
+
+        <file>assets/cards_svgs/hearts_ace.svg</file>
+        <file>assets/cards_svgs/hearts_king.svg</file>
+        <file>assets/cards_svgs/hearts_queen.svg</file>
+        <file>assets/cards_svgs/hearts_jack.svg</file>
+        <file>assets/cards_svgs/hearts_10.svg</file>
+        <file>assets/cards_svgs/hearts_9.svg</file>
+        <file>assets/cards_svgs/hearts_8.svg</file>
+        <file>assets/cards_svgs/hearts_7.svg</file>
+        <file>assets/cards_svgs/hearts_6.svg</file>
+        <file>assets/cards_svgs/hearts_5.svg</file>
+        <file>assets/cards_svgs/hearts_4.svg</file>
+        <file>assets/cards_svgs/hearts_3.svg</file>
+        <file>assets/cards_svgs/hearts_2.svg</file>
+    </qresource>
+</RCC>

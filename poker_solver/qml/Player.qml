@@ -48,6 +48,7 @@
         anchors.horizontalCenter: border.horizontalCenter
         anchors.bottomMargin: 10
         spacing: 7
+
         Rectangle {
             id: name
             radius: 10

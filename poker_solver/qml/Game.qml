@@ -15,6 +15,22 @@ Page {
         source: "assets/images/poker_table.jpg"
     }
 
+    ListModel {
+        id: cardsModel
+        ListElement {
+            card: "spades_7.svg"
+            flipped: true
+        }
+        ListElement {
+            card: "clubs_jack.svg"
+            flipped: true
+        }
+        ListElement {
+            card: "hearts_2.svg"
+            flipped: true
+        }
+    }
+
     RowLayout {
         anchors.fill: parent
         ColumnLayout {
@@ -44,6 +60,7 @@ Page {
             Table {
                 id: table
                 pot_amount: game.game_pot
+                model: game.table_cards
             }
             Player {
                 id: fourth_player
