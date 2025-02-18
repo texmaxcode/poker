@@ -45,7 +45,7 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: stackView.push("About.qml")
+                onClicked: stackView.push("qrc:/About.qml")
                 hoverEnabled: true
                 onPressed: { parent.opacity = 0.2; }
                 onReleased: { parent.opacity = 1; }

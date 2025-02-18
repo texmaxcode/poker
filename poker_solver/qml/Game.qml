@@ -12,7 +12,7 @@ Page {
         id: poker_table
         fillMode: Image.PreserveAspectCrop
         anchors.fill: parent
-        source: "assets/images/poker_table.jpg"
+        source: "qrc:/assets/images/poker_table.jpg"
     }
 
     ListModel {

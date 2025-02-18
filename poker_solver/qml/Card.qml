@@ -8,8 +8,8 @@ Flipable {
     property bool flipped: false
     property string card: "spades_ace.svg"
 
-    front: Image { source: "assets/cards_svgs/blue2.svg"; anchors.fill: parent }
-    back: Image { source: "assets/cards_svgs/" + card; anchors.fill: parent }
+    front: Image { source: "qrc:/assets/cards_svgs/blue2.svg"; anchors.fill: parent }
+    back: Image { source: "qrc:/assets/cards_svgs/" + card; anchors.fill: parent }
 
     transform: Rotation {
         id: rotation
