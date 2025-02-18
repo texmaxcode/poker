@@ -3,8 +3,8 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Item {
-    id: root
-    property int pot_amount
+    id: table_container
+    property alias pot_amount: pot_text.text
     property alias model: repeater.model
     Layout.fillWidth: true
     Layout.fillHeight: true
@@ -22,9 +22,9 @@ Item {
     }
 
     Text {
+        id: pot_text
         anchors.centerIn: pot
-        id: pot_amount
-        text: `$${root.pot_amount}`
+        text: `$${table_container.pot_amount}`
         color: "white"
         font.bold: true
         font.pointSize: 24
@@ -35,14 +35,14 @@ Item {
         id: cards
         width: 670
         height: 190
-        anchors.bottom: root.bottom
-        anchors.horizontalCenter: root.horizontalCenter
+        anchors.bottom: table_container.bottom
+        anchors.horizontalCenter: table_container.horizontalCenter
         anchors.bottomMargin: 20
 
         RowLayout {
             Repeater {
                 id: repeater
-                model: root.model
+                model: table_container.model
                 delegate: Card {
                     card: model.card
                     flipped: model.flipped

@@ -21,26 +21,20 @@ int game::players_count()
 
 void game::collect_blinds()
 {
-
-    std::cout << players_count() << std::endl;
     if (players_count() == 2)
     {
         pot += table[button].pay(big_blind);
         pot += table[button + 1].pay(small_blind);
-        std::cout << pot << std::endl;
         emit pot_changed();
     }
 }
 
 void game::take_bets()
 {
-    std::cout << players_count() << std::endl;
-    if (players_count() == 2)
     if (players_count() == 2)
     {
         pot += table[button].bet();
         pot += table[button + 1].bet();
-        std::cout << pot << std::endl;
         emit pot_changed();
     }
 }
@@ -219,24 +213,22 @@ void game::start()
     std::cout << "Starting a game." << std::endl;
     in_progress = true;
     street == Street::PRE_FLOP;
-    std::cout << "Preflop" << std::endl;
+    std::cout << "Preflop pot: "<< pot << std::endl;
     collect_blinds();
-    emit pot_changed();
     deal_hold_cards();
     take_bets();
-    emit pot_changed();
     street == Street::FLOP;
-    std::cout << "Flop" << std::endl;
+    std::cout << "Flot pot: "<< pot << std::endl;
     deal_flop();
     take_bets();
-    emit pot_changed();
     street == Street::TURN;
+    std::cout << "Turn pot: "<< pot << std::endl;
     deal_turn();
     take_bets();
-    emit pot_changed();
     street == Street::RIVER;
     deal_river();
     take_bets();
+    std::cout << "River pot: "<< pot << std::endl;
     /*
     decide_the_payout();
     do_payouts();
@@ -261,11 +253,8 @@ void game::setRootObject(QQuickItem *root)
 
 void game::clearAll()
 {
-    if (m_root)
-    {
-        pot = 0;
-        emit pot_changed();
-    }
+    pot = 0;
+    emit pot_changed();
 }
 
 game::game(QObject *parent) : QObject(parent), m_root(nullptr)
@@ -285,6 +274,7 @@ game::~game() {}
 
 void game::onPotChanged()
 {
-    if (m_root)
+    if (m_root) {
         m_root->setProperty("pot", QVariant(pot));
+    }
 }

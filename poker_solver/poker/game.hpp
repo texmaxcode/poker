@@ -21,7 +21,6 @@ enum class Street
 class game: public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(int game_pot READ get_pot NOTIFY pot_changed)
     int small_blind = 1;
     int big_blind = 3;
     int button = 0;
@@ -47,7 +46,6 @@ public:
     void join_table(player player);
     int players_count();
 
-    int get_pot() { return pot;}
     Q_INVOKABLE void start();
     void collect_blinds();
     void take_bets();

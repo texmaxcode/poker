@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Item {
-    id: root
+    id: game_controlls
     Layout.fillWidth: true
     Layout.fillHeight: true
 

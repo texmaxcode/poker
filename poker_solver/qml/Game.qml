@@ -4,15 +4,14 @@ import QtQuick.Layouts
 import com.musclecomputing
 
 Page {
-    id: root
+    id: game_screen
     width: 1700
     height: 1000
+    property alias pot: table.pot_amount
 
     Game {
         id: game
     }
-
-    property alias pot: table.pot_amount
 
     Image {
         id: poker_table
@@ -65,7 +64,7 @@ Page {
             }
             Table {
                 id: table
-                pot_amount: 0
+                pot_amount: "0"
                 model: cardsModel
             }
             Player {
