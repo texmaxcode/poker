@@ -4,10 +4,11 @@ import QtQuick.Layouts
 
 Item {
     id: table_container
-    property alias pot_amount: pot_text.text
-    property alias model: repeater.model
     Layout.fillWidth: true
     Layout.fillHeight: true
+
+    property alias pot_amount: pot_text.text
+    property alias model: repeater.model
 
     Rectangle {
         id: pot
@@ -29,7 +30,6 @@ Item {
         font.bold: true
         font.pointSize: 24
     }
-
 
     Item {
         id: cards

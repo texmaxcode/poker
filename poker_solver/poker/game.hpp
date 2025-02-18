@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <QObject>
-#include <QVariant>
+#include <QString>
 #include <QtQuick/QQuickItem>
 
 #include "cards.hpp"
@@ -18,7 +18,7 @@ enum class Street
     RIVER
 };
 
-class game: public QObject
+class game : public QObject
 {
     Q_OBJECT
     int small_blind = 1;
@@ -30,23 +30,25 @@ class game: public QObject
     std::vector<card> get_hand_vector(int);
 
 public:
-    game(QObject *parent =0);
+    game(QObject *parent = 0);
     ~game();
-    void setRootObject(QQuickItem* root);
+
+    void setRootObject(QQuickItem *root);
 
     // TODO: Make this private,
     // when you figure out how to test better.
-    int pot = 0;
-    std::vector<card> flop;
+    int pot = 777;
     card turn;
     card river;
+    std::vector<card> flop;
     std::vector<player> table;
+    // ########################################
+
+    Q_INVOKABLE void start();
 
     bool is_game_in_progress();
     void join_table(player player);
     int players_count();
-
-    Q_INVOKABLE void start();
     void collect_blinds();
     void take_bets();
     void deal_hold_cards();
@@ -55,7 +57,6 @@ public:
     void deal_river();
     void decide_the_payout();
     std::string evaluator(std::vector<card>);
-
     /*
     void do_payouts();
     void switch_button();
@@ -68,9 +69,8 @@ private slots:
     void onPotChanged();
 
 private:
-    QQuickItem* m_root;
+    QQuickItem *m_root;
     void clearAll();
-
 };
 
 #endif // MUSCLE_COMPUTING_GAME_H

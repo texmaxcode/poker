@@ -275,6 +275,6 @@ game::~game() {}
 void game::onPotChanged()
 {
     if (m_root) {
-        m_root->setProperty("pot", QVariant(pot));
+        m_root->setProperty("pot", QString::number(pot));
     }
 }
