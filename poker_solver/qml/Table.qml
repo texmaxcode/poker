@@ -7,11 +7,11 @@ Item {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
-    property alias pot_amount: pot_text.text
+    property int pot_amount: 333
     property alias model: repeater.model
 
     Rectangle {
-        id: pot
+        id: pot_display
         width: 230
         height: 60
         color: "#00113a"
@@ -24,7 +24,7 @@ Item {
 
     Text {
         id: pot_text
-        anchors.centerIn: pot
+        anchors.centerIn: pot_display
         text: `$${table_container.pot_amount}`
         color: "white"
         font.bold: true

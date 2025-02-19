@@ -33,19 +33,17 @@ public:
     game(QObject *parent = 0);
     ~game();
 
-    void setRootObject(QQuickItem *root);
+    void setRootObject(QObject *root);
 
     // TODO: Make this private,
     // when you figure out how to test better.
-    int pot = 777;
+    int pot = 0;
     card turn;
     card river;
     std::vector<card> flop;
     std::vector<player> table;
-    // ########################################
 
     Q_INVOKABLE void start();
-
     bool is_game_in_progress();
     void join_table(player player);
     int players_count();
@@ -65,11 +63,14 @@ public:
 signals:
     void pot_changed();
 
+public slots:
+    void buttonClicked(QString button);
+
 private slots:
-    void onPotChanged();
+    void on_pot_changed();
 
 private:
-    QQuickItem *m_root;
+    QObject *m_root;
     void clearAll();
 };
 

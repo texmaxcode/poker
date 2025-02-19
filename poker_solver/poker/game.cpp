@@ -25,8 +25,8 @@ void game::collect_blinds()
     {
         pot += table[button].pay(big_blind);
         pot += table[button + 1].pay(small_blind);
-        emit pot_changed();
     }
+    emit pot_changed();
 }
 
 void game::take_bets()
@@ -35,8 +35,8 @@ void game::take_bets()
     {
         pot += table[button].bet();
         pot += table[button + 1].bet();
-        emit pot_changed();
     }
+    emit pot_changed();
 }
 
 void game::deal_hold_cards()
@@ -213,22 +213,22 @@ void game::start()
     std::cout << "Starting a game." << std::endl;
     in_progress = true;
     street == Street::PRE_FLOP;
-    std::cout << "Preflop pot: "<< pot << std::endl;
+    std::cout << "Preflop pot: " << pot << std::endl;
     collect_blinds();
     deal_hold_cards();
     take_bets();
     street == Street::FLOP;
-    std::cout << "Flot pot: "<< pot << std::endl;
+    std::cout << "Flot pot: " << pot << std::endl;
     deal_flop();
     take_bets();
     street == Street::TURN;
-    std::cout << "Turn pot: "<< pot << std::endl;
+    std::cout << "Turn pot: " << pot << std::endl;
     deal_turn();
     take_bets();
     street == Street::RIVER;
     deal_river();
     take_bets();
-    std::cout << "River pot: "<< pot << std::endl;
+    std::cout << "River pot: " << pot << std::endl;
     /*
     decide_the_payout();
     do_payouts();
@@ -236,7 +236,7 @@ void game::start()
     */
 }
 
-void game::setRootObject(QQuickItem *root)
+void game::setRootObject(QObject *root)
 {
     // disconnect from previous root
     if (m_root != nullptr)
@@ -246,6 +246,7 @@ void game::setRootObject(QQuickItem *root)
 
     if (m_root)
     {
+        connect(m_root, SIGNAL(buttonClicked(QString)), this, SLOT(buttonClicked(QString)));
         // set initial state
         clearAll();
     }
@@ -253,8 +254,11 @@ void game::setRootObject(QQuickItem *root)
 
 void game::clearAll()
 {
-    pot = 0;
+    if(m_root) {
+      pot = 0;
     emit pot_changed();
+
+    }
 }
 
 game::game(QObject *parent) : QObject(parent), m_root(nullptr)
@@ -263,18 +267,23 @@ game::game(QObject *parent) : QObject(parent), m_root(nullptr)
     player_one.stack = 100;
     player player_two;
     player_two.stack = 100;
-
     join_table(player_one);
     join_table(player_two);
 
-    QObject::connect(this, &game::pot_changed, this, &game::onPotChanged);
+    QObject::connect(this, &game::pot_changed, this, &game::on_pot_changed);
 }
 
 game::~game() {}
 
-void game::onPotChanged()
+void game::on_pot_changed()
 {
-    if (m_root) {
-        m_root->setProperty("pot", QString::number(pot));
+    if (m_root)
+    {
+        m_root->setProperty("pot", pot);
     }
+}
+
+void game::buttonClicked(QString button) {
+    if (!m_root) return;
+    start();
 }

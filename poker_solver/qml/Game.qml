@@ -1,17 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import com.musclecomputing
 
 Page {
     id: game_screen
     width: 1700
     height: 1000
     property alias pot: table.pot_amount
-
-    Game {
-        id: game
-    }
+    signal buttonClicked(string button)
 
     Image {
         id: poker_table
@@ -64,7 +60,7 @@ Page {
             }
             Table {
                 id: table
-                pot_amount: "0"
+                pot_amount: pot 
                 model: cardsModel
             }
             Player {

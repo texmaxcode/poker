@@ -46,7 +46,10 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
-                onClicked: { game.start(); }
+                onClicked: {
+                    console.log("Clicked fold button.");
+                    game_screen.buttonClicked("FOLD");
+                }
                 onPressed: { parent.opacity = 0.2; }
                 onReleased: { parent.opacity = 1; }
             }

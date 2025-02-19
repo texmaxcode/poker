@@ -6,8 +6,6 @@
 
 int main(int argc, char *argv[])
 {
-    qmlRegisterType<game>("com.musclecomputing", 1, 0, "Game");
-
     QGuiApplication app(argc, argv);
     app.setApplicationName(QString("Texas Hold'em Solver"));
 
