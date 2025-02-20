@@ -43,7 +43,7 @@ public:
     std::vector<card> flop;
     std::vector<player> table;
 
-    Q_INVOKABLE void start();
+    void start();
     bool is_game_in_progress();
     void join_table(player player);
     int players_count();
