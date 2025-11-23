@@ -3,7 +3,7 @@
 MODE=Debug
 C=/usr/bin/gcc
 CXX=/usr/bin/g++
-QT_LIBS=/home/max-gloom/Qt/6.8.1/gcc_64
+QT_LIBS=/home/max-gloom/Qt/6.10.0/gcc_64
 SOURCE=.
 DESTINATION=./build
 

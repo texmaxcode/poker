@@ -14,7 +14,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
 option(BUILD_SHARED_LIBS "Build shared libraries?" NO)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Qml Quick)
 
 if(QT_KNOWN_POLICY_QTP0003)
     qt_policy(SET QTP0003 NEW)

@@ -254,10 +254,10 @@ void game::setRootObject(QObject *root)
 
 void game::clearAll()
 {
-    if(m_root) {
-      pot = 0;
-    emit pot_changed();
-
+    if (m_root)
+    {
+        pot = 0;
+        emit pot_changed();
     }
 }
 
@@ -283,7 +283,9 @@ void game::on_pot_changed()
     }
 }
 
-void game::buttonClicked(QString button) {
-    if (!m_root) return;
+void game::buttonClicked(QString button)
+{
+    if (!m_root)
+        return;
     start();
 }
