@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.26)
 
-add_executable(PokerSolver
+add_executable(Poker
     main.cpp
     qml/application.qrc
 )
 
-set_target_properties(PokerSolver PROPERTIES
+set_target_properties(Poker PROPERTIES
     WIN32_EXECUTABLE ON 
 )
 
 add_subdirectory(poker)
 
-target_link_libraries(PokerSolver
+target_link_libraries(Poker
     PRIVATE poker
     PRIVATE Qt${QT_VERSION_MAJOR}::Core
     PRIVATE Qt${QT_VERSION_MAJOR}::Gui

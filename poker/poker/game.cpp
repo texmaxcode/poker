@@ -1,6 +1,9 @@
 #include "game.hpp"
 
-bool game::is_game_in_progress()
+#include <array>
+#include <iostream>
+
+bool game::is_game_in_progress() const
 {
     return in_progress;
 }
@@ -8,23 +11,30 @@ bool game::is_game_in_progress()
 void game::join_table(player player)
 {
     bool more_than_ten_blinds = (player.stack >= 10 * big_blind);
-    bool less_than_hundrad_blinds = (player.stack <= 100 * big_blind);
-    bool has_enough_money = more_than_ten_blinds && less_than_hundrad_blinds;
+    bool less_than_hundred_blinds = (player.stack <= 100 * big_blind);
+    bool has_enough_money = more_than_ten_blinds && less_than_hundred_blinds;
     if (has_enough_money)
         table.push_back(player);
 }
 
-int game::players_count()
+int game::players_count() const
 {
     return table.size();
+}
+
+static int next_player_idx(int button, int offset, int player_count)
+{
+    if (player_count <= 0)
+        return 0;
+    return (button + offset) % player_count;
 }
 
 void game::collect_blinds()
 {
     if (players_count() == 2)
     {
-        pot += table[button].pay(big_blind);
-        pot += table[button + 1].pay(small_blind);
+        pot += table[next_player_idx(button, 0, players_count())].pay(big_blind);
+        pot += table[next_player_idx(button, 1, players_count())].pay(small_blind);
     }
     emit pot_changed();
 }
@@ -33,8 +43,8 @@ void game::take_bets()
 {
     if (players_count() == 2)
     {
-        pot += table[button].bet();
-        pot += table[button + 1].bet();
+        pot += table[next_player_idx(button, 0, players_count())].bet();
+        pot += table[next_player_idx(button, 1, players_count())].bet();
     }
     emit pot_changed();
 }
@@ -43,28 +53,20 @@ void game::deal_hold_cards()
 {
     if (players_count() == 2)
     {
-        for (auto i = 0; i < 2; ++i)
-        {
-            for (auto &player : table)
-            {
-                if (i == 0)
-                {
-                    table[button].first_card = deck.get_card();
-                    table[button + 1].first_card = deck.get_card();
-                }
-                else
-                {
-                    table[button].second_card = deck.get_card();
-                    table[button + 1].second_card = deck.get_card();
-                }
-            }
-        }
+        const auto first = next_player_idx(button, 0, players_count());
+        const auto second = next_player_idx(button, 1, players_count());
+
+        table[first].first_card = deck.get_card();
+        table[second].first_card = deck.get_card();
+
+        table[first].second_card = deck.get_card();
+        table[second].second_card = deck.get_card();
     }
 }
 
 void game::deal_flop()
 {
-    card burn_card = deck.get_card();
+    (void)deck.get_card(); // burn
     for (auto i = 0; i < 3; ++i)
     {
         flop.push_back(deck.get_card());
@@ -73,13 +75,13 @@ void game::deal_flop()
 
 void game::deal_turn()
 {
-    card burn_card = deck.get_card();
+    (void)deck.get_card(); // burn
     turn = deck.get_card();
 }
 
 void game::deal_river()
 {
-    card burn_card = deck.get_card();
+    (void)deck.get_card(); // burn
     river = deck.get_card();
 }
 
@@ -112,97 +114,66 @@ std::vector<card> game::get_hand_vector(int idx)
     return return_vector;
 }
 
-std::string game::evaluator(std::vector<card> hand)
+std::string game::evaluator(const std::vector<card> &hand)
 {
-    int clubs{0};
-    int dimonds{0};
-    int spades{0};
-    int hearts{0};
-    int two{0};
-    int three{0};
-    int four{0};
-    int five{0};
-    int six{0};
-    int seven{0};
-    int eight{0};
-    int nine{0};
-    int ten{0};
-    int jack{0};
-    int qeen{0};
-    int king{0};
-    int ace{0};
+    // Minimal evaluator: enough to be useful in logs and avoid unused vars.
+    // Expects a 7-card hand vector.
+    std::array<int, 15> rank_counts{};
+    std::array<int, 5> suite_counts{};
 
-    for (auto card : hand)
+    for (const auto &c : hand)
     {
-        switch (as_integer(card.suite))
+        const auto r = as_integer(c.rank);
+        const auto s = as_integer(c.suite);
+        if (r >= 2 && r <= 14)
+            rank_counts[static_cast<size_t>(r)]++;
+        if (s >= 1 && s <= 4)
+            suite_counts[static_cast<size_t>(s)]++;
+    }
+
+    bool has_flush = false;
+    for (int s = 1; s <= 4; ++s)
+    {
+        if (suite_counts[static_cast<size_t>(s)] >= 5)
         {
-        case 1:
-            clubs++;
-            break;
-        case 2:
-            spades++;
-            break;
-        case 3:
-            hearts++;
-            break;
-        case 4:
-            dimonds++;
+            has_flush = true;
             break;
         }
     }
 
-    for (auto card : hand)
+    int pairs = 0;
+    bool trips = false;
+    bool quads = false;
+    for (int r = 2; r <= 14; ++r)
     {
-        switch (as_integer(card.rank))
-        {
-        case 2:
-            two++;
-            break;
-        case 3:
-            three++;
-            break;
-        case 4:
-            four++;
-            break;
-        case 5:
-            five++;
-            break;
-        case 6:
-            six++;
-            break;
-        case 7:
-            seven++;
-            break;
-        case 8:
-            eight++;
-            break;
-        case 9:
-            nine++;
-            break;
-        case 10:
-            ten++;
-            break;
-        case 11:
-            jack++;
-            break;
-        case 12:
-            qeen++;
-            break;
-        case 13:
-            king++;
-            break;
-        case 14:
-            ace++;
-            break;
-        }
+        const auto cnt = rank_counts[static_cast<size_t>(r)];
+        if (cnt == 2)
+            pairs++;
+        else if (cnt == 3)
+            trips = true;
+        else if (cnt == 4)
+            quads = true;
     }
-    return "Some lucky type";
+
+    if (quads)
+        return "Four of a kind";
+    if (trips && pairs > 0)
+        return "Full house";
+    if (has_flush)
+        return "Flush";
+    if (trips)
+        return "Three of a kind";
+    if (pairs >= 2)
+        return "Two pair";
+    if (pairs == 1)
+        return "Pair";
+    return "High card";
 }
 
 void game::decide_the_payout()
 {
-    auto hand_one = get_hand_vector(button);
-    auto hand_two = get_hand_vector(button + 1);
+    auto hand_one = get_hand_vector(next_player_idx(button, 0, players_count()));
+    auto hand_two = get_hand_vector(next_player_idx(button, 1, players_count()));
     std::cout << stringify(hand_one) << " " << evaluator(hand_one) << std::endl;
     std::cout << stringify(hand_two) << " " << evaluator(hand_two) << std::endl;
 }
@@ -212,20 +183,20 @@ void game::start()
     clearAll();
     std::cout << "Starting a game." << std::endl;
     in_progress = true;
-    street == Street::PRE_FLOP;
+    street = Street::PRE_FLOP;
     std::cout << "Preflop pot: " << pot << std::endl;
     collect_blinds();
     deal_hold_cards();
     take_bets();
-    street == Street::FLOP;
-    std::cout << "Flot pot: " << pot << std::endl;
+    street = Street::FLOP;
+    std::cout << "Flop pot: " << pot << std::endl;
     deal_flop();
     take_bets();
-    street == Street::TURN;
+    street = Street::TURN;
     std::cout << "Turn pot: " << pot << std::endl;
     deal_turn();
     take_bets();
-    street == Street::RIVER;
+    street = Street::RIVER;
     deal_river();
     take_bets();
     std::cout << "River pot: " << pot << std::endl;
@@ -254,11 +225,12 @@ void game::setRootObject(QObject *root)
 
 void game::clearAll()
 {
+    pot = 0;
+    flop.clear();
+    deck = card_deck{};
+
     if (m_root)
-    {
-        pot = 0;
         emit pot_changed();
-    }
 }
 
 game::game(QObject *parent) : QObject(parent), m_root(nullptr)
@@ -272,8 +244,6 @@ game::game(QObject *parent) : QObject(parent), m_root(nullptr)
 
     QObject::connect(this, &game::pot_changed, this, &game::on_pot_changed);
 }
-
-game::~game() {}
 
 void game::on_pot_changed()
 {

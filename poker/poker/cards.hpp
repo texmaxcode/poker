@@ -64,6 +64,16 @@ public:
     friend std::ostream &operator<<(std::ostream &out, const card &card);
 };
 
+inline bool same_rank(const card &a, const card &b)
+{
+    return a.rank == b.rank;
+}
+
+inline bool same_suite(const card &a, const card &b)
+{
+    return a.suite == b.suite;
+}
+
 class card_deck
 {
     std::vector<card> cards;

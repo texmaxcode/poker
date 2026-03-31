@@ -25,13 +25,13 @@ class game : public QObject
     int big_blind = 3;
     int button = 0;
     bool in_progress = false;
-    Street street;
+    Street street = Street::PRE_FLOP;
     card_deck deck;
     std::vector<card> get_hand_vector(int);
 
 public:
-    game(QObject *parent = 0);
-    ~game();
+    explicit game(QObject *parent = nullptr);
+    ~game() override = default;
 
     void setRootObject(QObject *root);
 
@@ -44,9 +44,9 @@ public:
     std::vector<player> table;
 
     void start();
-    bool is_game_in_progress();
+    bool is_game_in_progress() const;
     void join_table(player player);
-    int players_count();
+    int players_count() const;
     void collect_blinds();
     void take_bets();
     void deal_hold_cards();
@@ -54,7 +54,7 @@ public:
     void deal_turn();
     void deal_river();
     void decide_the_payout();
-    std::string evaluator(std::vector<card>);
+    std::string evaluator(const std::vector<card> &);
     /*
     void do_payouts();
     void switch_button();

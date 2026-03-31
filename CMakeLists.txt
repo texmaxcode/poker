@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(PokerSolver VERSION 0.1 LANGUAGES CXX)
+project(Poker VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
@@ -22,4 +22,7 @@ endif()
 
 qt_standard_project_setup()
 
-add_subdirectory(poker_solver)
+include(CTest)
+enable_testing()
+
+add_subdirectory(poker)

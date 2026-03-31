@@ -12,12 +12,12 @@ bool card::operator>(const card &another) const
 
 bool card::operator==(const card &another) const
 {
-    return rank == another.rank;
+    return rank == another.rank && suite == another.suite;
 }
 
 bool card::operator!=(const card &another) const
 {
-    return rank != another.rank;
+    return !(*this == another);
 }
 
 card_deck::card_deck()

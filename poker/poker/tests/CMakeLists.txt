@@ -4,6 +4,8 @@ add_executable(Test_poker test.cpp)
 
 target_link_libraries(Test_poker
     poker 
-    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    Boost::unit_test_framework
     Qt${QT_VERSION_MAJOR}::Qml
 )
+
+add_test(NAME poker.smoke COMMAND Test_poker)

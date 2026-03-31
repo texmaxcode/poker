@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <type_traits>
 
 template <typename T>
 std::string to_string(const T &value)

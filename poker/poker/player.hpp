@@ -8,7 +8,7 @@ class player
 public:
     card first_card;
     card second_card;
-    double stack = 0;
+    int stack = 0;
 
     player() {};
     player(card first_card, card second_card) : first_card(first_card), second_card(second_card) {};

@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 
-find_package(Boost COMPONENTS system filesystem log_setup log unit_test_framework REQUIRED)
-include_directories(${TEST_SOURCE_DIR}/src ${Boost_INCLUDE_DIRS})
-add_definitions(-DBOOST_TEST_DYN_LINK)
+find_package(Boost 1.70 REQUIRED COMPONENTS unit_test_framework)
 
 add_subdirectory(tests)
 
@@ -16,3 +14,5 @@ target_link_libraries(poker PRIVATE
   Qt${QT_VERSION_MAJOR}::Qml
 )
 target_include_directories(poker INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_compile_features(poker PUBLIC cxx_std_17)

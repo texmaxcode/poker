@@ -1,14 +1,17 @@
 #!/bin/bash
 
-MODE=Debug
-C=/usr/bin/gcc
-CXX=/usr/bin/g++
-QT_LIBS=/home/max-gloom/Qt/6.10.0/gcc_64
+set -euo pipefail
+
+MODE=${MODE:-Debug}
+C=${C:-/usr/bin/gcc}
+CXX=${CXX:-/usr/bin/g++}
+QT_LIBS=${QT_LIBS:-/home/max-gloom/Qt/6.10.0/gcc_64}
 SOURCE=.
-DESTINATION=./build
+DESTINATION=${DESTINATION:-./build}
 
 # Clean up
-rm -rf build && mkdir build && rm poker_simulator.data;
+rm -rf "$DESTINATION"
+mkdir -p "$DESTINATION"
 
 # Configure
 cmake \
@@ -23,11 +26,10 @@ cmake \
   -G Ninja
 
 # Build
-cd build && ninja && cd ..
+cmake --build "$DESTINATION"
 
 # Test
-./build/poker_solver/simulator/tests/Test_simulator -l all -r short
-./build/poker_solver/poker/tests/Test_poker -l all -r short
+ctest --test-dir "$DESTINATION" --output-on-failure
 
 # Start app
-./build/poker_solver/PokerSolver
+"$DESTINATION/poker/Poker"
