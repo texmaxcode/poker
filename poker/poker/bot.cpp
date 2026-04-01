@@ -12,46 +12,75 @@ BotParams params_for(BotStrategy s)
     switch (s)
     {
     case BotStrategy::AlwaysCall:
-        return {0.0, 0.0};
+        return {0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
     case BotStrategy::Rock:
-        return {3.2, 2.8};
+        return {3.2, 2.8, 0.0, 0.35, 0.0, 0.4, 0.0, 0.3};
     case BotStrategy::Nit:
-        return {2.6, 2.4};
+        return {2.6, 2.4, 0.0, 0.35, 0.0, 0.4, 0.0, 0.3};
     case BotStrategy::TightAggressive:
-        return {2.0, 0.85};
+        return {2.0, 0.85, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
     case BotStrategy::LoosePassive:
-        return {0.75, 1.8};
+        return {0.75, 1.8, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
     case BotStrategy::LooseAggressive:
-        return {0.55, 0.65};
+        return {0.55, 0.65, 0.18, 1.0, 0.2, 1.0, 0.22, 1.0};
     case BotStrategy::Balanced:
-        return {1.15, 1.1};
+        return {1.15, 1.1, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
     case BotStrategy::Maniac:
-        return {0.35, 0.4};
+        return {0.35, 0.4, 0.18, 1.0, 0.2, 1.0, 0.22, 1.0};
+    case BotStrategy::GTOHeuristic:
+        // Near-balanced frequencies with mild pressure — starting point; user can tune every field.
+        return {1.12, 1.08, 0.09, 0.82, 0.10, 0.78, 0.11, 0.75};
     default:
-        return {1.0, 1.0};
+        return {1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
     }
 }
 
-bool bot_preflop_continue(BotStrategy s, double range_weight, std::mt19937 &rng)
+bool bot_preflop_continue_p(const BotParams &p, double range_weight, std::mt19937 &rng)
 {
-    if (s == BotStrategy::AlwaysCall)
-        return true;
-    const auto p = params_for(s);
     const double w = std::clamp(range_weight, 0.0, 1.0);
-    const double t = std::pow(w, p.preflop_exponent);
+    const double exp = std::max(p.preflop_exponent, 1e-6);
+    const double t = std::pow(w, exp);
     std::uniform_real_distribution<double> u(0.0, 1.0);
     return u(rng) < t;
 }
 
-bool bot_postflop_continue(BotStrategy s, double hand_strength01, std::mt19937 &rng)
+bool bot_postflop_continue_p(const BotParams &p, double hand_strength01, std::mt19937 &rng)
 {
-    if (s == BotStrategy::AlwaysCall)
-        return true;
-    const auto p = params_for(s);
     const double h = std::clamp(hand_strength01, 0.0, 1.0);
-    const double t = std::pow(h, p.postflop_exponent);
+    const double exp = std::max(p.postflop_exponent, 1e-6);
+    const double t = std::pow(h, exp);
     std::uniform_real_distribution<double> u(0.0, 1.0);
     return u(rng) < t;
+}
+
+bool bot_wants_raise_after_continue_p(const BotParams &p, double metric01, std::mt19937 &rng)
+{
+    std::uniform_real_distribution<double> u(0.0, 1.0);
+    const double m = std::clamp(metric01, 0.0, 1.0);
+    double prob = 0.08 + 0.35 * m;
+    prob += p.facing_raise_bonus;
+    prob *= p.facing_raise_tight_mul;
+    return u(rng) < std::clamp(prob, 0.0, 0.55);
+}
+
+bool bot_wants_open_bet_postflop_p(const BotParams &p, double hand_strength01, std::mt19937 &rng)
+{
+    std::uniform_real_distribution<double> u(0.0, 1.0);
+    const double h = std::clamp(hand_strength01, 0.0, 1.0);
+    double prob = 0.06 + 0.45 * h;
+    prob += p.open_bet_bonus;
+    prob *= p.open_bet_tight_mul;
+    return u(rng) < std::clamp(prob, 0.0, 0.65);
+}
+
+bool bot_bb_check_or_raise_p(const BotParams &p, double range_weight, std::mt19937 &rng)
+{
+    std::uniform_real_distribution<double> u(0.0, 1.0);
+    const double w = std::clamp(range_weight, 0.0, 1.0);
+    double prob = 0.12 + 0.4 * w;
+    prob += p.bb_checkraise_bonus;
+    prob *= p.bb_checkraise_tight_mul;
+    return u(rng) < std::clamp(prob, 0.0, 0.7);
 }
 
 const char *bot_strategy_name(BotStrategy s)
@@ -74,6 +103,8 @@ const char *bot_strategy_name(BotStrategy s)
         return "Balanced";
     case BotStrategy::Maniac:
         return "Maniac";
+    case BotStrategy::GTOHeuristic:
+        return "GTO (heuristic)";
     default:
         return "?";
     }
@@ -106,6 +137,7 @@ void fill_preset_range(RangeMatrix &m, BotStrategy s)
         m.fill(1.0);
         return;
     case BotStrategy::Balanced:
+    case BotStrategy::GTOHeuristic:
         if (!m.parse_text(
                 "99+,AKs,AKo,AQs,AQo,AJs,ATs,A9s,KQs,KJs,KTs,QJs,QTs,JTs,T9s,98s,87s,76s,65s"))
             m.fill(1.0);
@@ -122,14 +154,32 @@ std::string strategy_description(BotStrategy s)
     o << bot_strategy_name(s) << "\n\n";
 
     const BotParams p = params_for(s);
-    o << "Preflop tuning: exponent " << p.preflop_exponent << "\n";
+    o << "Preflop exponent: " << p.preflop_exponent << "\n";
     o << "  Each hole combo has a chart weight w in [0,1]. The bot continues preflop with "
-         "probability w^exponent (after a random trial), so low-weight cells fold more often "
-         "when the exponent is high.\n\n";
+         "probability w^exponent (random trial), so low-weight cells fold more often when the "
+         "exponent is high.\n\n";
 
-    o << "Postflop tuning: exponent " << p.postflop_exponent << "\n";
-    o << "  Uses estimated hand strength h in [0,1]; continue chance is h^exponent. Higher "
-         "exponent = more cautious with medium-strength hands.\n\n";
+    o << "Postflop exponent: " << p.postflop_exponent << "\n";
+    o << "  Uses estimated hand strength h in [0,1]; continue chance is h^exponent.\n\n";
+
+    o << "Facing raise / re-raise (after continuing): bonus " << p.facing_raise_bonus << ", tight × "
+      << p.facing_raise_tight_mul << "\n";
+    o << "  Base model p = 0.08 + 0.35·m (m = chart weight or hand strength); then p += bonus, p *= tight.\n\n";
+
+    o << "Postflop open raise (checked to): bonus " << p.open_bet_bonus << ", tight × " << p.open_bet_tight_mul
+      << "\n";
+    o << "  Base p = 0.06 + 0.45·h; then += bonus, *= tight.\n\n";
+
+    o << "BB preflop check-raise: bonus " << p.bb_checkraise_bonus << ", tight × " << p.bb_checkraise_tight_mul
+      << "\n";
+    o << "  Base p = 0.12 + 0.4·w (w = preflop chart weight); then += bonus, *= tight.\n\n";
+
+    if (s == BotStrategy::GTOHeuristic)
+    {
+        o << "GTO note: this is a tunable frequency heuristic inspired by balanced play — not a full "
+             "Nash equilibrium solver. Adjust exponents and bonuses to study how ranges respond; "
+             "use dedicated tools (Pio, GTO+, etc.) for street-by-street equilibrium solutions.\n\n";
+    }
 
     o << "Default preset chart (1.0 = in range at full weight; 0 = folded out):\n";
     switch (s)
@@ -153,6 +203,7 @@ std::string strategy_description(BotStrategy s)
              "and in aggression heuristics.\n";
         break;
     case BotStrategy::Balanced:
+    case BotStrategy::GTOHeuristic:
         o << "  99+, AKs, AKo, AQs, AQo, AJs, ATs, A9s, KQs, KJs, KTs, QJs, QTs, JTs, T9s, 98s, "
              "87s, 76s, 65s\n";
         break;
@@ -161,7 +212,7 @@ std::string strategy_description(BotStrategy s)
         break;
     }
 
-    o << "\nIn-engine aggression (postflop / raises):\n";
+    o << "\nPreset archetype aggression (editable per seat in Bots & ranges):\n";
     switch (s)
     {
     case BotStrategy::AlwaysCall:
@@ -169,18 +220,19 @@ std::string strategy_description(BotStrategy s)
         break;
     case BotStrategy::Maniac:
     case BotStrategy::LooseAggressive:
-        o << "  Raises and probe bets more often; BB check-raise more likely with playable weights.";
+        o << "  Higher bonuses / full tight multipliers — more barrels and BB raises.";
         break;
     case BotStrategy::Nit:
     case BotStrategy::Rock:
-        o << "  Fewer semi-bluffs; smaller raise frequency; BB often checks without a strong hand.";
+        o << "  Low tight multipliers — fewer semi-bluffs and raises without strength.";
         break;
     case BotStrategy::TightAggressive:
     case BotStrategy::Balanced:
-        o << "  Moderate bluff frequency; mixes between trapping and pressure.";
+    case BotStrategy::GTOHeuristic:
+        o << "  Moderate defaults; GTO preset starts between nit and aggro — tune to taste.";
         break;
     case BotStrategy::LoosePassive:
-        o << "  Wide preflop chart but less tendency to build the pot without strength.";
+        o << "  Wide preflop chart but lower open/raise bonuses in the preset.";
         break;
     default:
         o << "  Default aggression profile.";

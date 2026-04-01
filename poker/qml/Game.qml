@@ -1,11 +1,16 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Theme 1.0
 
 Page {
     id: game_screen
     objectName: "game_screen"
     padding: 0
+
+    BotNames {
+        id: botNames
+    }
 
     property int pot: 0
     property int smallBlind: 1
@@ -15,6 +20,9 @@ Page {
     property var seatC2: ["", "", "", "", "", ""]
     property var seatInHand: [true, true, true, true, true, true]
     property var seatStreetChips: [0, 0, 0, 0, 0, 0]
+    /// Engine: last action label this street per seat (Call / Raise / Check / Fold / …).
+    property var seatStreetActions: ["", "", "", "", "", ""]
+    property int maxStreetContrib: 0
     property int buttonSeat: 0
     property int sbSeat: -1
     property int bbSeat: -1
@@ -26,6 +34,7 @@ Page {
     property string board3: ""
     property string board4: ""
     property string statusText: qsTr("Starting…")
+    property string humanHandText: ""
     property bool showdown: false
     property int actingSeat: -1
     property int decisionSecondsLeft: 0
@@ -37,13 +46,18 @@ Page {
     property int facingMinRaiseChips: 0
     property int facingMaxChips: 0
     property int facingPotAmount: 0
-    property int openBetMinChips: 0
-    property int openBetMaxChips: 0
+    property int openRaiseMinChips: 0
+    property int openRaiseMaxChips: 0
     property int humanStackChips: 0
     property bool humanBbCanRaise: false
     property var pokerGameAccess: null
     property string streetPhase: qsTr("Preflop")
     property bool humanSittingOut: false
+    property var seatParticipating: [true, true, true, true, true, true]
+    /// Off-table chips (rebuy reserve); index aligns with seats.
+    property var seatWallets: [0, 0, 0, 0, 0, 0]
+    property bool humanCanBuyBackIn: false
+    property int buyInChips: 100
 
     signal buttonClicked(string button)
 
@@ -75,18 +89,44 @@ Page {
         return "—"
     }
 
-    background: Rectangle {
-        color: "#08080a"
+    background: Item {
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop {
+                    position: 0
+                    color: Theme.bgGradientTop
+                }
+                GradientStop {
+                    position: 0.5
+                    color: Theme.bgGradientMid
+                }
+                GradientStop {
+                    position: 1
+                    color: Theme.bgGradientBottom
+                }
+            }
+        }
+        Image {
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectCrop
+            opacity: 0.42
+            source: "qrc:/assets/images/bg_vignette.svg"
+            smooth: true
+            mipmap: true
+        }
     }
 
-    // Playfield uses full window width; stops above the bottom HUD so nothing hides under it.
+    /// Floating HUD beside seat 0: sit-out toggle is always available; action rows hide when sitting out.
+    readonly property bool humanHudVisible: true
+
     Item {
         id: tableArea
         z: 1
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.bottom: game_controls.top
+        anchors.bottom: parent.bottom
         anchors.leftMargin: 0
         anchors.rightMargin: 0
         anchors.topMargin: 0
@@ -94,15 +134,15 @@ Page {
 
         readonly property point feltCenter: Qt.point(width / 2, height / 2)
 
-        readonly property real seatHalfW: 112
-        readonly property real seatHalfH: 124
+        readonly property real seatHalfW: 102
+        readonly property real seatHalfH: 141
         readonly property real seatGap: 12
         readonly property real maxLayoutOvalW: Math.max(260, width - 4 * seatHalfW - 2 * seatGap - 28)
         readonly property real maxLayoutOvalH: Math.max(200, height - 4 * seatHalfH - 2 * seatGap - 40)
         readonly property real layoutOvalW: Math.min(Math.min(width * 0.99, height * 1.36), maxLayoutOvalW)
         readonly property real layoutOvalH: Math.min(Math.min(height * 0.76, width * 0.48), maxLayoutOvalH)
-        readonly property real feltBleedW: Math.max(300, width * 0.16)
-        readonly property real feltBleedH: Math.max(240, height * 0.18)
+        readonly property real feltBleedW: Math.max(360, width * 0.22)
+        readonly property real feltBleedH: Math.max(280, height * 0.24)
         readonly property real feltOvalW: Math.min(layoutOvalW + feltBleedW, width - 8)
         readonly property real feltOvalH: Math.min(layoutOvalH + feltBleedH, height - 8)
         readonly property real orbitRxRaw: layoutOvalW * 0.5 + seatGap + seatHalfW
@@ -122,8 +162,15 @@ Page {
             z: 3
             anchors.fill: parent
             pot_amount: game_screen.pot
-            smallBlind: game_screen.smallBlind
-            bigBlind: game_screen.bigBlind
+            actingSeat: game_screen.actingSeat
+            decisionSecondsLeft: game_screen.decisionSecondsLeft
+            humanCanCheck: game_screen.humanCanCheck
+            humanBbPreflopOption: game_screen.humanBbPreflopOption
+            facingNeedChips: game_screen.facingNeedChips
+            humanSittingOut: game_screen.humanSittingOut
+            seatStreetActions: game_screen.seatStreetActions
+            maxStreetContrib: game_screen.maxStreetContrib
+            playerCount: game_screen.playerCount
             board0: game_screen.board0
             board1: game_screen.board1
             board2: game_screen.board2
@@ -133,12 +180,13 @@ Page {
         }
 
         Repeater {
+            id: seatRepeater
             z: 2
             model: 6
             delegate: Item {
                 id: seatWrap
                 required property int index
-                width: 224
+                width: 204
                 height: 282
                 readonly property real angle: Math.PI / 2 - index * 2 * Math.PI / 6
                 readonly property real cornerBoost: (index === 1 || index === 2 || index === 4 || index === 5) ? 1.09 : 1.0
@@ -149,48 +197,86 @@ Page {
 
                 Player {
                     anchors.fill: parent
-                    name: index === 0 ? qsTr("You (seat 1)") : qsTr("Bot %1").arg(index + 1)
+                    name: botNames.displayName(index)
                     position: game_screen.seatRole(index)
                     isDealer: index === game_screen.buttonSeat
+                    seatAtTable: {
+                        var p = game_screen.seatParticipating
+                        if (!p || p.length <= index)
+                            return true
+                        return p[index] !== false
+                    }
                     inHand: game_screen.seatInHand[index] !== false
-                    first_card: (game_screen.seatInHand[index] !== false && game_screen.seatC1[index] !== undefined)
+                    first_card: (seatAtTable && game_screen.seatInHand[index] !== false
+                                 && game_screen.seatC1[index] !== undefined)
                                 ? game_screen.seatC1[index] : ""
-                    second_card: (game_screen.seatInHand[index] !== false && game_screen.seatC2[index] !== undefined)
+                    second_card: (seatAtTable && game_screen.seatInHand[index] !== false
+                                  && game_screen.seatC2[index] !== undefined)
                                  ? game_screen.seatC2[index] : ""
                     stackChips: game_screen.seatStacks[index] !== undefined ? game_screen.seatStacks[index] : 100
                     streetBetChips: game_screen.seatStreetChips[index] !== undefined ? game_screen.seatStreetChips[index] : 0
-                    show_cards: (game_screen.seatInHand[index] !== false)
+                    streetActionText: game_screen.seatStreetActions[index] !== undefined
+                                      ? game_screen.seatStreetActions[index] : ""
+                    maxStreetContrib: game_screen.maxStreetContrib
+                    tablePotChips: game_screen.pot
+                    show_cards: seatAtTable && (game_screen.seatInHand[index] !== false)
                                   && (game_screen.showdown || index === 0)
                     isActing: game_screen.actingSeat === index
+                    isHumanSeat: index === 0
+                    decisionSecondsLeft: game_screen.decisionSecondsLeft
                     foldedDim: (game_screen.seatInHand[index] === false)
                     humanWatching: index === 0 && game_screen.humanSittingOut
+                    reserveChips: game_screen.seatWallets[index] !== undefined ? game_screen.seatWallets[index] : 0
                 }
             }
         }
-    }
 
-    GameControls {
-        id: game_controls
-        z: 10
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        pageRoot: game_screen
-        statusText: game_screen.statusText
-        decisionSecondsLeft: game_screen.decisionSecondsLeft
-        humanMoreTimeAvailable: game_screen.humanMoreTimeAvailable
-        humanCanCheck: game_screen.humanCanCheck
-        humanBbPreflopOption: game_screen.humanBbPreflopOption
-        humanCanRaiseFacing: game_screen.humanCanRaiseFacing
-        facingNeedChips: game_screen.facingNeedChips
-        facingMinRaiseChips: game_screen.facingMinRaiseChips
-        facingMaxChips: game_screen.facingMaxChips
-        facingPotAmount: game_screen.facingPotAmount
-        openBetMinChips: game_screen.openBetMinChips
-        openBetMaxChips: game_screen.openBetMaxChips
-        humanStackChips: game_screen.humanStackChips
-        humanBbCanRaise: game_screen.humanBbCanRaise
-        humanSitOut: game_screen.humanSittingOut
-        pokerGame: game_screen.pokerGameAccess
+        readonly property Item humanSeat: seatRepeater.count > 0 ? seatRepeater.itemAt(0) : null
+        readonly property real hudPanelW: Math.min(400, Math.max(260, width * 0.36))
+
+        GameControls {
+            id: game_controls
+            z: 20
+            embeddedMode: true
+            visible: game_screen.humanHudVisible
+            panelWidth: tableArea.hudPanelW
+            x: {
+                var hs = tableArea.humanSeat
+                if (!hs)
+                    return 8
+                var gap = 8
+                var w = tableArea.hudPanelW
+                var placeRight = hs.x + hs.width + gap
+                if (placeRight + w <= tableArea.width - 6)
+                    return placeRight
+                return Math.max(6, hs.x - w - gap)
+            }
+            y: {
+                var hs = tableArea.humanSeat
+                if (!hs)
+                    return 0
+                return Math.max(6, hs.y + hs.height - game_controls.height)
+            }
+            pageRoot: game_screen
+            statusText: game_screen.statusText
+            humanHandText: game_screen.humanHandText
+            decisionSecondsLeft: game_screen.decisionSecondsLeft
+            humanMoreTimeAvailable: game_screen.humanMoreTimeAvailable
+            humanCanCheck: game_screen.humanCanCheck
+            humanBbPreflopOption: game_screen.humanBbPreflopOption
+            humanCanRaiseFacing: game_screen.humanCanRaiseFacing
+            facingNeedChips: game_screen.facingNeedChips
+            facingMinRaiseChips: game_screen.facingMinRaiseChips
+            facingMaxChips: game_screen.facingMaxChips
+            facingPotAmount: game_screen.facingPotAmount
+            openRaiseMinChips: game_screen.openRaiseMinChips
+            openRaiseMaxChips: game_screen.openRaiseMaxChips
+            humanStackChips: game_screen.humanStackChips
+            humanBbCanRaise: game_screen.humanBbCanRaise
+            humanSitOut: game_screen.humanSittingOut
+            pokerGame: game_screen.pokerGameAccess
+            humanCanBuyBackIn: game_screen.humanCanBuyBackIn
+            buyInChips: game_screen.buyInChips
+        }
     }
 }

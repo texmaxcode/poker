@@ -1,5 +1,65 @@
 #include "cards.hpp"
 
+namespace {
+
+QString rank_to_qml_asset_token(Rank r)
+{
+    switch (r)
+    {
+    case Rank::TWO:
+        return QStringLiteral("2");
+    case Rank::THREE:
+        return QStringLiteral("3");
+    case Rank::FOUR:
+        return QStringLiteral("4");
+    case Rank::FIVE:
+        return QStringLiteral("5");
+    case Rank::SIX:
+        return QStringLiteral("6");
+    case Rank::SEVEN:
+        return QStringLiteral("7");
+    case Rank::EIGHT:
+        return QStringLiteral("8");
+    case Rank::NINE:
+        return QStringLiteral("9");
+    case Rank::TEN:
+        return QStringLiteral("10");
+    case Rank::JACK:
+        return QStringLiteral("jack");
+    case Rank::QUEEN:
+        return QStringLiteral("queen");
+    case Rank::KING:
+        return QStringLiteral("king");
+    case Rank::ACE:
+        return QStringLiteral("ace");
+    }
+    return QStringLiteral("2");
+}
+
+QString suite_to_qml_asset_token(Suite s)
+{
+    switch (as_integer(s))
+    {
+    case 1:
+        return QStringLiteral("clubs");
+    case 2:
+        return QStringLiteral("spades");
+    case 3:
+        return QStringLiteral("hearts");
+    case 4:
+        return QStringLiteral("diamonds");
+    default:
+        return QStringLiteral("clubs");
+    }
+}
+
+} // namespace
+
+QString card_to_qml_asset_path(const card &c)
+{
+    return suite_to_qml_asset_token(c.suite) + QLatin1Char('_') + rank_to_qml_asset_token(c.rank) + QStringLiteral(".svg");
+}
+
 bool card::operator<(const card &another) const
 {
     return rank < another.rank;

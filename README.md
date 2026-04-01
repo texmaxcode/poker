@@ -21,7 +21,7 @@
 | `build.sh` | Optional script: clean configure, **Ninja** build, `ctest`, then runs the app |
 | `poker/main.cpp` | `QGuiApplication`, QML engine, exposes `pokerGame` (`game`) and `pokerSolver` |
 | `poker/qml/` | QML UI; assets and `application.qrc` |
-| `poker/poker/` | Cards, player, `game`, hand eval, bots, ranges, equity, solver; **Boost.Test** smoke tests |
+| `poker/poker/` | Cards, player, `game` + `game_ui_sync` (QML sync), hand eval, bots, ranges, equity, solver, session store; **Boost.Test** smoke tests |
 
 ## Dependencies (summary)
 
@@ -58,6 +58,10 @@ QT_LIBS=/path/to/Qt/6.10.0/gcc_64 ./build.sh
 ```
 
 The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, or **solver & equity** screens. The live table page is `Game.qml` (`objectName: game_screen`), connected after load so the engine can sync state.
+
+### Saved configuration
+
+Table stakes, per-seat bot strategy and range text (exported form), **sit out**, and **solver & equity** field values are stored with **`QSettings`** under organization **`TexasHoldemGym`** / application **`Texas Hold'em Gym`** (e.g. `~/.config/TexasHoldemGym/` on Linux). They load at startup and save on quit and when you apply stakes, change a bot strategy, apply range text, reset a seat to full range, toggle sit out, or close the window (solver tab).
 
 ## Documentation
 

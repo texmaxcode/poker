@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Theme 1.0
 
 ApplicationWindow {
     id: win
@@ -10,7 +11,36 @@ ApplicationWindow {
     minimumWidth: 720
     minimumHeight: 520
     title: qsTr("Texas Hold'em Gym")
-    color: "#08080a"
+    color: Theme.bgWindow
+
+    Rectangle {
+        z: -1
+        anchors.fill: parent
+        gradient: Gradient {
+            GradientStop {
+                position: 0
+                color: Theme.bgGradientTop
+            }
+            GradientStop {
+                position: 0.52
+                color: Theme.bgGradientMid
+            }
+            GradientStop {
+                position: 1
+                color: Theme.bgGradientBottom
+            }
+        }
+    }
+
+    Image {
+        z: -1
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        opacity: 0.55
+        source: "qrc:/assets/images/bg_vignette.svg"
+        smooth: true
+        mipmap: true
+    }
 
     FontLoader {
         id: oswaldRegular
@@ -31,33 +61,79 @@ ApplicationWindow {
 
     header: ToolBar {
         visible: stack.currentIndex > 0
-        implicitHeight: 52
+        implicitHeight: 40
 
         background: Rectangle {
-            color: "#12121a"
+            color: Theme.headerBg
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width
                 height: 1
-                color: "#3d2818"
+                color: Theme.headerRule
             }
         }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-            spacing: 14
+            anchors.leftMargin: 6
+            anchors.rightMargin: 6
+            anchors.topMargin: 2
+            anchors.bottomMargin: 2
+            spacing: 10
 
             ToolButton {
                 id: backBtn
                 text: qsTr("Lobby")
                 font.family: win.fontUiBold
                 font.bold: true
+                font.pointSize: 10
                 icon.source: "qrc:/assets/icons/home.svg"
-                icon.width: 22
-                icon.height: 22
+                icon.width: 20
+                icon.height: 20
                 display: AbstractButton.TextBesideIcon
+                padding: 6
+                flat: false
+                background: Rectangle {
+                    anchors.fill: parent
+                    radius: 8
+                    clip: true
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0
+                            color: Qt.lighter(Theme.hudBg0, 1.06)
+                        }
+                        GradientStop {
+                            position: 1
+                            color: Theme.hudBg1
+                        }
+                    }
+                    border.color: backBtn.down ? Theme.fireDeep
+                            : (backBtn.hovered ? Theme.chromeLineGold : Qt.alpha(Theme.chromeLine, 0.88))
+                    border.width: 1
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        height: 1
+                        radius: 8
+                        color: Qt.alpha(Theme.gold, 0.22)
+                    }
+                }
+                contentItem: RowLayout {
+                    spacing: 6
+                    Image {
+                        width: 20
+                        height: 20
+                        source: backBtn.icon.source
+                        opacity: backBtn.enabled ? 1 : 0.45
+                    }
+                    Label {
+                        text: backBtn.text
+                        font: backBtn.font
+                        color: backBtn.down ? Theme.fire : (backBtn.hovered ? Theme.gold : Theme.textPrimary)
+                        elide: Text.ElideRight
+                    }
+                }
                 onClicked: stack.currentIndex = 0
             }
 
@@ -66,8 +142,8 @@ ApplicationWindow {
                 horizontalAlignment: Text.AlignHCenter
                 font.family: win.fontUiBold
                 font.bold: true
-                font.pointSize: 15
-                color: "#d4af37"
+                font.pointSize: 13
+                color: Theme.gold
                 text: {
                     switch (stack.currentIndex) {
                     case 1:
@@ -76,6 +152,8 @@ ApplicationWindow {
                         return qsTr("Bots & ranges")
                     case 3:
                         return qsTr("Solver & equity")
+                    case 4:
+                        return qsTr("Bankroll & stats")
                     default:
                         return ""
                     }
@@ -109,6 +187,9 @@ ApplicationWindow {
         }
 
         SolverScreen {
+        }
+
+        StatsScreen {
         }
     }
 }

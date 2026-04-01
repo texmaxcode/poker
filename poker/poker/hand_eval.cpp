@@ -1,7 +1,5 @@
 #include "hand_eval.hpp"
 
-#include "utils.hpp"
-
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -309,6 +307,26 @@ static const char *rank_name(int r)
     default:
         return "?";
     }
+}
+
+std::string describe_holdem_hand(const std::vector<card> &cards)
+{
+    const size_t n = cards.size();
+    if (n < 2)
+        return {};
+    if (n == 2)
+    {
+        const card &a = cards[0];
+        const card &b = cards[1];
+        if (a.rank == b.rank)
+            return std::string("Pocket ") + rank_name(static_cast<int>(a.rank)) + "s";
+        const int hi = std::max(static_cast<int>(a.rank), static_cast<int>(b.rank));
+        const int lo = std::min(static_cast<int>(a.rank), static_cast<int>(b.rank));
+        return std::string("Hole cards: ") + rank_name(hi) + " " + rank_name(lo);
+    }
+    if (n < 5)
+        return {};
+    return describe_hand_score(detail::best_hand_score_variable(cards));
 }
 
 std::string describe_hand_score(const std::array<int, 8> &s)

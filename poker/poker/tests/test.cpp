@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "poker.hpp"
+#include "game.hpp"
 #include "hand_eval.hpp"
 #include "range_matrix.hpp"
 #include "equity_engine.hpp"
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_take_bets)
 
   game.collect_blinds();
   BOOST_CHECK_EQUAL(game.pot, 4);
-  game.take_bets();
+  game.take_bets_for_testing();
   BOOST_CHECK_EQUAL(game.pot, 58);
   int sum = 0;
   for (int i = 0; i < 6; ++i)
@@ -197,28 +197,28 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_decide_the_winner)
 
   game.collect_blinds();
   BOOST_CHECK_EQUAL(game.pot, 4);
-  game.take_bets();
+  game.take_bets_for_testing();
   BOOST_CHECK_EQUAL(game.pot, 58);
 
   game.deal_hold_cards();
 
-  game.take_bets();
+  game.take_bets_for_testing();
   BOOST_CHECK_EQUAL(game.pot, 112);
 
   game.deal_flop();
   BOOST_CHECK_EQUAL(game.flop.size(), 3);
 
-  game.take_bets();
+  game.take_bets_for_testing();
   BOOST_CHECK_EQUAL(game.pot, 166);
 
   game.deal_turn();
 
-  game.take_bets();
+  game.take_bets_for_testing();
   BOOST_CHECK_EQUAL(game.pot, 220);
 
   game.deal_river();
 
-  game.take_bets();
+  game.take_bets_for_testing();
   BOOST_CHECK_EQUAL(game.pot, 274);
   game.decide_the_payout();
 

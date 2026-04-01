@@ -1,10 +1,14 @@
 <RCC>
     <qresource prefix="/">
+        <file>Theme/qmldir</file>
+        <file>Theme/Theme.qml</file>
         <!-- QML -->
         <file>Main.qml</file>
         <file>Lobby.qml</file>
+        <file>BotNames.qml</file>
         <file>SetupScreen.qml</file>
         <file>SolverScreen.qml</file>
+        <file>StatsScreen.qml</file>
         <file>RangeGrid.qml</file>
         <file>Card.qml</file>
         <file>Game.qml</file>
@@ -13,6 +17,7 @@
         <file>Table.qml</file>
         <file>TableBoardCard.qml</file>
         <file>GameControls.qml</file>
+        <file>SizingPresetBar.qml</file>
 
         <!-- Typography (SIL Open Font License — Oswald, Google Fonts) -->
         <file>assets/fonts/Oswald-Regular.ttf</file>
@@ -26,6 +31,7 @@
 
         <!-- Brand -->
         <file>assets/images/logo.png</file>
+        <file>assets/images/bg_vignette.svg</file>
 
         <!-- Playing cards (SVG) -->
         <file>assets/cards/blue2.svg</file>

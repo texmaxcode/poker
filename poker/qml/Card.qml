@@ -9,6 +9,9 @@ Flipable {
     property string card: "spades_ace.svg"
     /// Community cards are always face-up; holes use flipped/show_cards from Player.
     property bool tableCard: false
+    /// If false (default), hole cards follow the parent binding only — click-to-flip breaks that binding
+    /// and was letting opponents’ pockets appear face-up.
+    property bool interactivePeek: false
 
     front: Image {
         source: "qrc:/assets/cards/blue2.svg"
@@ -53,7 +56,7 @@ Flipable {
 
     MouseArea {
         anchors.fill: parent
-        enabled: !tableCard
+        enabled: !tableCard && interactivePeek
         onClicked: flipable.flipped = !flipable.flipped
     }
 }

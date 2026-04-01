@@ -1,5 +1,5 @@
-#ifndef POKER_SOLVER_QOBJECT_H
-#define POKER_SOLVER_QOBJECT_H
+#ifndef TEXAS_HOLDEM_GYM_POKER_SOLVER_H
+#define TEXAS_HOLDEM_GYM_POKER_SOLVER_H
 
 #include <QObject>
 #include <QString>
@@ -50,4 +50,4 @@ private:
     std::atomic<bool> async_busy_{false};
 };
 
-#endif
+#endif // TEXAS_HOLDEM_GYM_POKER_SOLVER_H

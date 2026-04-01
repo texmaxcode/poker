@@ -1,17 +1,26 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Theme 1.0
 
-/// Compact bottom HUD: primary row + pop-up slider for raise/bet sizing.
+/// Bottom HUD (full width) or floating panel beside the human seat (`embeddedMode`).
 Item {
     id: game_controls
-    width: parent ? parent.width : implicitWidth
+    width: game_controls.embeddedMode
+          ? (game_controls.panelWidth > 0 ? game_controls.panelWidth : implicitWidth)
+          : (parent ? parent.width : implicitWidth)
     height: mainCol.height
+
+    /// When true, use compact timer row instead of full-width status row.
+    property bool embeddedMode: false
+    /// Used when `embeddedMode` is true; set from `Game.qml` so the panel does not span the table width.
+    property real panelWidth: 0
 
     property var pageRoot: null
     property var pokerGame: null
     property bool humanSitOut: false
     property string statusText: ""
+    property string humanHandText: ""
     property int decisionSecondsLeft: 0
     property bool humanMoreTimeAvailable: false
     property bool humanCanCheck: false
@@ -22,25 +31,41 @@ Item {
     property int facingMinRaiseChips: 0
     property int facingMaxChips: 0
     property int facingPotAmount: 0
-    property int openBetMinChips: 0
-    property int openBetMaxChips: 0
+    property int openRaiseMinChips: 0
+    property int openRaiseMaxChips: 0
     property int humanStackChips: 0
-
-    property bool raisePanelOpen: false
-    property bool betPanelOpen: false
+    property bool humanCanBuyBackIn: false
+    property int buyInChips: 100
 
     readonly property bool humanDecisionActive: decisionSecondsLeft > 0
     readonly property bool humanHasChips: humanStackChips > 0
-    /// Busted (0 stack) players watch but do not get bet/call UI.
+    /// Busted (0 stack) players watch but do not get the action UI.
     readonly property bool showWagerUi: !humanSitOut && humanStackChips > 0
-    readonly property bool facingBet: humanDecisionActive && !humanCanCheck && !humanBbPreflopOption
-    readonly property bool checkOrBetSized: humanDecisionActive && humanCanCheck && !humanBbPreflopOption
-    readonly property bool canFacingCall: facingBet && (facingNeedChips <= 0 || humanHasChips)
-    readonly property bool canRaiseFacing: facingBet && humanCanRaiseFacing && humanHasChips
-    readonly property bool canOpenBet: checkOrBetSized && humanHasChips && openBetMinChips > 0
-            && openBetMaxChips >= openBetMinChips
+    readonly property bool facingRaise: humanDecisionActive && !humanCanCheck && !humanBbPreflopOption
+    readonly property bool checkOrRaiseSized: humanDecisionActive && humanCanCheck && !humanBbPreflopOption
+    readonly property bool canFacingCall: facingRaise && (facingNeedChips <= 0 || humanHasChips)
+    readonly property bool canRaiseFacing: facingRaise && humanCanRaiseFacing && humanHasChips
+    readonly property bool canOpenRaise: checkOrRaiseSized && humanHasChips && openRaiseMinChips > 0
+            && openRaiseMaxChips >= openRaiseMinChips
 
     readonly property bool showHumanActions: !humanSitOut
+
+    readonly property string statusFullDisplay: {
+        var hand = humanHandText.length > 0 ? humanHandText : ""
+        var base
+        if (humanSitOut)
+            base = (statusText.length > 0) ? statusText : qsTr("Watching — next hand you skip.")
+        else
+            base = statusText.length > 0 ? statusText : qsTr("Ready.")
+        if (hand.length > 0 && base.length > 0)
+            return hand + "\n" + base
+        return hand.length > 0 ? hand : base
+    }
+
+    /// Show raise slider + presets only after the user taps RAISE (facing a raise).
+    property bool raiseSizingExpanded: false
+    /// Show open-raise slider + presets only after Raise… (first in on the street).
+    property bool openRaiseSizingExpanded: false
 
     function raiseSpinSafeMin() {
         return Math.min(facingMinRaiseChips, facingMaxChips)
@@ -50,30 +75,67 @@ Item {
         return Math.max(facingMinRaiseChips, facingMaxChips)
     }
 
-    function openBetSafeMin() {
-        return Math.min(openBetMinChips, openBetMaxChips)
+    function openRaiseSafeMin() {
+        return Math.min(openRaiseMinChips, openRaiseMaxChips)
     }
 
-    function openBetSafeMax() {
-        return Math.max(openBetMinChips, openBetMaxChips)
+    function openRaiseSafeMax() {
+        return Math.max(openRaiseMinChips, openRaiseMaxChips)
     }
 
-    onFacingBetChanged: {
-        if (!facingBet)
-            raisePanelOpen = false
+    function submitFacingRaise() {
+        if (!pokerGame || !game_controls.raiseSizingExpanded || !game_controls.canRaiseFacing
+                || !game_controls.facingRaise)
+            return
+        pokerGame.submitFacingAction(2, Math.round(raiseSlider.value))
     }
-    onCheckOrBetSizedChanged: {
-        if (!checkOrBetSized)
-            betPanelOpen = false
+
+    function submitOpenRaise() {
+        if (!pokerGame || !game_controls.openRaiseSizingExpanded || !game_controls.canOpenRaise
+                || !game_controls.checkOrRaiseSized)
+            return
+        pokerGame.submitCheckOrBet(false, Math.round(openRaiseSlider.value))
+    }
+
+    Connections {
+        target: raiseSlider
+        function onPressedChanged() {
+            if (!raiseSlider.pressed)
+                game_controls.submitFacingRaise()
+        }
+    }
+
+    Connections {
+        target: openRaiseSlider
+        function onPressedChanged() {
+            if (!openRaiseSlider.pressed)
+                game_controls.submitOpenRaise()
+        }
     }
 
     Connections {
         target: game_controls
+        function onFacingRaiseChanged() {
+            if (!game_controls.facingRaise)
+                game_controls.raiseSizingExpanded = false
+        }
         function onHumanDecisionActiveChanged() {
             if (!game_controls.humanDecisionActive) {
-                game_controls.raisePanelOpen = false
-                game_controls.betPanelOpen = false
+                game_controls.raiseSizingExpanded = false
+                game_controls.openRaiseSizingExpanded = false
             }
+        }
+        function onCheckOrRaiseSizedChanged() {
+            if (!game_controls.checkOrRaiseSized)
+                game_controls.openRaiseSizingExpanded = false
+        }
+        function onCanRaiseFacingChanged() {
+            if (!game_controls.canRaiseFacing)
+                game_controls.raiseSizingExpanded = false
+        }
+        function onCanOpenRaiseChanged() {
+            if (!game_controls.canOpenRaise)
+                game_controls.openRaiseSizingExpanded = false
         }
     }
 
@@ -82,13 +144,13 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         height: mainCol.height
-        color: "#12121a"
+        color: Theme.headerBg
         border.width: 0
         Rectangle {
             anchors.top: parent.top
             width: parent.width
             height: 2
-            color: "#3d2818"
+            color: Theme.headerRule
         }
 
         Column {
@@ -96,31 +158,20 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            spacing: 3
+            spacing: 6
 
             RowLayout {
                 id: statusRow
+                visible: !game_controls.embeddedMode
                 width: parent.width - 12
                 x: 6
                 spacing: 6
-
-                CheckBox {
-                    id: sitOutCheck
-                    text: qsTr("Sit out")
-                    font.pointSize: 9
-                    padding: 2
-                    checked: game_controls.humanSitOut
-                    onToggled: {
-                        if (pokerGame)
-                            pokerGame.setHumanSitOut(sitOutCheck.checked)
-                    }
-                }
 
                 Text {
                     id: actionsHdr
                     visible: game_controls.showHumanActions && game_controls.showWagerUi
                     text: qsTr("Act")
-                    color: "#8b93a8"
+                    color: Theme.hudActionLabel
                     font.pointSize: 9
                     font.bold: true
                 }
@@ -130,7 +181,7 @@ Item {
                     visible: game_controls.showHumanActions && game_controls.showWagerUi
                             && game_controls.humanDecisionActive
                     text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
-                    color: "#7ec8ff"
+                    color: Theme.hudActionAccent
                     font.pointSize: 10
                     font.bold: true
                     Layout.preferredWidth: visible ? implicitWidth : 0
@@ -141,7 +192,7 @@ Item {
                     visible: game_controls.showHumanActions && game_controls.showWagerUi
                             && game_controls.humanDecisionActive
                             && game_controls.humanMoreTimeAvailable
-                    color: "#3a4a6a"
+                    color: Theme.hudActionPanel
                     implicitWidth: visible ? 76 : 0
                     implicitHeight: 26
                     radius: 6
@@ -150,7 +201,7 @@ Item {
                     Text {
                         anchors.centerIn: parent
                         text: qsTr("More")
-                        color: "#d0e4ff"
+                        color: Theme.hudActionBright
                         font.pointSize: 9
                         font.bold: true
                     }
@@ -167,53 +218,77 @@ Item {
                     }
                 }
 
-                Rectangle {
+                Item {
                     Layout.fillWidth: true
-                    Layout.minimumWidth: 80
-                    implicitHeight: Math.max(28, statusLabel.implicitHeight + 8)
-                    radius: 6
-                    color: "#252a36"
-                    border.color: "#3d4555"
-                    border.width: 1
-
-                    readonly property string statusFullText: {
-                        if (game_controls.humanSitOut)
-                            return (game_controls.statusText.length > 0)
-                                    ? game_controls.statusText
-                                    : qsTr("Watching — next hand you skip.")
-                        return game_controls.statusText.length > 0 ? game_controls.statusText : qsTr("Ready.")
-                    }
-
-                    HoverHandler {
-                        id: statusHover
-                    }
-                    ToolTip.visible: statusHover.hovered && statusFullText.length > 0
-                    ToolTip.delay: 350
-                    ToolTip.text: statusFullText
-
-                    Text {
-                        id: statusLabel
-                        anchors.fill: parent
-                        anchors.margins: 5
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                        text: parent.statusFullText
-                        color: "#e4e8f0"
-                        font.pixelSize: 10
-                    }
+                    height: 1
                 }
             }
 
-            // Raise sizing (facing a bet)
+            RowLayout {
+                id: embeddedChromeRow
+                visible: game_controls.embeddedMode && game_controls.showHumanActions
+                        && game_controls.humanDecisionActive
+                width: parent.width - 12
+                x: 6
+                spacing: 10
+
+                Text {
+                    text: qsTr("Act")
+                    color: Theme.hudActionLabel
+                    font.pointSize: 9
+                    font.bold: true
+                }
+
+                Text {
+                    text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
+                    color: Theme.hudActionAccent
+                    font.pointSize: 10
+                    font.bold: true
+                }
+
+                Rectangle {
+                    visible: game_controls.humanMoreTimeAvailable
+                    color: Theme.hudActionPanel
+                    implicitWidth: 76
+                    implicitHeight: 26
+                    radius: 6
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: qsTr("More")
+                        color: Theme.hudActionBright
+                        font.pointSize: 9
+                        font.bold: true
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (pageRoot)
+                                pageRoot.buttonClicked("MORE_TIME")
+                        }
+                        onPressed: parent.opacity = 0.85
+                        onReleased: parent.opacity = 1
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 1
+                }
+            }
+
+            // Raise sizing (facing a raise): above FOLD / CALL / RAISE
             Rectangle {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
-                        && game_controls.raisePanelOpen
+                        && game_controls.facingRaise
                         && game_controls.canRaiseFacing
+                        && game_controls.raiseSizingExpanded
                 width: parent.width
                 height: visible ? raiseSizerCol.implicitHeight + 16 : 0
-                color: "#22262f"
-                border.color: "#3d4555"
+                color: Theme.panelElevated
+                border.color: Theme.inputBorder
                 border.width: 1
                 clip: true
 
@@ -224,6 +299,33 @@ Item {
                     anchors.top: parent.top
                     anchors.topMargin: 8
                     spacing: 6
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+
+                        Rectangle {
+                            color: Theme.panelBorder
+                            width: 72
+                            height: 26
+                            radius: 6
+                            Text {
+                                anchors.centerIn: parent
+                                text: qsTr("Cancel")
+                                color: Theme.textSecondary
+                                font.pointSize: 10
+                                font.bold: true
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: game_controls.raiseSizingExpanded = false
+                                onPressed: parent.opacity = 0.88
+                                onReleased: parent.opacity = 1
+                            }
+                        }
+                    }
 
                     Slider {
                         id: raiseSlider
@@ -257,8 +359,8 @@ Item {
                         function onFacingMaxChipsChanged() {
                             raiseSlider.syncRaiseSlider()
                         }
-                        function onRaisePanelOpenChanged() {
-                            if (game_controls.raisePanelOpen)
+                        function onFacingRaiseChanged() {
+                            if (game_controls.facingRaise)
                                 raiseSlider.syncRaiseSlider()
                         }
                     }
@@ -266,368 +368,48 @@ Item {
                     readonly property int raiseSliderEffective: Math.round(raiseSlider.value)
 
                     Text {
-                        text: qsTr("Raise — chips to add: %1").arg(raiseSizerCol.raiseSliderEffective)
-                        color: "#c5cad8"
-                        font.pointSize: 11
-                    }
-
-                    Row {
-                        id: raisePresetRow
-                        spacing: 6
-
-                        function applyRaise(v) {
-                            var lo = raiseSlider.from
-                            var hi = raiseSlider.to
-                            v = Math.max(v, game_controls.facingMinRaiseChips)
-                            raiseSlider.value = Math.min(Math.max(v, lo), hi)
-                        }
-
-                        Rectangle {
-                            color: "#3a4555"
-                            radius: 6
-                            width: 44
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Min")
-                                color: "#e4e8f0"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: raisePresetRow.applyRaise(game_controls.facingMinRaiseChips)
-                                onPressed: parent.opacity = 0.85
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                        Rectangle {
-                            color: "#3a4555"
-                            radius: 6
-                            width: 44
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("½")
-                                color: "#e4e8f0"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: raisePresetRow.applyRaise(
-                                    game_controls.facingNeedChips
-                                    + Math.floor(game_controls.facingPotAmount / 2))
-                                onPressed: parent.opacity = 0.85
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                        Rectangle {
-                            color: "#3a4555"
-                            radius: 6
-                            width: 44
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Pot")
-                                color: "#e4e8f0"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: raisePresetRow.applyRaise(
-                                    game_controls.facingNeedChips + game_controls.facingPotAmount)
-                                onPressed: parent.opacity = 0.85
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                        Rectangle {
-                            color: "#3a4555"
-                            radius: 6
-                            width: 44
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("All")
-                                color: "#e4e8f0"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: raisePresetRow.applyRaise(raiseSlider.to)
-                                onPressed: parent.opacity = 0.85
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-
-                        Item { width: 12; height: 1 }
-
-                        Rectangle {
-                            color: "#4a5568"
-                            radius: 6
-                            width: 72
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Cancel")
-                                color: "#f0f4ff"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: game_controls.raisePanelOpen = false
-                            }
-                        }
-
-                        Rectangle {
-                            color: "#1a6b45"
-                            radius: 6
-                            width: 80
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Raise")
-                                color: "white"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (pokerGame)
-                                        pokerGame.submitFacingAction(2, raiseSizerCol.raiseSliderEffective)
-                                    game_controls.raisePanelOpen = false
-                                }
-                                onPressed: parent.opacity = 0.88
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Open bet sizing (check / bet street)
-            Rectangle {
-                visible: game_controls.showHumanActions && game_controls.showWagerUi
-                        && game_controls.betPanelOpen
-                        && game_controls.canOpenBet
-                width: parent.width
-                height: visible ? betSizerCol.implicitHeight + 16 : 0
-                color: "#22262f"
-                border.color: "#3d4555"
-                border.width: 1
-                clip: true
-
-                Column {
-                    id: betSizerCol
-                    width: parent.width - 16
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    anchors.topMargin: 8
-                    spacing: 6
-
-                    Slider {
-                        id: betSlider
+                        text: qsTr("Tap a size to raise · or drag slider, release to raise")
+                        color: Theme.textSecondary
+                        font.pointSize: 10
+                        wrapMode: Text.WordWrap
                         width: parent.width
-                        from: game_controls.openBetSafeMin()
-                        to: game_controls.openBetSafeMax()
-                        stepSize: 1
-                        snapMode: Slider.SnapAlways
-                        value: from
-
-                        function syncBetSlider() {
-                            betSlider.from = game_controls.openBetSafeMin()
-                            betSlider.to = game_controls.openBetSafeMax()
-                            if (betSlider.to < betSlider.from) {
-                                betSlider.value = betSlider.from
-                                return
-                            }
-                            betSlider.value = Math.min(
-                                Math.max(game_controls.openBetMinChips, betSlider.from),
-                                betSlider.to)
-                        }
-
-                        Component.onCompleted: syncBetSlider()
                     }
-
-                    Connections {
-                        target: game_controls
-                        function onOpenBetMinChipsChanged() {
-                            betSlider.syncBetSlider()
-                        }
-                        function onOpenBetMaxChipsChanged() {
-                            betSlider.syncBetSlider()
-                        }
-                        function onBetPanelOpenChanged() {
-                            if (game_controls.betPanelOpen)
-                                betSlider.syncBetSlider()
-                        }
-                    }
-
-                    readonly property int betSliderEffective: Math.round(betSlider.value)
 
                     Text {
-                        text: qsTr("Bet size: %1").arg(betSizerCol.betSliderEffective)
-                        color: "#c5cad8"
+                        text: qsTr("Raise +%1 chips").arg(raiseSizerCol.raiseSliderEffective)
+                        color: Theme.textSecondary
                         font.pointSize: 11
                     }
 
-                    Row {
-                        id: betPresetRow
-                        spacing: 6
-
-                        function applyBet(v) {
-                            var lo = betSlider.from
-                            var hi = betSlider.to
-                            v = Math.max(v, game_controls.openBetMinChips)
-                            betSlider.value = Math.min(Math.max(v, lo), hi)
-                        }
-
-                        Rectangle {
-                            color: "#3a4555"
-                            radius: 6
-                            width: 44
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Min")
-                                color: "#e4e8f0"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: betPresetRow.applyBet(game_controls.openBetMinChips)
-                                onPressed: parent.opacity = 0.85
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                        Rectangle {
-                            color: "#3a4555"
-                            radius: 6
-                            width: 44
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Pot")
-                                color: "#e4e8f0"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: betPresetRow.applyBet(
-                                    Math.min(game_controls.facingPotAmount, betSlider.to))
-                                onPressed: parent.opacity = 0.85
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                        Rectangle {
-                            color: "#3a4555"
-                            radius: 6
-                            width: 44
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("All")
-                                color: "#e4e8f0"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: betPresetRow.applyBet(betSlider.to)
-                                onPressed: parent.opacity = 0.85
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-
-                        Item { width: 12; height: 1 }
-
-                        Rectangle {
-                            color: "#4a5568"
-                            radius: 6
-                            width: 72
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Cancel")
-                                color: "#f0f4ff"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: game_controls.betPanelOpen = false
-                            }
-                        }
-
-                        Rectangle {
-                            color: "#1a6b45"
-                            radius: 6
-                            width: 72
-                            height: 28
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Bet")
-                                color: "white"
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (pokerGame)
-                                        pokerGame.submitCheckOrBet(false, betSizerCol.betSliderEffective)
-                                    game_controls.betPanelOpen = false
-                                }
-                                onPressed: parent.opacity = 0.88
-                                onReleased: parent.opacity = 1
-                            }
-                        }
+                    SizingPresetBar {
+                        id: raisePresetRow
+                        width: parent.width
+                        hud: game_controls
+                        slider: raiseSlider
+                        flavor: "raise"
+                        afterPreset: game_controls.submitFacingRaise
                     }
                 }
             }
 
-            // Facing a bet: fold / call / raise
+            // Facing a raise: fold / call / raise
             Row {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
-                        && game_controls.facingBet
+                        && game_controls.facingRaise
                 width: parent.width - 12
                 x: 6
-                spacing: 6
+                spacing: 10
 
                 Rectangle {
-                    color: "#6b3030"
+                    color: Theme.dangerBg
                     width: 76
                     height: 32
                     radius: 6
-                    opacity: game_controls.facingBet ? 1.0 : 0.42
+                    opacity: game_controls.facingRaise ? 1.0 : 0.42
                     Text {
                         anchors.centerIn: parent
                         text: qsTr("FOLD")
-                        color: "#f5e0e0"
+                        color: Theme.dangerText
                         font.pointSize: 12
                         font.bold: true
                     }
@@ -635,9 +417,9 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        enabled: game_controls.facingBet
+                        enabled: game_controls.facingRaise
                         onClicked: {
-                            if (pageRoot && game_controls.facingBet)
+                            if (pageRoot && game_controls.facingRaise)
                                 pageRoot.buttonClicked("FOLD")
                         }
                         onPressed: parent.opacity = 0.88
@@ -647,7 +429,7 @@ Item {
 
                 Rectangle {
                     visible: game_controls.canFacingCall
-                    color: "#c9a227"
+                    color: Theme.focusGold
                     width: 108
                     height: 32
                     radius: 6
@@ -656,7 +438,7 @@ Item {
                         text: game_controls.facingNeedChips > 0
                               ? qsTr("Call %1").arg(game_controls.facingNeedChips)
                               : qsTr("CALL")
-                        color: "#222"
+                        color: Theme.insetDark
                         font.pointSize: 11
                         font.bold: true
                     }
@@ -665,7 +447,7 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (pageRoot && game_controls.facingBet)
+                            if (pageRoot && game_controls.facingRaise)
                                 pageRoot.buttonClicked("CALL")
                         }
                         onPressed: parent.opacity = 0.88
@@ -674,14 +456,14 @@ Item {
                 }
 
                 Rectangle {
-                    visible: game_controls.canRaiseFacing
-                    color: game_controls.raisePanelOpen ? "#2d5a45" : "#1a6b45"
-                    width: 84
+                    visible: game_controls.canRaiseFacing && !game_controls.raiseSizingExpanded
+                    color: Theme.successGreen
+                    width: 88
                     height: 32
                     radius: 6
                     Text {
                         anchors.centerIn: parent
-                        text: qsTr("Raise")
+                        text: qsTr("RAISE")
                         color: "white"
                         font.pointSize: 12
                         font.bold: true
@@ -690,11 +472,7 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            game_controls.raisePanelOpen = !game_controls.raisePanelOpen
-                            if (game_controls.raisePanelOpen)
-                                game_controls.betPanelOpen = false
-                        }
+                        onClicked: game_controls.raiseSizingExpanded = true
                         onPressed: parent.opacity = 0.88
                         onReleased: parent.opacity = 1
                     }
@@ -708,17 +486,17 @@ Item {
                         && game_controls.humanBbPreflopOption
                 width: parent.width - 12
                 x: 6
-                spacing: 6
+                spacing: 10
 
                 Rectangle {
-                    color: "#4a5568"
+                    color: Theme.panelBorder
                     width: 96
                     height: 32
                     radius: 6
                     Text {
                         anchors.centerIn: parent
                         text: qsTr("CHECK")
-                        color: "#f0f4ff"
+                        color: Theme.textPrimary
                         font.pointSize: 12
                         font.bold: true
                     }
@@ -737,7 +515,7 @@ Item {
 
                 Rectangle {
                     visible: game_controls.humanBbCanRaise && game_controls.humanHasChips
-                    color: "#1a6b45"
+                    color: Theme.successGreen
                     width: 96
                     height: 32
                     radius: 6
@@ -762,23 +540,136 @@ Item {
                 }
             }
 
-            // Check or open bet (post-flop streets)
+            // Open raise sizing (checked to you): above CHECK / FOLD / RAISE
+            Rectangle {
+                visible: game_controls.showHumanActions && game_controls.showWagerUi
+                        && game_controls.checkOrRaiseSized
+                        && game_controls.canOpenRaise
+                        && game_controls.openRaiseSizingExpanded
+                width: parent.width
+                height: visible ? openRaiseSizerCol.implicitHeight + 16 : 0
+                color: Theme.panelElevated
+                border.color: Theme.inputBorder
+                border.width: 1
+                clip: true
+
+                Column {
+                    id: openRaiseSizerCol
+                    width: parent.width - 16
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 8
+                    spacing: 6
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+
+                        Rectangle {
+                            color: Theme.panelBorder
+                            width: 72
+                            height: 26
+                            radius: 6
+                            Text {
+                                anchors.centerIn: parent
+                                text: qsTr("Cancel")
+                                color: Theme.textSecondary
+                                font.pointSize: 10
+                                font.bold: true
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: game_controls.openRaiseSizingExpanded = false
+                                onPressed: parent.opacity = 0.88
+                                onReleased: parent.opacity = 1
+                            }
+                        }
+                    }
+
+                    Slider {
+                        id: openRaiseSlider
+                        width: parent.width
+                        from: game_controls.openRaiseSafeMin()
+                        to: game_controls.openRaiseSafeMax()
+                        stepSize: 1
+                        snapMode: Slider.SnapAlways
+                        value: from
+
+                        function syncOpenRaiseSlider() {
+                            openRaiseSlider.from = game_controls.openRaiseSafeMin()
+                            openRaiseSlider.to = game_controls.openRaiseSafeMax()
+                            if (openRaiseSlider.to < openRaiseSlider.from) {
+                                openRaiseSlider.value = openRaiseSlider.from
+                                return
+                            }
+                            openRaiseSlider.value = Math.min(
+                                Math.max(game_controls.openRaiseMinChips, openRaiseSlider.from),
+                                openRaiseSlider.to)
+                        }
+
+                        Component.onCompleted: syncOpenRaiseSlider()
+                    }
+
+                    Connections {
+                        target: game_controls
+                        function onOpenRaiseMinChipsChanged() {
+                            openRaiseSlider.syncOpenRaiseSlider()
+                        }
+                        function onOpenRaiseMaxChipsChanged() {
+                            openRaiseSlider.syncOpenRaiseSlider()
+                        }
+                        function onCheckOrRaiseSizedChanged() {
+                            if (game_controls.checkOrRaiseSized)
+                                openRaiseSlider.syncOpenRaiseSlider()
+                        }
+                    }
+
+                    readonly property int openRaiseSliderEffective: Math.round(openRaiseSlider.value)
+
+                    Text {
+                        text: qsTr("Tap a size to raise · or drag slider, release to raise")
+                        color: Theme.textSecondary
+                        font.pointSize: 10
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+
+                    Text {
+                        text: qsTr("Raise %1 chips").arg(openRaiseSizerCol.openRaiseSliderEffective)
+                        color: Theme.textSecondary
+                        font.pointSize: 11
+                    }
+
+                    SizingPresetBar {
+                        id: openRaisePresetRow
+                        width: parent.width
+                        hud: game_controls
+                        slider: openRaiseSlider
+                        flavor: "open"
+                        afterPreset: game_controls.submitOpenRaise
+                    }
+                }
+            }
+
+            // Check or fold (post-flop) + open raise trigger
             Row {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
-                        && game_controls.checkOrBetSized
+                        && game_controls.checkOrRaiseSized
                 width: parent.width - 12
                 x: 6
-                spacing: 6
+                spacing: 10
 
                 Rectangle {
-                    color: "#4a5568"
+                    color: Theme.panelBorder
                     width: 88
                     height: 32
                     radius: 6
                     Text {
                         anchors.centerIn: parent
                         text: qsTr("CHECK")
-                        color: "#f0f4ff"
+                        color: Theme.textPrimary
                         font.pointSize: 12
                         font.bold: true
                     }
@@ -796,15 +687,14 @@ Item {
                 }
 
                 Rectangle {
-                    visible: game_controls.canOpenBet
-                    color: game_controls.betPanelOpen ? "#2d5a45" : "#1a6b45"
-                    width: 84
+                    color: Theme.dangerBg
+                    width: 76
                     height: 32
                     radius: 6
                     Text {
                         anchors.centerIn: parent
-                        text: qsTr("Bet")
-                        color: "white"
+                        text: qsTr("FOLD")
+                        color: Theme.dangerText
                         font.pointSize: 12
                         font.bold: true
                     }
@@ -813,13 +703,115 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            game_controls.betPanelOpen = !game_controls.betPanelOpen
-                            if (game_controls.betPanelOpen)
-                                game_controls.raisePanelOpen = false
+                            if (pokerGame)
+                                pokerGame.submitFoldFromCheck()
                         }
                         onPressed: parent.opacity = 0.88
                         onReleased: parent.opacity = 1
                     }
+                }
+
+                Rectangle {
+                    visible: game_controls.canOpenRaise && !game_controls.openRaiseSizingExpanded
+                    color: Theme.successGreen
+                    width: 88
+                    height: 32
+                    radius: 6
+                    Text {
+                        anchors.centerIn: parent
+                        text: qsTr("Raise…")
+                        color: "white"
+                        font.pointSize: 12
+                        font.bold: true
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: game_controls.openRaiseSizingExpanded = true
+                        onPressed: parent.opacity = 0.88
+                        onReleased: parent.opacity = 1
+                    }
+                }
+            }
+
+            RowLayout {
+                id: sitOutRow
+                width: parent.width - 12
+                x: 6
+                spacing: 6
+
+                CheckBox {
+                    id: sitOutCheck
+                    text: qsTr("Sit out")
+                    font.pointSize: 9
+                    padding: 2
+                    checked: game_controls.humanSitOut
+                    onToggled: {
+                        if (pokerGame) {
+                            pokerGame.setHumanSitOut(sitOutCheck.checked)
+                            pokerGame.savePersistedSettings()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 1
+                }
+            }
+
+            RowLayout {
+                id: buyBackRow
+                visible: game_controls.embeddedMode && game_controls.humanCanBuyBackIn
+                width: parent.width - 12
+                x: 6
+                spacing: 6
+
+                Button {
+                    text: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
+                    font.pointSize: 9
+                    padding: 8
+                    onClicked: {
+                        if (game_controls.pokerGame)
+                            game_controls.pokerGame.tryBuyBackIn(0)
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    height: 1
+                }
+            }
+
+            Rectangle {
+                id: statusBanner
+                width: parent.width - 12
+                x: 6
+                implicitHeight: Math.max(40, statusBannerLabel.implicitHeight + 12)
+                radius: 6
+                color: Theme.inputBg
+                border.color: Theme.inputBorder
+                border.width: 1
+
+                HoverHandler {
+                    id: statusBannerHover
+                }
+                ToolTip.visible: statusBannerHover.hovered && game_controls.statusFullDisplay.length > 0
+                ToolTip.delay: 350
+                ToolTip.text: game_controls.statusFullDisplay
+
+                Text {
+                    id: statusBannerLabel
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: game_controls.embeddedMode ? 4 : 5
+                    elide: Text.ElideRight
+                    text: game_controls.statusFullDisplay
+                    color: Theme.textPrimary
+                    font.pixelSize: game_controls.embeddedMode ? 12 : 13
+                    lineHeight: 1.12
                 }
             }
 

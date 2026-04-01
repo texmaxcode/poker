@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Theme 1.0
 
 /// Pot + blinds in one HUD; street + board below. Pot ticks up with animation; pot bumps when chips grow.
 Item {
@@ -7,8 +8,18 @@ Item {
     anchors.fill: parent
 
     property int pot_amount: 0
-    property int smallBlind: 1
-    property int bigBlind: 3
+    property int actingSeat: -1
+    property int decisionSecondsLeft: 0
+    property bool humanCanCheck: false
+    property bool humanBbPreflopOption: false
+    property int facingNeedChips: 0
+    property bool humanSittingOut: false
+    property var seatStreetActions: ["", "", "", "", "", ""]
+    property int maxStreetContrib: 0
+    property int playerCount: 6
+
+    readonly property bool humanDeciding: actingSeat === 0 && decisionSecondsLeft > 0 && !humanSittingOut
+
     property string board0: ""
     property string board1: ""
     property string board2: ""
@@ -16,8 +27,7 @@ Item {
     property string board4: ""
     property string streetPhase: ""
 
-    readonly property color gold: "#d4af37"
-    readonly property color silver: "#c8c8d0"
+    readonly property color gold: Theme.gold
 
     /// Animated display value (counts toward current pot)
     property int potShown: 0
@@ -58,130 +68,87 @@ Item {
         spacing: 10
         anchors.centerIn: parent
 
-        /// Single card: pot (primary) + divider + SB / BB
+        /// Fixed-size pot (total in the middle; raises add chips here in the engine) + call hint when you act.
         Rectangle {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
-            implicitWidth: hudRow.implicitWidth + 28
-            implicitHeight: 52
+            width: 212
+            height: 56
             radius: 14
-            color: "#1a1512"
+            color: Theme.hudBg1
             border.width: 2
-            border.color: "#5a3a18"
+            border.color: Theme.hudBorder
             clip: true
 
             gradient: Gradient {
                 GradientStop {
                     position: 0
-                    color: "#2a1810"
+                    color: Theme.hudBg0
                 }
                 GradientStop {
                     position: 1
-                    color: "#120c08"
+                    color: Theme.hudBg1
                 }
             }
 
-            RowLayout {
-                id: hudRow
+            Row {
                 anchors.centerIn: parent
-                spacing: 0
+                spacing: 10
 
-                RowLayout {
-                    id: potBlock
-                    spacing: 10
-                    Layout.minimumWidth: 120
+                Item {
+                    width: 118
+                    height: 40
+                    anchors.verticalCenter: parent.verticalCenter
 
-                    ColumnLayout {
-                        spacing: 1
+                    Text {
+                        id: potValueText
+                        anchors.centerIn: parent
+                        text: "$" + Math.round(table_container.potShown)
+                        color: gold
+                        font.bold: true
+                        font.pointSize: 20
+                        horizontalAlignment: Text.AlignHCenter
 
-                        Text {
-                            text: qsTr("Pot")
-                            color: silver
-                            font.pointSize: 9
-                            font.bold: true
-                            Layout.alignment: Qt.AlignHCenter
-                        }
-
-                        Item {
-                            id: potValBox
-                            Layout.preferredWidth: potValueText.implicitWidth
-                            Layout.preferredHeight: potValueText.implicitHeight
-                            Layout.alignment: Qt.AlignHCenter
-
-                            Text {
-                                id: potValueText
-                                anchors.centerIn: parent
-                                text: "$" + Math.round(table_container.potShown)
-                                color: gold
-                                font.bold: true
-                                font.pointSize: 20
-                            }
-
-                            transform: Scale {
-                                id: potValueScale
-                                origin.x: potValBox.width > 0 ? potValBox.width * 0.5 : 24
-                                origin.y: potValBox.height > 0 ? potValBox.height * 0.5 : 14
-                                xScale: 1
-                                yScale: 1
-                            }
+                        transform: Scale {
+                            id: potValueScale
+                            origin.x: potValueText.width * 0.5
+                            origin.y: potValueText.height * 0.5
+                            xScale: 1
+                            yScale: 1
                         }
                     }
                 }
 
                 Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.fillHeight: true
-                    Layout.minimumHeight: 36
-                    Layout.maximumHeight: 40
-                    Layout.leftMargin: 6
-                    Layout.rightMargin: 6
-                    color: "#5a3a1888"
+                    width: 1
+                    height: 36
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.hudDivider
                 }
 
-                RowLayout {
-                    spacing: 8
+                Item {
+                    width: 72
+                    height: 40
+                    anchors.verticalCenter: parent.verticalCenter
 
                     Text {
-                        text: qsTr("Blinds")
-                        color: silver
-                        font.pointSize: 9
+                        anchors.centerIn: parent
+                        width: parent.width
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        visible: table_container.humanDeciding
+                        text: {
+                            if (table_container.humanBbPreflopOption)
+                                return qsTr("Check / raise")
+                            if (table_container.humanCanCheck)
+                                return qsTr("Check / raise")
+                            if (table_container.facingNeedChips > 0)
+                                return qsTr("Call $%1").arg(table_container.facingNeedChips)
+                            return qsTr("—")
+                        }
+                        color: Theme.textPrimary
+                        font.pointSize: 11
                         font.bold: true
-                    }
-
-                    Rectangle {
-                        radius: 8
-                        color: "#251810"
-                        border.width: 1
-                        border.color: "#6a4a28"
-                        implicitWidth: sbTxt.implicitWidth + 14
-                        implicitHeight: 30
-
-                        Text {
-                            id: sbTxt
-                            anchors.centerIn: parent
-                            text: qsTr("SB %1").arg(table_container.smallBlind)
-                            color: gold
-                            font.pointSize: 11
-                            font.bold: true
-                        }
-                    }
-
-                    Rectangle {
-                        radius: 8
-                        color: "#251810"
-                        border.width: 1
-                        border.color: "#8a5030"
-                        implicitWidth: bbTxt.implicitWidth + 14
-                        implicitHeight: 30
-
-                        Text {
-                            id: bbTxt
-                            anchors.centerIn: parent
-                            text: qsTr("BB %1").arg(table_container.bigBlind)
-                            color: "#ffb060"
-                            font.pointSize: 11
-                            font.bold: true
-                        }
                     }
                 }
             }
@@ -235,7 +202,7 @@ Item {
                 id: streetText
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: table_container.streetPhase
-                color: "#a8c8ff"
+                color: Theme.accentBlue
                 font.pointSize: 12
                 font.bold: true
                 horizontalAlignment: Text.AlignHCenter

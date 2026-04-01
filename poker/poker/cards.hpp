@@ -1,9 +1,11 @@
-#ifndef MUSCLE_COMPUTING_CARDS_H
-#define MUSCLE_COMPUTING_CARDS_H
+#ifndef TEXAS_HOLDEM_GYM_CARDS_H
+#define TEXAS_HOLDEM_GYM_CARDS_H
 
 #include <vector>
 #include <iostream>
 #include <string>
+
+#include <QString>
 
 #include "utils.hpp"
 #include <algorithm>
@@ -86,4 +88,7 @@ public:
     card get_card();
 };
 
-#endif // MUSCLE_COMPUTING_CARDS_H
+/// Resource name for QML SVG assets: `"<suite>_<rank>.svg"` (e.g. `clubs_ace.svg`).
+QString card_to_qml_asset_path(const card &c);
+
+#endif // TEXAS_HOLDEM_GYM_CARDS_H

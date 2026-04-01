@@ -1,5 +1,5 @@
-#ifndef MUSCLE_COMPUTING_PLAYER_H
-#define MUSCLE_COMPUTING_PLAYER_H
+#ifndef TEXAS_HOLDEM_GYM_PLAYER_H
+#define TEXAS_HOLDEM_GYM_PLAYER_H
 
 #include "cards.hpp"
 
@@ -18,4 +18,4 @@ public:
     void reset_stack(int chips);
 };
 
-#endif
+#endif // TEXAS_HOLDEM_GYM_PLAYER_H

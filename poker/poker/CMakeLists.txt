@@ -8,11 +8,13 @@ qt_add_library(poker
   cards.cpp
   player.cpp
   game.cpp
+  game_ui_sync.cpp
   hand_eval.cpp
   range_matrix.cpp
   bot.cpp
   equity_engine.cpp
   poker_solver.cpp
+  session_store.cpp
 )
 
 target_link_libraries(poker PRIVATE

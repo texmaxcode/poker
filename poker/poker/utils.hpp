@@ -1,17 +1,8 @@
-#ifndef MUSCLE_COMPUTING_UTILS_H
-#define MUSCLE_COMPUTING_UTILS_H
+#ifndef TEXAS_HOLDEM_GYM_UTILS_H
+#define TEXAS_HOLDEM_GYM_UTILS_H
 
 #include <string>
-#include <sstream>
 #include <type_traits>
-
-template <typename T>
-std::string to_string(const T &value)
-{
-  std::ostringstream ss;
-  ss << value;
-  return ss.str();
-}
 
 template <typename Enumeration>
 auto as_integer(Enumeration const value)
@@ -20,4 +11,4 @@ auto as_integer(Enumeration const value)
   return static_cast<typename std::underlying_type<Enumeration>::type>(value);
 }
 
-#endif // MUSCLE_COMPUTING_UTILS_H
+#endif // TEXAS_HOLDEM_GYM_UTILS_H

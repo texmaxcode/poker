@@ -6,18 +6,28 @@
 
 #include "game.hpp"
 #include "poker_solver.hpp"
+#include "session_store.hpp"
 
 int main(int argc, char *argv[])
 {
+    QCoreApplication::setOrganizationName(QStringLiteral("TexasHoldemGym"));
+    QCoreApplication::setApplicationName(QStringLiteral("Texas Hold'em Gym"));
     QGuiApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("Texas Hold'em Gym"));
 
     game poker_game;
+    poker_game.loadPersistedSettings();
     PokerSolver poker_solver;
+    SessionStore session_store;
 
     QQmlApplicationEngine engine;
+    engine.addImportPath(QStringLiteral("qrc:/"));
     engine.rootContext()->setContextProperty(QStringLiteral("pokerGame"), &poker_game);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerSolver"), &poker_solver);
+    engine.rootContext()->setContextProperty(QStringLiteral("sessionStore"), &session_store);
+
+    QObject::connect(&app, &QGuiApplication::aboutToQuit, &poker_game, [&poker_game]() {
+        poker_game.savePersistedSettings();
+    });
     const QUrl mainUrl(QStringLiteral("qrc:/Main.qml"));
     QObject::connect(
         &engine,

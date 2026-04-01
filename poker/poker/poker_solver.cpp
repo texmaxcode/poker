@@ -178,7 +178,7 @@ QVariantMap compute_equity_impl(const QString &hero1,
         const double mdf = p / (p + b);
         out.insert(QStringLiteral("mdfPct"), mdf * 100.0);
         detail += QStringLiteral(
-            "\nTeaching note — minimum defense frequency (MDF) vs this bet size, if villain were polarized "
+            "\nTeaching note — minimum defense frequency (MDF) vs this raise size, if villain were polarized "
             "and you defended only to stop auto-profit: ~%1% of your continuing range (rough heuristic, not "
             "a full tree solution).\n")
                       .arg(mdf * 100.0, 0, 'f', 1);

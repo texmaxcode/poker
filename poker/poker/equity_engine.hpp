@@ -1,5 +1,5 @@
-#ifndef POKER_EQUITY_ENGINE_H
-#define POKER_EQUITY_ENGINE_H
+#ifndef TEXAS_HOLDEM_GYM_EQUITY_ENGINE_H
+#define TEXAS_HOLDEM_GYM_EQUITY_ENGINE_H
 
 #include "cards.hpp"
 #include "range_matrix.hpp"
@@ -37,4 +37,4 @@ EquityResult monte_carlo_equity_vs_hand(const card &hero1,
 bool parse_card_string(const std::string &tok, card &out);
 bool parse_board_string(const std::string &line, std::vector<card> &out, std::string &err);
 
-#endif
+#endif // TEXAS_HOLDEM_GYM_EQUITY_ENGINE_H

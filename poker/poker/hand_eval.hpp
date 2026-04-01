@@ -1,5 +1,5 @@
-#ifndef POKER_HAND_EVAL_H
-#define POKER_HAND_EVAL_H
+#ifndef TEXAS_HOLDEM_GYM_HAND_EVAL_H
+#define TEXAS_HOLDEM_GYM_HAND_EVAL_H
 
 #include "cards.hpp"
 
@@ -16,10 +16,13 @@ int compare_holdem_hands(const std::vector<card> &seven_a, const std::vector<car
 
 std::string describe_hand_score(const std::array<int, 8> &score);
 
+/// Best current 5-card holding from 2 (preflop holes) or 5–7 community cards.
+std::string describe_holdem_hand(const std::vector<card> &cards);
+
 /// Rough 0..1 strength for postflop bot heuristics (not equity).
 double hand_strength_01(const std::vector<card> &seven_cards);
 
 /// Same metric for 5–7 known cards (flop / turn / river).
 double hand_strength_01_cards(const std::vector<card> &cards);
 
-#endif
+#endif // TEXAS_HOLDEM_GYM_HAND_EVAL_H

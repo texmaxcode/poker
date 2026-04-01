@@ -1,7 +1,5 @@
 #include "range_matrix.hpp"
 
-#include "utils.hpp"
-
 #include <algorithm>
 #include <cctype>
 #include <sstream>

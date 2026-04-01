@@ -1,5 +1,5 @@
-#ifndef POKER_RANGE_MATRIX_H
-#define POKER_RANGE_MATRIX_H
+#ifndef TEXAS_HOLDEM_GYM_RANGE_MATRIX_H
+#define TEXAS_HOLDEM_GYM_RANGE_MATRIX_H
 
 #include "cards.hpp"
 
@@ -30,4 +30,4 @@ private:
 
 int rank_index(Rank r);
 
-#endif
+#endif // TEXAS_HOLDEM_GYM_RANGE_MATRIX_H

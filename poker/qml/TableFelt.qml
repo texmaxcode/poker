@@ -1,4 +1,5 @@
 import QtQuick
+import Theme 1.0
 
 /// Vector-only table playfield (no bitmaps): dark room + oval rail + felt.
 Item {
@@ -13,15 +14,15 @@ Item {
         gradient: Gradient {
             GradientStop {
                 position: 0
-                color: "#0c0808"
+                color: Theme.bgGradientTop
             }
             GradientStop {
                 position: 0.5
-                color: "#060608"
+                color: Theme.bgGradientMid
             }
             GradientStop {
                 position: 1
-                color: "#08040a"
+                color: Theme.bgGradientBottom
             }
         }
     }
@@ -55,59 +56,60 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: parent.cr
-            color: "#121018"
+            color: Theme.railOuter
             border.width: 2
-            border.color: "#1a1018"
+            border.color: Theme.railBezel
         }
 
+        /// Wood rail / armrest band (wider than a thin bezel — like a real table ramp).
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 7
-            radius: Math.max(4, parent.cr - 7)
+            anchors.margins: 10
+            radius: Math.max(4, parent.cr - 10)
             gradient: Gradient {
                 GradientStop {
                     position: 0
-                    color: "#3d2820"
+                    color: Theme.railWood0
                 }
                 GradientStop {
                     position: 0.5
-                    color: "#2a1810"
+                    color: Theme.railWood1
                 }
                 GradientStop {
                     position: 1
-                    color: "#1a1008"
+                    color: Theme.railWood2
                 }
             }
             border.width: 2
-            border.color: "#8a5030"
+            border.color: Theme.railEdge
         }
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 16
-            radius: Math.max(4, parent.cr - 16)
+            anchors.margins: 34
+            radius: Math.max(4, parent.cr - 34)
             gradient: Gradient {
                 GradientStop {
                     position: 0
-                    color: "#1a4a32"
+                    color: Theme.feltHighlight
                 }
                 GradientStop {
                     position: 0.45
-                    color: "#123828"
+                    color: Theme.feltMid
                 }
                 GradientStop {
                     position: 1
-                    color: "#0a2018"
+                    color: Theme.feltShadow
                 }
             }
             border.width: 1
-            border.color: "#0a2818"
+            border.color: Theme.feltBorder
         }
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 22
-            radius: Math.max(4, parent.cr - 22)
+            anchors.margins: 40
+            radius: Math.max(4, parent.cr - 40)
             color: "transparent"
             border.width: 1
             border.color: "#ffffff14"
@@ -115,8 +117,8 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 28
-            radius: Math.max(4, parent.cr - 28)
+            anchors.margins: 46
+            radius: Math.max(4, parent.cr - 46)
             color: "transparent"
             border.width: 1
             border.color: "#ffffff06"
