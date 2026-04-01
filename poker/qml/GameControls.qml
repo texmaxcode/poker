@@ -9,7 +9,7 @@ Item {
     width: game_controls.embeddedMode
           ? (game_controls.panelWidth > 0 ? game_controls.panelWidth : implicitWidth)
           : (parent ? parent.width : implicitWidth)
-    height: mainCol.height
+    height: mainCol.height + 8
 
     /// When true, use compact timer row instead of full-width status row.
     property bool embeddedMode: false
@@ -64,8 +64,10 @@ Item {
 
     /// Show raise slider + presets only after the user taps RAISE (facing a raise).
     property bool raiseSizingExpanded: false
-    /// Show open-raise slider + presets only after Raise… (first in on the street).
+    /// Show open-raise slider + presets only after Raise (first in on the street).
     property bool openRaiseSizingExpanded: false
+
+    readonly property bool sizingDialogOpen: raiseSizingExpanded || openRaiseSizingExpanded
 
     function raiseSpinSafeMin() {
         return Math.min(facingMinRaiseChips, facingMaxChips)
@@ -143,14 +145,19 @@ Item {
         id: bar
         anchors.left: parent.left
         anchors.right: parent.right
-        height: mainCol.height
+        height: mainCol.height + 8
+        radius: 10
         color: Theme.headerBg
-        border.width: 0
+        border.width: 1
+        border.color: Qt.alpha(Theme.gold, 0.25)
+
         Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.top: parent.top
-            width: parent.width
-            height: 2
-            color: Theme.headerRule
+            height: 1
+            radius: 10
+            color: Qt.alpha(Theme.gold, 0.12)
         }
 
         Column {
@@ -158,6 +165,7 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
+            anchors.topMargin: 4
             spacing: 6
 
             RowLayout {
@@ -181,7 +189,7 @@ Item {
                     visible: game_controls.showHumanActions && game_controls.showWagerUi
                             && game_controls.humanDecisionActive
                     text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
-                    color: Theme.hudActionAccent
+                    color: Theme.seatBorderAct
                     font.pointSize: 10
                     font.bold: true
                     Layout.preferredWidth: visible ? implicitWidth : 0
@@ -224,58 +232,88 @@ Item {
                 }
             }
 
-            RowLayout {
-                id: embeddedChromeRow
+            Column {
+                id: embeddedChromeCol
                 visible: game_controls.embeddedMode && game_controls.showHumanActions
                         && game_controls.humanDecisionActive
                 width: parent.width - 12
                 x: 6
-                spacing: 10
+                spacing: 6
 
-                Text {
-                    text: qsTr("Act")
-                    color: Theme.hudActionLabel
-                    font.pointSize: 9
-                    font.bold: true
-                }
-
-                Text {
-                    text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
-                    color: Theme.hudActionAccent
-                    font.pointSize: 10
-                    font.bold: true
-                }
-
-                Rectangle {
-                    visible: game_controls.humanMoreTimeAvailable
-                    color: Theme.hudActionPanel
-                    implicitWidth: 76
-                    implicitHeight: 26
-                    radius: 6
+                RowLayout {
+                    width: parent.width
+                    spacing: 10
 
                     Text {
-                        anchors.centerIn: parent
-                        text: qsTr("More")
-                        color: Theme.hudActionBright
+                        text: qsTr("Act")
+                        color: Theme.hudActionLabel
                         font.pointSize: 9
                         font.bold: true
                     }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (pageRoot)
-                                pageRoot.buttonClicked("MORE_TIME")
+
+                    Text {
+                        text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
+                        color: Theme.seatBorderAct
+                        font.pointSize: 10
+                        font.bold: true
+                    }
+
+                    Rectangle {
+                        visible: game_controls.humanMoreTimeAvailable
+                        color: Theme.hudActionPanel
+                        implicitWidth: 76
+                        implicitHeight: 26
+                        radius: 6
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: qsTr("More")
+                            color: Theme.hudActionBright
+                            font.pointSize: 9
+                            font.bold: true
                         }
-                        onPressed: parent.opacity = 0.85
-                        onReleased: parent.opacity = 1
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (pageRoot)
+                                    pageRoot.buttonClicked("MORE_TIME")
+                            }
+                            onPressed: parent.opacity = 0.85
+                            onReleased: parent.opacity = 1
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                        height: 1
                     }
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                    height: 1
+                ProgressBar {
+                    id: embeddedDecisionBar
+                    width: parent.width
+                    height: 6
+                    padding: 2
+                    from: 0
+                    to: 1
+                    value: Math.max(0, Math.min(1, game_controls.decisionSecondsLeft / 20))
+                    background: Rectangle {
+                        implicitHeight: 6
+                        implicitWidth: 200
+                        radius: 3
+                        color: Theme.progressTrack
+                    }
+                    contentItem: Item {
+                        implicitHeight: 6
+                        Rectangle {
+                            width: embeddedDecisionBar.visualPosition * parent.width
+                            height: parent.height
+                            radius: 3
+                            color: Theme.seatBorderAct
+                        }
+                    }
                 }
             }
 
@@ -299,33 +337,6 @@ Item {
                     anchors.top: parent.top
                     anchors.topMargin: 8
                     spacing: 6
-
-                    Row {
-                        width: parent.width
-                        spacing: 8
-
-                        Rectangle {
-                            color: Theme.panelBorder
-                            width: 72
-                            height: 26
-                            radius: 6
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Cancel")
-                                color: Theme.textSecondary
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: game_controls.raiseSizingExpanded = false
-                                onPressed: parent.opacity = 0.88
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                    }
 
                     Slider {
                         id: raiseSlider
@@ -561,33 +572,6 @@ Item {
                     anchors.topMargin: 8
                     spacing: 6
 
-                    Row {
-                        width: parent.width
-                        spacing: 8
-
-                        Rectangle {
-                            color: Theme.panelBorder
-                            width: 72
-                            height: 26
-                            radius: 6
-                            Text {
-                                anchors.centerIn: parent
-                                text: qsTr("Cancel")
-                                color: Theme.textSecondary
-                                font.pointSize: 10
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: game_controls.openRaiseSizingExpanded = false
-                                onPressed: parent.opacity = 0.88
-                                onReleased: parent.opacity = 1
-                            }
-                        }
-                    }
-
                     Slider {
                         id: openRaiseSlider
                         width: parent.width
@@ -719,7 +703,7 @@ Item {
                     radius: 6
                     Text {
                         anchors.centerIn: parent
-                        text: qsTr("Raise…")
+                        text: qsTr("Raise")
                         color: "white"
                         font.pointSize: 12
                         font.bold: true

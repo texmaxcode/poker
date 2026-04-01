@@ -61,7 +61,7 @@ ApplicationWindow {
 
     header: ToolBar {
         visible: stack.currentIndex > 0
-        implicitHeight: 40
+        implicitHeight: 32
 
         background: Rectangle {
             color: Theme.headerBg
@@ -77,21 +77,21 @@ ApplicationWindow {
             anchors.fill: parent
             anchors.leftMargin: 6
             anchors.rightMargin: 6
-            anchors.topMargin: 2
-            anchors.bottomMargin: 2
-            spacing: 10
+            anchors.topMargin: 1
+            anchors.bottomMargin: 1
+            spacing: 8
 
             ToolButton {
                 id: backBtn
                 text: qsTr("Lobby")
                 font.family: win.fontUiBold
                 font.bold: true
-                font.pointSize: 10
+                font.pointSize: 8
                 icon.source: "qrc:/assets/icons/home.svg"
-                icon.width: 20
-                icon.height: 20
+                icon.width: 16
+                icon.height: 16
                 display: AbstractButton.TextBesideIcon
-                padding: 6
+                padding: 4
                 flat: false
                 background: Rectangle {
                     anchors.fill: parent
@@ -120,10 +120,10 @@ ApplicationWindow {
                     }
                 }
                 contentItem: RowLayout {
-                    spacing: 6
+                    spacing: 4
                     Image {
-                        width: 20
-                        height: 20
+                        width: 16
+                        height: 16
                         source: backBtn.icon.source
                         opacity: backBtn.enabled ? 1 : 0.45
                     }
@@ -142,7 +142,7 @@ ApplicationWindow {
                 horizontalAlignment: Text.AlignHCenter
                 font.family: win.fontUiBold
                 font.bold: true
-                font.pointSize: 13
+                font.pointSize: 11
                 color: Theme.gold
                 text: {
                     switch (stack.currentIndex) {

@@ -16,7 +16,7 @@ Item {
     property string position: ""
     property bool isDealer: false
     property bool isActing: false
-    /// Seat 0: use engine countdown for determinate progress; bots use indeterminate bar.
+    /// Seat 0: human uses the same countdown source as the table HUD (`decisionSecondsLeft`).
     property bool isHumanSeat: false
     property int decisionSecondsLeft: 0
     readonly property int decisionTimeTotal: 20
@@ -42,16 +42,37 @@ Item {
     readonly property color borderDealer: Theme.gold
     readonly property color borderIdle: Theme.seatBorderIdle
 
+    readonly property color streetActionColor: {
+        var t = root.streetActionText.toLowerCase()
+        if (t.indexOf("all-in") >= 0 || t.indexOf("all in") >= 0)
+            return Theme.ember
+        if (t.indexOf("raise") >= 0)
+            return Theme.successGreen
+        if (t.indexOf("call") >= 0)
+            return Theme.focusGold
+        return Theme.gold
+    }
+
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
     implicitHeight: 282
     implicitWidth: 204
 
     opacity: (foldedDim && seatAtTable) ? 0.52 : 1.0
+    Behavior on opacity {
+        NumberAnimation { duration: 280; easing.type: Easing.InOutQuad }
+    }
 
     property bool secondHoleRevealed: false
 
     property int stackDisplay: root.stackChips
     onStackChipsChanged: stackDisplay = root.stackChips
+
+    Behavior on stackDisplay {
+        NumberAnimation {
+            duration: 320
+            easing.type: Easing.OutCubic
+        }
+    }
 
     Timer {
         id: holeStagger
@@ -71,12 +92,44 @@ Item {
     }
 
     Rectangle {
+        id: seatShadow
+        anchors.fill: parent
+        anchors.margins: -2
+        anchors.topMargin: 0
+        anchors.bottomMargin: -4
+        radius: 16
+        color: "#40000000"
+        z: -1
+    }
+
+    Rectangle {
+        id: actGlow
+        visible: root.isActing
+        anchors.fill: parent
+        anchors.margins: -4
+        radius: 18
+        color: "transparent"
+        border.width: 2
+        border.color: Qt.alpha(root.borderAct, actGlow._pulse)
+        property real _pulse: 0.35
+        SequentialAnimation on _pulse {
+            loops: Animation.Infinite
+            running: root.isActing
+            NumberAnimation { from: 0.35; to: 0.7; duration: 800; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 0.7; to: 0.35; duration: 800; easing.type: Easing.InOutSine }
+        }
+    }
+
+    Rectangle {
         anchors.fill: parent
         radius: 14
         color: Theme.seatPanel
         border.color: root.isActing ? root.borderAct : (root.isDealer ? root.borderDealer : root.borderIdle)
         border.width: root.isActing ? 3 : (root.isDealer ? 2 : 1)
         clip: false
+        Behavior on border.color {
+            ColorAnimation { duration: 200 }
+        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -94,16 +147,20 @@ Item {
                 Item {
                     Card {
                         id: c1
+                        width: 86
+                        height: 127
                         anchors.right: parent.horizontalCenter
-                        anchors.rightMargin: 3
+                        anchors.rightMargin: 2
                         anchors.verticalCenter: parent.verticalCenter
                         card: root.first_card
                         flipped: root.show_cards
                     }
 
                     Card {
+                        width: 86
+                        height: 127
                         anchors.left: parent.horizontalCenter
-                        anchors.leftMargin: 3
+                        anchors.leftMargin: 2
                         anchors.verticalCenter: parent.verticalCenter
                         card: root.second_card
                         flipped: root.show_cards && root.secondHoleRevealed
@@ -192,13 +249,12 @@ Item {
                     Text {
                         anchors.fill: parent
                         anchors.margins: 3
-                        text: root.isActing ? (root.name + "\n" + qsTr("Thinking…")) : root.name
+                        text: root.name
                         color: Theme.textPrimary
-                        font.pointSize: root.isActing ? 8 : 9
+                        font.pointSize: 9
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
-                        lineHeight: root.isActing ? 1.08 : 1.0
                         wrapMode: Text.WrapAnywhere
                         maximumLineCount: 2
                     }
@@ -230,24 +286,26 @@ Item {
             Item {
                 id: thinkBarSlot
                 Layout.fillWidth: true
-                Layout.preferredHeight: 8
-                Layout.maximumHeight: 8
-                Layout.minimumHeight: 8
+                Layout.preferredHeight: 12
+                Layout.maximumHeight: 12
+                Layout.minimumHeight: 12
 
                 ProgressBar {
                     id: thinkBar
                     anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 4
+                    anchors.rightMargin: 4
                     height: 6
                     enabled: root.isActing
                     opacity: root.isActing ? 1 : 0
-                    padding: 0
+                    padding: 2
                     from: 0
                     to: 1
-                    value: root.isHumanSeat
+                    value: root.isActing
                            ? Math.max(0, Math.min(1, root.decisionSecondsLeft / root.decisionTimeTotal))
                            : 0
-                    indeterminate: root.isActing && !root.isHumanSeat
 
                     background: Rectangle {
                         implicitHeight: 6

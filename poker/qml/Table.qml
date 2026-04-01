@@ -96,9 +96,13 @@ Item {
                 spacing: 10
 
                 Item {
-                    width: 118
+                    width: table_container.humanDeciding ? 118 : potBlindsHud.width - 24
                     height: 40
                     anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on width {
+                        NumberAnimation { duration: 180; easing.type: Easing.InOutQuad }
+                    }
 
                     Text {
                         id: potValueText
@@ -124,19 +128,21 @@ Item {
                     height: 36
                     anchors.verticalCenter: parent.verticalCenter
                     color: Theme.hudDivider
+                    visible: table_container.humanDeciding
                 }
 
                 Item {
-                    width: 72
+                    width: table_container.humanDeciding ? 72 : 0
                     height: 40
                     anchors.verticalCenter: parent.verticalCenter
+                    visible: table_container.humanDeciding
+                    clip: true
 
                     Text {
                         anchors.centerIn: parent
-                        width: parent.width
+                        width: 72
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
-                        visible: table_container.humanDeciding
                         text: {
                             if (table_container.humanBbPreflopOption)
                                 return qsTr("Check / raise")

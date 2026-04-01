@@ -371,7 +371,14 @@ void game::wait_for_human_need(int need_chips, Street st, int raise_increment_ch
     human_more_time_available_ = true;
     decision_seconds_left_ = kDecisionSeconds;
 
-    arm_decision_timers([this]() { submitFacingAction(1, 0); });
+    arm_decision_timers([this]() { submitFacingAction(0, 0); });
+    sync_ui();
+
+    if (human_sitting_out_)
+    {
+        submitFacingAction(0, 0);
+        return;
+    }
 
     human_decision_tick_.start();
     human_decision_deadline_.start();
@@ -430,9 +437,23 @@ bool game::wait_for_human_check_or_bet(Street st)
     human_more_time_available_ = true;
     decision_seconds_left_ = kDecisionSeconds;
 
-    arm_decision_timers([this]() { finish_human_check(true, 0); });
+    arm_decision_timers([this]() {
+        if (waiting_for_human_check_)
+            submitFoldFromCheck();
+    });
 
     acting_seat_ = kHumanSeat;
+    sync_ui();
+
+    if (human_sitting_out_)
+    {
+        submitFoldFromCheck();
+        acting_seat_ = -1;
+        decision_seconds_left_ = 0;
+        sync_ui();
+        return false;
+    }
+
     human_decision_tick_.start();
     human_decision_deadline_.start();
     sync_ui();
@@ -498,6 +519,17 @@ bool game::wait_for_human_bb_preflop()
     arm_decision_timers([this]() { finish_human_bb_preflop(false); });
 
     acting_seat_ = kHumanSeat;
+    sync_ui();
+
+    if (human_sitting_out_)
+    {
+        finish_human_bb_preflop(false);
+        acting_seat_ = -1;
+        decision_seconds_left_ = 0;
+        sync_ui();
+        return false;
+    }
+
     human_decision_tick_.start();
     human_decision_deadline_.start();
     sync_ui();
@@ -749,9 +781,13 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
         }
         if (!interactive_human_ || !m_root)
         {
+            const int stack_before = table[si].stack;
             pot += table[si].take_from_stack(need);
             street_contrib_[si] += need;
-            set_seat_street_action(seat, QStringLiteral("Call $%1").arg(need));
+            if (need >= stack_before)
+                set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(need));
+            else
+                set_seat_street_action(seat, QStringLiteral("Call $%1").arg(need));
             emit pot_changed();
             return true;
         }
@@ -784,6 +820,7 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
                 in_hand_[si] = false;
                 return true;
             }
+            const int stack_before_raise = table[si].stack;
             pot += table[si].take_from_stack(chips);
             street_contrib_[si] += chips;
             const int new_contrib = static_cast<int>(street_contrib_[si]);
@@ -793,8 +830,13 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
                 if (new_contrib > big_blind)
                     bb_preflop_option_open_ = false;
                 note_river_aggressor(st, seat);
-                set_seat_street_action(seat, QStringLiteral("Raise to $%1").arg(new_contrib));
+                if (chips >= stack_before_raise)
+                    set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(chips));
+                else
+                    set_seat_street_action(seat, QStringLiteral("Raise to $%1").arg(new_contrib));
             }
+            else if (chips >= stack_before_raise)
+                set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(chips));
             else
                 set_seat_street_action(seat, QStringLiteral("Call $%1").arg(chips));
             emit pot_changed();
@@ -807,9 +849,13 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             in_hand_[si] = false;
             return true;
         }
+        const int stack_before_call = table[si].stack;
         pot += table[si].take_from_stack(need);
         street_contrib_[si] += need;
-        set_seat_street_action(seat, QStringLiteral("Call $%1").arg(need));
+        if (need >= stack_before_call)
+            set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(need));
+        else
+            set_seat_street_action(seat, QStringLiteral("Call $%1").arg(need));
         emit pot_changed();
         return true;
     }
@@ -887,9 +933,13 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
         sync_ui();
         return true;
     }
+    const int stack_before_bot_call = table[si].stack;
     pot += table[si].take_from_stack(need);
     street_contrib_[si] += need;
-    set_seat_street_action(seat, QStringLiteral("Call $%1").arg(need));
+    if (need >= stack_before_bot_call)
+        set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(need));
+    else
+        set_seat_street_action(seat, QStringLiteral("Call $%1").arg(need));
     emit pot_changed();
     acting_seat_ = -1;
     sync_ui();

@@ -255,7 +255,8 @@ Page {
                 var hs = tableArea.humanSeat
                 if (!hs)
                     return 0
-                return Math.max(6, hs.y + hs.height - game_controls.height)
+                var ideal = hs.y + hs.height - game_controls.height
+                return Math.min(Math.max(6, ideal), tableArea.height - game_controls.height - 6)
             }
             pageRoot: game_screen
             statusText: game_screen.statusText
@@ -277,6 +278,16 @@ Page {
             pokerGame: game_screen.pokerGameAccess
             humanCanBuyBackIn: game_screen.humanCanBuyBackIn
             buyInChips: game_screen.buyInChips
+        }
+
+        MouseArea {
+            z: 19
+            anchors.fill: parent
+            visible: game_controls.sizingDialogOpen
+            onClicked: {
+                game_controls.raiseSizingExpanded = false
+                game_controls.openRaiseSizingExpanded = false
+            }
         }
     }
 }
