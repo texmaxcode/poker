@@ -1,112 +1,118 @@
- import QtQuick
- import QtQuick.Layouts
+import QtQuick
+import QtQuick.Layouts
 
- Item {
+/// Dark seat panel — sized for enlarged hole cards.
+Item {
     id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
+
     property string name: "Default"
     property string first_card: ""
     property string second_card: ""
-    property string color: "black"
+    property string color: "#2d3d5c"
     property string position: ""
+    property bool isDealer: false
+    property bool isActing: false
     property bool show_cards: false
+    property int stackChips: 100
+
+    // Two cards (100+gap) + margins + labels + stack
+    implicitHeight: 268
+    implicitWidth: 244
 
     Rectangle {
-        id: border
-        anchors.centerIn: parent
-        radius: 30
-        opacity: 0.5
-        width: 20
-        height: 20
-        color: root.color
-        PropertyAnimation on width { to: 300}
-        PropertyAnimation on height { to: 330}
-    }
+        anchors.fill: parent
+        radius: 14
+        color: "#252830"
+        border.color: root.isActing ? "#3d8fd9" : (root.isDealer ? "#e8b84a" : "#4a5262")
+        border.width: root.isActing ? 3 : (root.isDealer ? 2 : 1)
+        clip: true
 
-    Row {
-        anchors.top: border.top
-        anchors.horizontalCenter: border.horizontalCenter
-        anchors.topMargin: 20
-        spacing: 7
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 6
 
-        Card {
-            id: first_card
-            card: root.first_card
-            flipped: root.show_cards
-        }
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 8
 
-        Card {
-            id: second_card
-            card: root.second_card
-            flipped: root.show_cards
-        }
-    }
+                Card {
+                    card: root.first_card
+                    flipped: root.show_cards
+                }
 
-    Row {
-        anchors.bottom: stack_count.top
-        anchors.horizontalCenter: border.horizontalCenter
-        anchors.bottomMargin: 10
-        spacing: 7
-
-        Rectangle {
-            id: name
-            radius: 10
-            opacity: 0.8
-            color: "white"
-            width: 200
-            height: 40
-
-            Text {
-                anchors.centerIn: parent
-                text: root.name
-                color: "black"
-                font.pointSize: 18
-            }
-        }
-
-        Rectangle {
-            id: position
-            radius: 10
-            opacity: 0.8
-            color: "pink"
-            width: 65
-            height: 40
-
-            MouseArea {
-               anchors.fill: parent
-               onClicked: {root.show_cards = !root.show_cards;}
+                Card {
+                    card: root.second_card
+                    flipped: root.show_cards
+                }
             }
 
-            Text {
-                anchors.centerIn: parent
-                text: root.position
-                color: "black"
-                font.pointSize: 22
-                font.bold: true
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 6
+
+                Rectangle {
+                    radius: 8
+                    color: "#363c4a"
+                    implicitWidth: 156
+                    implicitHeight: root.isActing ? 48 : 34
+
+                    Text {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        text: root.isActing ? (root.name + "\n" + qsTr("Thinking…")) : root.name
+                        color: "#e8ecf4"
+                        font.pointSize: root.isActing ? 11 : 12
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        lineHeight: root.isActing ? 1.15 : 1.0
+                        wrapMode: Text.NoWrap
+                    }
+                }
+
+                Rectangle {
+                    radius: 8
+                    color: root.isDealer ? "#5c4a28" : "#4a3f35"
+                    border.width: root.isDealer ? 2 : 1
+                    border.color: root.isDealer ? "#f0c96a" : "#6b5d4a"
+                    implicitWidth: 48
+                    implicitHeight: 34
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: root.show_cards = !root.show_cards
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.position
+                        color: root.isDealer ? "#fff0c0" : "#ffd88a"
+                        font.pointSize: 14
+                        font.bold: true
+                    }
+                }
             }
-        }
-    }
 
-    Rectangle {
-        id: stack_count
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            bottom: border.bottom
-            bottomMargin: 15
-        }
-        radius: 10
-        color: "black"
-        width: 20
-        height: 20
-        PropertyAnimation on width { to: 270}
-        PropertyAnimation on height { to: 40}
+            Rectangle {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 212
+                Layout.preferredHeight: 36
+                radius: 8
+                color: root.color
+                border.width: 1
+                border.color: "#55ffffff"
 
-        Text {
-            anchors.centerIn: parent
-            text: "300 BB"
-            color: "white"
-            font.pointSize: 22
+                Text {
+                    anchors.centerIn: parent
+                    text: "$" + root.stackChips
+                    color: "#f0f4ff"
+                    font.pointSize: 15
+                    font.bold: true
+                }
+            }
         }
     }
 }

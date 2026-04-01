@@ -8,9 +8,15 @@ qt_add_library(poker
   cards.cpp
   player.cpp
   game.cpp
+  hand_eval.cpp
+  range_matrix.cpp
+  bot.cpp
+  equity_engine.cpp
+  poker_solver.cpp
 )
 
 target_link_libraries(poker PRIVATE
+  Qt${QT_VERSION_MAJOR}::Core
   Qt${QT_VERSION_MAJOR}::Qml
 )
 target_include_directories(poker INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,21 +1,51 @@
+#include <QCoreApplication>
 #include <QGuiApplication>
-#include <QQuickView>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QTimer>
+#include <QDebug>
 
 #include "game.hpp"
+#include "poker_solver.hpp"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    app.setApplicationName(QString("Texas Hold'em Solver"));
-
-    QQuickView view;
-    view.setSource(QUrl("qrc:/Game.qml"));
-    view.setResizeMode(QQuickView::SizeRootObjectToView);
+    app.setApplicationName(QStringLiteral("Texas Hold'em"));
 
     game poker_game;
-    poker_game.setRootObject(view.rootObject());
+    PokerSolver poker_solver;
 
-    view.show();
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty(QStringLiteral("pokerGame"), &poker_game);
+    engine.rootContext()->setContextProperty(QStringLiteral("pokerSolver"), &poker_solver);
+    const QUrl mainUrl(QStringLiteral("qrc:/Main.qml"));
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreated,
+        &app,
+        [mainUrl](QObject *obj, const QUrl &objUrl) {
+            if (!obj && mainUrl == objUrl)
+                QCoreApplication::exit(-1);
+        },
+        Qt::QueuedConnection);
+    engine.load(mainUrl);
+
+    if (engine.rootObjects().isEmpty())
+        return -1;
+
+    // After the scene tree is built, bind the Game Page (not the window) and start hand.
+    QTimer::singleShot(400, &app, [&engine, &poker_game]() {
+        QObject *const win = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().first();
+        QObject *const gp = win ? win->findChild<QObject *>(QStringLiteral("game_screen")) : nullptr;
+        if (!gp)
+        {
+            qWarning() << "game_screen not found; table UI will not update.";
+            return;
+        }
+        poker_game.setRootObject(gp);
+        poker_game.beginNewHand();
+    });
+
     return app.exec();
-
 }

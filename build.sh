@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# Silence Qt 6 commercial "qtframework" license prompts during moc/rcc and at runtime
+# when using a Qt installation that expects Qt License Service (set to 0 to enforce checks).
+export QTFRAMEWORK_BYPASS_LICENSE_CHECK="${QTFRAMEWORK_BYPASS_LICENSE_CHECK:-1}"
+
 MODE=${MODE:-Debug}
 C=${C:-/usr/bin/gcc}
 CXX=${CXX:-/usr/bin/g++}

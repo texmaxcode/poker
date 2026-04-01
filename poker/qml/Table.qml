@@ -1,52 +1,74 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
 
+/// Pot above board, centered on the full playfield (parent fills tableArea).
 Item {
     id: table_container
-    Layout.fillWidth: true
-    Layout.fillHeight: true
+    anchors.fill: parent
 
-    property int pot_amount: 333
-    property alias model: repeater.model
+    property int pot_amount: 0
+    property int smallBlind: 1
+    property int bigBlind: 3
+    property string board0: ""
+    property string board1: ""
+    property string board2: ""
+    property string board3: ""
+    property string board4: ""
 
-    Rectangle {
-        id: pot_display
-        width: 230
-        height: 60
-        color: "#00113a"
-        opacity: 0.5
-        anchors.bottom: cards.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottomMargin: 20
-        radius: 10
-    }
+    Column {
+        id: col
+        spacing: 6
+        anchors.centerIn: parent
 
-    Text {
-        id: pot_text
-        anchors.centerIn: pot_display
-        text: `$${table_container.pot_amount}`
-        color: "white"
-        font.bold: true
-        font.pointSize: 24
-    }
+        Rectangle {
+            id: pot_display
+            width: 200
+            height: 36
+            anchors.horizontalCenter: parent.horizontalCenter
+            radius: 10
+            color: "#cc00113a"
+            border.color: "#55ffffff"
+            border.width: 1
 
-    Item {
-        id: cards
-        width: 670
-        height: 190
-        anchors.bottom: table_container.bottom
-        anchors.horizontalCenter: table_container.horizontalCenter
-        anchors.bottomMargin: 20
+            Text {
+                anchors.centerIn: parent
+                text: "$" + table_container.pot_amount
+                color: "white"
+                font.bold: true
+                font.pointSize: 14
+            }
+        }
 
-        RowLayout {
-            Repeater {
-                id: repeater
-                model: table_container.model
-                delegate: Card {
-                    card: model.card
-                    flipped: model.flipped
-                }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: qsTr("Blinds %1 / %2").arg(table_container.smallBlind).arg(table_container.bigBlind)
+            color: "#c8d8f0"
+            font.pointSize: 11
+            font.bold: true
+        }
+
+        Row {
+            id: cardRow
+            spacing: 6
+            anchors.horizontalCenter: parent.horizontalCenter
+            TableBoardCard {
+                card: table_container.board0
+                staggerIndex: 0
+            }
+            TableBoardCard {
+                card: table_container.board1
+                staggerIndex: 1
+            }
+            TableBoardCard {
+                card: table_container.board2
+                staggerIndex: 2
+            }
+            TableBoardCard {
+                card: table_container.board3
+                staggerIndex: 3
+            }
+            TableBoardCard {
+                card: table_container.board4
+                staggerIndex: 4
             }
         }
     }

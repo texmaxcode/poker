@@ -8,13 +8,21 @@ void player::take_hold_cards(card f_card, card s_card)
 
 int player::pay(int amount)
 {
-    stack -= amount;
-    return amount;
+    const int a = (amount <= stack) ? amount : stack;
+    stack -= a;
+    return a;
 }
 
-int player::bet()
+int player::take_from_stack(int amount)
 {
-    constexpr int bet_amount = 3 * 3;
-    stack -= bet_amount;
-    return bet_amount;
+    if (amount <= 0)
+        return 0;
+    const int a = (amount <= stack) ? amount : stack;
+    stack -= a;
+    return a;
+}
+
+void player::reset_stack(int chips)
+{
+    stack = chips;
 }
