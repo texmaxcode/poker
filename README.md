@@ -1,45 +1,71 @@
-# Poker
+# Texas Hold’em Gym
 
-Texas Hold’em playground / solver UI built with **Qt 6 (QML/Quick)** and **C++**.
+<p align="center">
+  <img src="poker/qml/assets/images/logo.png" alt="Texas Hold'em Gym logo" width="420">
+</p>
 
-## Project layout
+**Texas Hold’em Gym** is a desktop playground for no-limit Texas Hold’em: a live table with bots, range/strategy setup, and preflop **solver + Monte Carlo equity** tools. The UI is **Qt 6 (QML / Qt Quick)**; game logic, evaluation, and tests are **C++17**.
 
-- `CMakeLists.txt`: top-level build (Qt6 required)
-- `build.sh`: convenience build script (expects a Qt install path)
-- `poker/`
-  - `main.cpp`: Qt/QML entrypoint
-  - `qml/`: QML UI (resources are embedded via `application.qrc`)
-  - `poker/`: core game / cards / player logic + unit tests
+## What’s in the box
 
-## Prerequisites
+- **Lobby & table** — configurable blinds and stacks; human vs bots; sit-out; timed decisions; pot and board display.
+- **Bots & ranges** — per-seat bot style and editable opening ranges (matrix / text).
+- **Solver & equity** — preflop solver and equity runs (work is off the UI thread where applicable).
+- **Core engine** — full hand from deal through showdown: blinds, streets, betting order, hand evaluation (best five of seven), simplified pot award (see [Rules & limitations](docs/rules-and-limitations.md)).
 
-- **CMake** 3.26+
-- A C++17 compiler
-- **Qt 6.10+** (Core, Gui, Qml, Quick)
-- **Boost** (for unit tests: `unit_test_framework`)
+## Repository layout
 
-On Linux you typically need the Qt *development* packages or a Qt SDK install and then set `CMAKE_PREFIX_PATH` (or `Qt6_DIR`) so CMake can find `Qt6Config.cmake`.
+| Path | Role |
+|------|------|
+| `CMakeLists.txt` | Top-level CMake: Qt 6, C++17, tests |
+| `build.sh` | Optional script: clean configure, **Ninja** build, `ctest`, then runs the app |
+| `poker/main.cpp` | `QGuiApplication`, QML engine, exposes `pokerGame` (`game`) and `pokerSolver` |
+| `poker/qml/` | QML UI; assets and `application.qrc` |
+| `poker/poker/` | Cards, player, `game`, hand eval, bots, ranges, equity, solver; **Boost.Test** smoke tests |
 
-## Build
+## Dependencies (summary)
 
-### CMake (recommended)
+You need a **toolchain**, **CMake**, **Qt 6.10+** (Quick stack), and **Boost** (headers + `unit_test_framework` for tests). See **[Building](docs/building.md)** for versions, optional tools, distro packages, environment variables, and troubleshooting.
+
+| Requirement | Notes |
+|-------------|--------|
+| CMake | **3.26+** (`cmake_minimum_required` in tree) |
+| C++ compiler | **C++17** (GCC, Clang, MSVC supported in principle) |
+| Qt 6 | **≥ 6.10** — components: **Core**, **Gui**, **Qml**, **Quick** (Quick pulls Gui/OpenGL stack on many platforms) |
+| Boost | **≥ 1.70** — **unit_test_framework** only (for `Test_poker`) |
+| Build backend | **Ninja** recommended (used by `build.sh`); Makefile generators work too |
+
+## Build (quick)
+
+Point CMake at your Qt install prefix (the directory that contains `lib/cmake/Qt6`):
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=/path/to/Qt/6.10.*/gcc_64
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=/path/to/Qt/6.10.0/gcc_64
 cmake --build build -j
+ctest --test-dir build --output-on-failure
 ```
 
-### Convenience script
+Convenience script (expects `QT_LIBS` or defaults in the script — edit for your machine):
 
 ```bash
-QT_LIBS=/path/to/Qt/6.10.*/gcc_64 ./build.sh
+QT_LIBS=/path/to/Qt/6.10.0/gcc_64 ./build.sh
 ```
 
-## Run
+**Run** (binary name and path):
 
 ```bash
 ./build/poker/Poker
 ```
+
+The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, or **solver & equity** screens. The live table page is `Game.qml` (`objectName: game_screen`), connected after load so the engine can sync state.
+
+## Documentation
+
+| Document | Contents |
+|----------|----------|
+| [docs/building.md](docs/building.md) | Full dependency list, configure variables, OS notes, Qt commercial / license service env, tests, card assets script |
+| [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, tests |
+| [docs/rules-and-limitations.md](docs/rules-and-limitations.md) | Alignment with standard Hold’em, heads-up blinds, intentional simplifications (e.g. no side pots) |
 
 ## Tests
 
@@ -47,10 +73,4 @@ QT_LIBS=/path/to/Qt/6.10.*/gcc_64 ./build.sh
 ctest --test-dir build --output-on-failure
 ```
 
-## Docs
-
-See `docs/`:
-
-- `docs/building.md`
-- `docs/architecture.md`
-
+The registered suite is the **Boost.Test** smoke binary `Test_poker` (`poker/poker/tests/test.cpp`).

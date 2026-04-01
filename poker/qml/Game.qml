@@ -14,7 +14,11 @@ Page {
     property var seatC1: ["", "", "", "", "", ""]
     property var seatC2: ["", "", "", "", "", ""]
     property var seatInHand: [true, true, true, true, true, true]
+    property var seatStreetChips: [0, 0, 0, 0, 0, 0]
     property int buttonSeat: 0
+    property int sbSeat: -1
+    property int bbSeat: -1
+    property int playerCount: 6
 
     property string board0: ""
     property string board1: ""
@@ -27,20 +31,52 @@ Page {
     property int decisionSecondsLeft: 0
     property bool humanMoreTimeAvailable: false
     property bool humanCanCheck: false
+    property bool humanBbPreflopOption: false
+    property bool humanCanRaiseFacing: false
+    property int facingNeedChips: 0
+    property int facingMinRaiseChips: 0
+    property int facingMaxChips: 0
+    property int facingPotAmount: 0
+    property int openBetMinChips: 0
+    property int openBetMaxChips: 0
+    property int humanStackChips: 0
+    property bool humanBbCanRaise: false
+    property var pokerGameAccess: null
+    property string streetPhase: qsTr("Preflop")
+    property bool humanSittingOut: false
 
     signal buttonClicked(string button)
 
-    readonly property real screenRef: Math.max(320, Math.min(width, height))
-
     function seatRole(seat) {
-        var n = 6
-        var r = (seat - game_screen.buttonSeat + n * 10) % n
-        var names = ["BTN", "SB", "BB", "UTG", "HJ", "CO"]
-        return names[r]
+        var n = game_screen.playerCount > 0 ? game_screen.playerCount : 6
+        var btn = game_screen.buttonSeat
+        var sb = game_screen.sbSeat
+        var bb = game_screen.bbSeat
+        if (sb >= 0 && seat === sb)
+            return "SB"
+        if (bb >= 0 && seat === bb)
+            return "BB"
+        if (seat === btn)
+            return "BTN"
+        if (bb < 0)
+            return "—"
+        var order = []
+        for (var k = 1; k <= n; k++) {
+            var s = (bb + k) % n
+            if (s !== btn && s !== sb && s !== bb)
+                order.push(s)
+        }
+        if (order.length > 0 && seat === order[0])
+            return "UTG"
+        if (order.length > 1 && seat === order[1])
+            return "HJ"
+        if (order.length > 2 && seat === order[2])
+            return "CO"
+        return "—"
     }
 
     background: Rectangle {
-        color: "transparent"
+        color: "#08080a"
     }
 
     // Playfield uses full window width; stops above the bottom HUD so nothing hides under it.
@@ -58,27 +94,23 @@ Page {
 
         readonly property point feltCenter: Qt.point(width / 2, height / 2)
 
-        // Seats sit outside the wood rail (dark carpet), not on the green felt.
-        readonly property real seatHalfW: 124
-        readonly property real seatHalfH: 136
-        readonly property real seatGap: 14
-        // Layout ellipse (seat orbit): keeps players roughly where they are now.
+        readonly property real seatHalfW: 112
+        readonly property real seatHalfH: 124
+        readonly property real seatGap: 12
         readonly property real maxLayoutOvalW: Math.max(260, width - 4 * seatHalfW - 2 * seatGap - 28)
         readonly property real maxLayoutOvalH: Math.max(200, height - 4 * seatHalfH - 2 * seatGap - 40)
         readonly property real layoutOvalW: Math.min(Math.min(width * 0.99, height * 1.36), maxLayoutOvalW)
         readonly property real layoutOvalH: Math.min(Math.min(height * 0.76, width * 0.48), maxLayoutOvalH)
-        // Drawn felt extends well past layout ellipse (seats unchanged).
         readonly property real feltBleedW: Math.max(300, width * 0.16)
         readonly property real feltBleedH: Math.max(240, height * 0.18)
         readonly property real feltOvalW: Math.min(layoutOvalW + feltBleedW, width - 8)
         readonly property real feltOvalH: Math.min(layoutOvalH + feltBleedH, height - 8)
-        // Outside rail; cap so diagonal seats (cos 30°) stay inside the window.
         readonly property real orbitRxRaw: layoutOvalW * 0.5 + seatGap + seatHalfW
         readonly property real orbitRyRaw: layoutOvalH * 0.5 + seatGap + seatHalfH
         readonly property real orbitRx: Math.min(orbitRxRaw, (width * 0.5 - seatHalfW - 12) / 0.866)
         readonly property real orbitRy: Math.min(orbitRyRaw, (height * 0.5 - seatHalfH - 12) / 0.866)
 
-        PokerTableBackground {
+        TableFelt {
             z: 0
             anchors.fill: parent
             feltOvalW: tableArea.feltOvalW
@@ -97,6 +129,7 @@ Page {
             board2: game_screen.board2
             board3: game_screen.board3
             board4: game_screen.board4
+            streetPhase: game_screen.streetPhase
         }
 
         Repeater {
@@ -105,10 +138,9 @@ Page {
             delegate: Item {
                 id: seatWrap
                 required property int index
-                width: 248
-                height: 272
+                width: 224
+                height: 282
                 readonly property real angle: Math.PI / 2 - index * 2 * Math.PI / 6
-                // Side seats (not top/bottom): nudge outward toward window corners.
                 readonly property real cornerBoost: (index === 1 || index === 2 || index === 4 || index === 5) ? 1.09 : 1.0
                 readonly property real scx: tableArea.feltCenter.x + tableArea.orbitRx * Math.cos(angle) * cornerBoost
                 readonly property real scy: tableArea.feltCenter.y + tableArea.orbitRy * Math.sin(angle) * cornerBoost
@@ -120,12 +152,18 @@ Page {
                     name: index === 0 ? qsTr("You (seat 1)") : qsTr("Bot %1").arg(index + 1)
                     position: game_screen.seatRole(index)
                     isDealer: index === game_screen.buttonSeat
-                    first_card: game_screen.seatC1[index] !== undefined ? game_screen.seatC1[index] : ""
-                    second_card: game_screen.seatC2[index] !== undefined ? game_screen.seatC2[index] : ""
+                    inHand: game_screen.seatInHand[index] !== false
+                    first_card: (game_screen.seatInHand[index] !== false && game_screen.seatC1[index] !== undefined)
+                                ? game_screen.seatC1[index] : ""
+                    second_card: (game_screen.seatInHand[index] !== false && game_screen.seatC2[index] !== undefined)
+                                 ? game_screen.seatC2[index] : ""
                     stackChips: game_screen.seatStacks[index] !== undefined ? game_screen.seatStacks[index] : 100
-                    show_cards: index === 0
+                    streetBetChips: game_screen.seatStreetChips[index] !== undefined ? game_screen.seatStreetChips[index] : 0
+                    show_cards: (game_screen.seatInHand[index] !== false)
+                                  && (game_screen.showdown || index === 0)
                     isActing: game_screen.actingSeat === index
-                    opacity: (game_screen.seatInHand[index] !== false) ? 1.0 : 0.42
+                    foldedDim: (game_screen.seatInHand[index] === false)
+                    humanWatching: index === 0 && game_screen.humanSittingOut
                 }
             }
         }
@@ -142,5 +180,17 @@ Page {
         decisionSecondsLeft: game_screen.decisionSecondsLeft
         humanMoreTimeAvailable: game_screen.humanMoreTimeAvailable
         humanCanCheck: game_screen.humanCanCheck
+        humanBbPreflopOption: game_screen.humanBbPreflopOption
+        humanCanRaiseFacing: game_screen.humanCanRaiseFacing
+        facingNeedChips: game_screen.facingNeedChips
+        facingMinRaiseChips: game_screen.facingMinRaiseChips
+        facingMaxChips: game_screen.facingMaxChips
+        facingPotAmount: game_screen.facingPotAmount
+        openBetMinChips: game_screen.openBetMinChips
+        openBetMaxChips: game_screen.openBetMaxChips
+        humanStackChips: game_screen.humanStackChips
+        humanBbCanRaise: game_screen.humanBbCanRaise
+        humanSitOut: game_screen.humanSittingOut
+        pokerGame: game_screen.pokerGameAccess
     }
 }

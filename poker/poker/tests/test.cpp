@@ -12,10 +12,10 @@ BOOST_AUTO_TEST_SUITE(SMOKE_TEST_SUITE)
 
 BOOST_AUTO_TEST_CASE(can_create_jack_of_diamonds)
 {
-  card jack_of_dimonds(Rank::JACK, Suite::DIAMONDS);
+  card jack_of_diamonds(Rank::JACK, Suite::DIAMONDS);
 
-  BOOST_CHECK(jack_of_dimonds.rank == Rank::JACK);
-  BOOST_CHECK(jack_of_dimonds.suite == Suite::DIAMONDS);
+  BOOST_CHECK(jack_of_diamonds.rank == Rank::JACK);
+  BOOST_CHECK(jack_of_diamonds.suite == Suite::DIAMONDS);
 }
 
 BOOST_AUTO_TEST_CASE(can_create_ace_of_hearts)
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(can_create_ace_of_hearts)
   BOOST_CHECK(ace_of_hearts.suite == Suite::HEARTS);
 }
 
-BOOST_AUTO_TEST_CASE(compare_ace_of_hears_with_jack_of_diamonds)
+BOOST_AUTO_TEST_CASE(compare_ace_of_hearts_with_jack_of_diamonds)
 {
   card ace_of_hearts{Rank::ACE, Suite::HEARTS};
   card jack_of_diamonds{Rank::JACK, Suite::DIAMONDS};

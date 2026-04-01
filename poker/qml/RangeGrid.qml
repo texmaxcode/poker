@@ -6,6 +6,7 @@ import QtQuick.Layouts
 Item {
     id: root
     property int seatIndex: 0
+    property bool readOnly: false
     property var weights: []
     property var rankLabels: ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"]
 
@@ -18,6 +19,8 @@ Item {
     }
 
     function cycleWeight(row, col) {
+        if (root.readOnly)
+            return
         if (typeof pokerGame === "undefined")
             return
         const idx = row * 13 + col
@@ -40,17 +43,17 @@ Item {
         RowLayout {
             spacing: 2
             Item {
-                Layout.preferredWidth: 26
-                Layout.preferredHeight: 22
+                Layout.preferredWidth: 22
+                Layout.preferredHeight: 18
             }
             Repeater {
                 model: 13
                 Label {
                     text: rankLabels[index]
                     horizontalAlignment: Text.AlignHCenter
-                    Layout.preferredWidth: 28
+                    Layout.preferredWidth: 24
                     font.bold: true
-                    font.pixelSize: 11
+                    font.pixelSize: 10
                 }
             }
         }
@@ -63,15 +66,15 @@ Item {
                 spacing: 2
                 Label {
                     text: rankLabels[rowItem.row]
-                    Layout.preferredWidth: 24
+                    Layout.preferredWidth: 20
                     font.bold: true
-                    font.pixelSize: 11
+                    font.pixelSize: 10
                 }
                 Repeater {
                     model: 13
                     Rectangle {
-                        Layout.preferredWidth: 28
-                        Layout.preferredHeight: 24
+                        Layout.preferredWidth: 24
+                        Layout.preferredHeight: 20
                         property int col: index
                         color: root.cellColor((weights.length > (rowItem.row * 13 + col)) ? weights[rowItem.row * 13 + col] : 0)
                         border.color: "#333"
@@ -79,6 +82,8 @@ Item {
 
                         MouseArea {
                             anchors.fill: parent
+                            enabled: !root.readOnly
+                            cursorShape: root.readOnly ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: root.cycleWeight(rowItem.row, col)
                         }
                     }

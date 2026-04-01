@@ -1,65 +1,31 @@
 import QtQuick
 
-/// Dark room, suit texture, racetrack oval. Size comes from Game.qml so seats sit outside the rail.
+/// Vector-only table playfield (no bitmaps): dark room + oval rail + felt.
 Item {
     id: root
     anchors.fill: parent
 
-    /// Synced from Game.qml (caps oval so seats fit on the carpet).
     property real feltOvalW: Math.min(parent.width - 8, parent.height * 1.42)
     property real feltOvalH: Math.min(parent.height - 8, parent.width * 0.58)
 
     Rectangle {
         anchors.fill: parent
-        color: "#0a1f16"
         gradient: Gradient {
             GradientStop {
                 position: 0
-                color: "#0d281c"
+                color: "#0c0808"
             }
             GradientStop {
-                position: 0.45
-                color: "#081812"
+                position: 0.5
+                color: "#060608"
             }
             GradientStop {
                 position: 1
-                color: "#050f0c"
+                color: "#08040a"
             }
         }
     }
 
-    // Light suit texture (sparse grid — cheap vs full window tiles)
-    Grid {
-        id: suitGrid
-        anchors.fill: parent
-        columns: 18
-        rows: 12
-        opacity: 0.055
-
-        Repeater {
-            model: 216
-            delegate: Text {
-                width: suitGrid.width / 18
-                height: suitGrid.height / 12
-                text: {
-                    var s = index % 4
-                    if (s === 0)
-                        return "♠"
-                    if (s === 1)
-                        return "♥"
-                    if (s === 2)
-                        return "♦"
-                    return "♣"
-                }
-                color: "#7dffb8"
-                font.pixelSize: Math.max(10, Math.min(16, root.width / 64))
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
-    }
-
-    // Soft shadow under the table (drawn first, below oval)
     Item {
         id: shadowHost
         anchors.centerIn: parent
@@ -78,7 +44,6 @@ Item {
         }
     }
 
-    // Stadium oval — rail + felt (size = feltOvalW/H from Game)
     Item {
         id: ovalHost
         anchors.centerIn: parent
@@ -87,16 +52,14 @@ Item {
         property real cr: height / 2
         z: 0
 
-        // Outer bumper
         Rectangle {
             anchors.fill: parent
             radius: parent.cr
-            color: "#15151a"
+            color: "#121018"
             border.width: 2
-            border.color: "#050508"
+            border.color: "#1a1018"
         }
 
-        // Wood rail
         Rectangle {
             anchors.fill: parent
             anchors.margins: 7
@@ -104,22 +67,21 @@ Item {
             gradient: Gradient {
                 GradientStop {
                     position: 0
-                    color: "#4a3020"
+                    color: "#3d2820"
                 }
                 GradientStop {
                     position: 0.5
-                    color: "#3d2818"
+                    color: "#2a1810"
                 }
                 GradientStop {
                     position: 1
-                    color: "#2a1a12"
+                    color: "#1a1008"
                 }
             }
             border.width: 2
-            border.color: "#d4a060"
+            border.color: "#8a5030"
         }
 
-        // Felt
         Rectangle {
             anchors.fill: parent
             anchors.margins: 16
@@ -127,39 +89,37 @@ Item {
             gradient: Gradient {
                 GradientStop {
                     position: 0
-                    color: "#25965e"
+                    color: "#1a4a32"
                 }
                 GradientStop {
-                    position: 0.42
-                    color: "#1d7d4e"
+                    position: 0.45
+                    color: "#123828"
                 }
                 GradientStop {
                     position: 1
-                    color: "#124832"
+                    color: "#0a2018"
                 }
             }
             border.width: 1
-            border.color: "#0a3220"
+            border.color: "#0a2818"
         }
 
-        // Inner betting ring (subtle)
         Rectangle {
             anchors.fill: parent
             anchors.margins: 22
             radius: Math.max(4, parent.cr - 22)
             color: "transparent"
             border.width: 1
-            border.color: "#ffffff18"
+            border.color: "#ffffff14"
         }
 
-        // Felt sheen
         Rectangle {
             anchors.fill: parent
             anchors.margins: 28
             radius: Math.max(4, parent.cr - 28)
             color: "transparent"
             border.width: 1
-            border.color: "#ffffff08"
+            border.color: "#ffffff06"
         }
     }
 }

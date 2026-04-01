@@ -1,75 +1,88 @@
 <RCC>
     <qresource prefix="/">
+        <!-- QML -->
         <file>Main.qml</file>
+        <file>Lobby.qml</file>
         <file>SetupScreen.qml</file>
         <file>SolverScreen.qml</file>
         <file>RangeGrid.qml</file>
         <file>Card.qml</file>
         <file>Game.qml</file>
-        <file>PokerTableBackground.qml</file>
+        <file>TableFelt.qml</file>
         <file>Player.qml</file>
         <file>Table.qml</file>
         <file>TableBoardCard.qml</file>
         <file>GameControls.qml</file>
 
-        <file>assets/images/poker_table.jpg</file>
-        <file>assets/cards_svgs/blue2.svg</file>
-        <file>assets/cards_svgs/red2.svg</file>
+        <!-- Typography (SIL Open Font License — Oswald, Google Fonts) -->
+        <file>assets/fonts/Oswald-Regular.ttf</file>
+        <file>assets/fonts/Oswald-Bold.ttf</file>
 
-        <file>assets/cards_svgs/clubs_ace.svg</file>
-        <file>assets/cards_svgs/clubs_king.svg</file>
-        <file>assets/cards_svgs/clubs_queen.svg</file>
-        <file>assets/cards_svgs/clubs_jack.svg</file>
-        <file>assets/cards_svgs/clubs_10.svg</file>
-        <file>assets/cards_svgs/clubs_9.svg</file>
-        <file>assets/cards_svgs/clubs_8.svg</file>
-        <file>assets/cards_svgs/clubs_7.svg</file>
-        <file>assets/cards_svgs/clubs_6.svg</file>
-        <file>assets/cards_svgs/clubs_5.svg</file>
-        <file>assets/cards_svgs/clubs_4.svg</file>
-        <file>assets/cards_svgs/clubs_3.svg</file>
-        <file>assets/cards_svgs/clubs_2.svg</file>
+        <!-- Icons -->
+        <file>assets/icons/home.svg</file>
+        <file>assets/icons/table.svg</file>
+        <file>assets/icons/bots.svg</file>
+        <file>assets/icons/solver.svg</file>
 
-        <file>assets/cards_svgs/spades_ace.svg</file>
-        <file>assets/cards_svgs/spades_king.svg</file>
-        <file>assets/cards_svgs/spades_queen.svg</file>
-        <file>assets/cards_svgs/spades_jack.svg</file>
-        <file>assets/cards_svgs/spades_10.svg</file>
-        <file>assets/cards_svgs/spades_9.svg</file>
-        <file>assets/cards_svgs/spades_8.svg</file>
-        <file>assets/cards_svgs/spades_7.svg</file>
-        <file>assets/cards_svgs/spades_6.svg</file>
-        <file>assets/cards_svgs/spades_5.svg</file>
-        <file>assets/cards_svgs/spades_4.svg</file>
-        <file>assets/cards_svgs/spades_3.svg</file>
-        <file>assets/cards_svgs/spades_2.svg</file>
+        <!-- Brand -->
+        <file>assets/images/logo.png</file>
 
-        <file>assets/cards_svgs/diamonds_ace.svg</file>
-        <file>assets/cards_svgs/diamonds_king.svg</file>
-        <file>assets/cards_svgs/diamonds_queen.svg</file>
-        <file>assets/cards_svgs/diamonds_jack.svg</file>
-        <file>assets/cards_svgs/diamonds_10.svg</file>
-        <file>assets/cards_svgs/diamonds_9.svg</file>
-        <file>assets/cards_svgs/diamonds_8.svg</file>
-        <file>assets/cards_svgs/diamonds_7.svg</file>
-        <file>assets/cards_svgs/diamonds_6.svg</file>
-        <file>assets/cards_svgs/diamonds_5.svg</file>
-        <file>assets/cards_svgs/diamonds_4.svg</file>
-        <file>assets/cards_svgs/diamonds_3.svg</file>
-        <file>assets/cards_svgs/diamonds_2.svg</file>
+        <!-- Playing cards (SVG) -->
+        <file>assets/cards/blue2.svg</file>
+        <file>assets/cards/clubs_ace.svg</file>
+        <file>assets/cards/clubs_king.svg</file>
+        <file>assets/cards/clubs_queen.svg</file>
+        <file>assets/cards/clubs_jack.svg</file>
+        <file>assets/cards/clubs_10.svg</file>
+        <file>assets/cards/clubs_9.svg</file>
+        <file>assets/cards/clubs_8.svg</file>
+        <file>assets/cards/clubs_7.svg</file>
+        <file>assets/cards/clubs_6.svg</file>
+        <file>assets/cards/clubs_5.svg</file>
+        <file>assets/cards/clubs_4.svg</file>
+        <file>assets/cards/clubs_3.svg</file>
+        <file>assets/cards/clubs_2.svg</file>
 
-        <file>assets/cards_svgs/hearts_ace.svg</file>
-        <file>assets/cards_svgs/hearts_king.svg</file>
-        <file>assets/cards_svgs/hearts_queen.svg</file>
-        <file>assets/cards_svgs/hearts_jack.svg</file>
-        <file>assets/cards_svgs/hearts_10.svg</file>
-        <file>assets/cards_svgs/hearts_9.svg</file>
-        <file>assets/cards_svgs/hearts_8.svg</file>
-        <file>assets/cards_svgs/hearts_7.svg</file>
-        <file>assets/cards_svgs/hearts_6.svg</file>
-        <file>assets/cards_svgs/hearts_5.svg</file>
-        <file>assets/cards_svgs/hearts_4.svg</file>
-        <file>assets/cards_svgs/hearts_3.svg</file>
-        <file>assets/cards_svgs/hearts_2.svg</file>
+        <file>assets/cards/spades_ace.svg</file>
+        <file>assets/cards/spades_king.svg</file>
+        <file>assets/cards/spades_queen.svg</file>
+        <file>assets/cards/spades_jack.svg</file>
+        <file>assets/cards/spades_10.svg</file>
+        <file>assets/cards/spades_9.svg</file>
+        <file>assets/cards/spades_8.svg</file>
+        <file>assets/cards/spades_7.svg</file>
+        <file>assets/cards/spades_6.svg</file>
+        <file>assets/cards/spades_5.svg</file>
+        <file>assets/cards/spades_4.svg</file>
+        <file>assets/cards/spades_3.svg</file>
+        <file>assets/cards/spades_2.svg</file>
+
+        <file>assets/cards/diamonds_ace.svg</file>
+        <file>assets/cards/diamonds_king.svg</file>
+        <file>assets/cards/diamonds_queen.svg</file>
+        <file>assets/cards/diamonds_jack.svg</file>
+        <file>assets/cards/diamonds_10.svg</file>
+        <file>assets/cards/diamonds_9.svg</file>
+        <file>assets/cards/diamonds_8.svg</file>
+        <file>assets/cards/diamonds_7.svg</file>
+        <file>assets/cards/diamonds_6.svg</file>
+        <file>assets/cards/diamonds_5.svg</file>
+        <file>assets/cards/diamonds_4.svg</file>
+        <file>assets/cards/diamonds_3.svg</file>
+        <file>assets/cards/diamonds_2.svg</file>
+
+        <file>assets/cards/hearts_ace.svg</file>
+        <file>assets/cards/hearts_king.svg</file>
+        <file>assets/cards/hearts_queen.svg</file>
+        <file>assets/cards/hearts_jack.svg</file>
+        <file>assets/cards/hearts_10.svg</file>
+        <file>assets/cards/hearts_9.svg</file>
+        <file>assets/cards/hearts_8.svg</file>
+        <file>assets/cards/hearts_7.svg</file>
+        <file>assets/cards/hearts_6.svg</file>
+        <file>assets/cards/hearts_5.svg</file>
+        <file>assets/cards/hearts_4.svg</file>
+        <file>assets/cards/hearts_3.svg</file>
+        <file>assets/cards/hearts_2.svg</file>
     </qresource>
 </RCC>

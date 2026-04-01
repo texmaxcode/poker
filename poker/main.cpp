@@ -3,7 +3,6 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QTimer>
-#include <QDebug>
 
 #include "game.hpp"
 #include "poker_solver.hpp"
@@ -11,7 +10,7 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    app.setApplicationName(QStringLiteral("Texas Hold'em"));
+    app.setApplicationName(QStringLiteral("Texas Hold'em Gym"));
 
     game poker_game;
     PokerSolver poker_solver;

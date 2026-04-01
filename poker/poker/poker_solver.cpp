@@ -3,6 +3,9 @@
 #include "equity_engine.hpp"
 #include "range_matrix.hpp"
 
+#include <QMetaObject>
+#include <QThreadPool>
+
 #include <cmath>
 #include <random>
 
@@ -26,19 +29,15 @@ bool cards_disjoint(const card &a, const card &b, const std::vector<card> &extra
     return true;
 }
 
-} // namespace
-
-PokerSolver::PokerSolver(QObject *parent) : QObject(parent) {}
-
-QVariantMap PokerSolver::computeEquity(const QString &hero1,
-                                       const QString &hero2,
-                                       const QString &boardSpaceSeparated,
-                                       const QString &villainRangeText,
-                                       const QString &villainExact1,
-                                       const QString &villainExact2,
-                                       int iterations,
-                                       double potBeforeCall,
-                                       double callAmount) const
+QVariantMap compute_equity_impl(const QString &hero1,
+                                const QString &hero2,
+                                const QString &boardSpaceSeparated,
+                                const QString &villainRangeText,
+                                const QString &villainExact1,
+                                const QString &villainExact2,
+                                int iterations,
+                                double potBeforeCall,
+                                double callAmount)
 {
     QVariantMap out;
     card h1, h2;
@@ -108,7 +107,8 @@ QVariantMap PokerSolver::computeEquity(const QString &hero1,
             {
                 if (all[i] == all[j])
                 {
-                    out.insert(QStringLiteral("error"), QStringLiteral("Overlapping cards between hero, villain, and board"));
+                    out.insert(QStringLiteral("error"),
+                               QStringLiteral("Overlapping cards between hero, villain, and board"));
                     return out;
                 }
             }
@@ -186,4 +186,68 @@ QVariantMap PokerSolver::computeEquity(const QString &hero1,
 
     out.insert(QStringLiteral("detailText"), detail);
     return out;
+}
+
+} // namespace
+
+PokerSolver::PokerSolver(QObject *parent) : QObject(parent) {}
+
+QVariantMap PokerSolver::computeEquity(const QString &hero1,
+                                       const QString &hero2,
+                                       const QString &boardSpaceSeparated,
+                                       const QString &villainRangeText,
+                                       const QString &villainExact1,
+                                       const QString &villainExact2,
+                                       int iterations,
+                                       double potBeforeCall,
+                                       double callAmount) const
+{
+    return compute_equity_impl(hero1, hero2, boardSpaceSeparated, villainRangeText, villainExact1, villainExact2,
+                               iterations, potBeforeCall, callAmount);
+}
+
+void PokerSolver::computeEquityAsync(const QString &hero1,
+                                     const QString &hero2,
+                                     const QString &boardSpaceSeparated,
+                                     const QString &villainRangeText,
+                                     const QString &villainExact1,
+                                     const QString &villainExact2,
+                                     int iterations,
+                                     double potBeforeCall,
+                                     double callAmount)
+{
+    if (async_busy_.exchange(true))
+    {
+        QVariantMap busy;
+        busy.insert(QStringLiteral("error"),
+                    QStringLiteral("A simulation is already running. Wait for it to finish."));
+        QMetaObject::invokeMethod(
+            this,
+            [this, busy]() {
+                emit equityComputationFinished(busy);
+            },
+            Qt::QueuedConnection);
+        return;
+    }
+
+    const QString h1 = hero1;
+    const QString h2 = hero2;
+    const QString brd = boardSpaceSeparated;
+    const QString vr = villainRangeText;
+    const QString ve1 = villainExact1;
+    const QString ve2 = villainExact2;
+    const int iters = iterations;
+    const double pot = potBeforeCall;
+    const double call = callAmount;
+
+    QThreadPool::globalInstance()->start([=]() {
+        QVariantMap r = compute_equity_impl(h1, h2, brd, vr, ve1, ve2, iters, pot, call);
+        QMetaObject::invokeMethod(
+            this,
+            [this, r]() {
+                emit equityComputationFinished(r);
+                async_busy_.store(false);
+            },
+            Qt::QueuedConnection);
+    });
 }

@@ -11,13 +11,13 @@ Flipable {
     property bool tableCard: false
 
     front: Image {
-        source: "qrc:/assets/cards_svgs/blue2.svg"
+        source: "qrc:/assets/cards/blue2.svg"
         anchors.fill: parent
     }
     back: Image {
         source: (card.length === 0)
-                ? "qrc:/assets/cards_svgs/blue2.svg"
-                : ("qrc:/assets/cards_svgs/" + card)
+                ? "qrc:/assets/cards/blue2.svg"
+                : ("qrc:/assets/cards/" + card)
         anchors.fill: parent
     }
 
