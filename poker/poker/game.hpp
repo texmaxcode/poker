@@ -107,11 +107,15 @@ public:
     /// When false (e.g. unit tests), seat 0 auto-acts without UI/timer.
     Q_INVOKABLE void setInteractiveHuman(bool enabled);
     Q_INVOKABLE bool interactiveHuman() const { return interactive_human_; }
+    /// When false, a completed hand does not automatically start the next (tests).
+    Q_INVOKABLE void setAutoHandLoop(bool enabled);
+    Q_INVOKABLE bool autoHandLoop() const { return auto_hand_loop_; }
 
 signals:
     void pot_changed();
     void ui_state_changed();
     void humanDecisionFinished();
+    void humanCheckFinished();
 
 public slots:
     void buttonClicked(QString button);
@@ -125,13 +129,21 @@ private:
     int acting_seat_ = -1;
     int decision_seconds_left_ = 0;
     bool waiting_for_human_ = false;
+    bool waiting_for_human_check_ = false;
     bool human_wanted_call_ = false;
+    bool human_opened_bet_from_check_ = false;
+    bool human_more_time_available_ = false;
+    bool auto_hand_loop_ = true;
     int pending_human_need_ = 0;
     QTimer human_decision_tick_;
     QTimer human_decision_deadline_;
 
     bool wait_for_human_need(int need_chips, Street st);
+    bool wait_for_human_check_or_bet(Street st);
     void finish_human_decision(bool call_not_fold);
+    void finish_human_check(bool open_bet);
+    void requestMoreTime();
+    void schedule_next_hand_if_idle();
     void clear_for_new_hand();
     void do_payouts();
     void switch_button();

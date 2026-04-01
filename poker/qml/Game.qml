@@ -25,6 +25,8 @@ Page {
     property bool showdown: false
     property int actingSeat: -1
     property int decisionSecondsLeft: 0
+    property bool humanMoreTimeAvailable: false
+    property bool humanCanCheck: false
 
     signal buttonClicked(string button)
 
@@ -121,7 +123,7 @@ Page {
                     first_card: game_screen.seatC1[index] !== undefined ? game_screen.seatC1[index] : ""
                     second_card: game_screen.seatC2[index] !== undefined ? game_screen.seatC2[index] : ""
                     stackChips: game_screen.seatStacks[index] !== undefined ? game_screen.seatStacks[index] : 100
-                    show_cards: game_screen.showdown
+                    show_cards: index === 0
                     isActing: game_screen.actingSeat === index
                     opacity: (game_screen.seatInHand[index] !== false) ? 1.0 : 0.42
                 }
@@ -138,5 +140,7 @@ Page {
         pageRoot: game_screen
         statusText: game_screen.statusText
         decisionSecondsLeft: game_screen.decisionSecondsLeft
+        humanMoreTimeAvailable: game_screen.humanMoreTimeAvailable
+        humanCanCheck: game_screen.humanCanCheck
     }
 }

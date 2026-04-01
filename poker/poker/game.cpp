@@ -10,6 +10,7 @@
 #include <QEventLoop>
 #include <QString>
 #include <QThread>
+#include <QTimer>
 
 namespace {
 
@@ -109,6 +110,10 @@ bool bot_wants_open_bet_postflop(BotStrategy s, double hand_strength01, std::mt1
         p *= 0.4;
     return u(rng) < std::clamp(p, 0.0, 0.65);
 }
+
+constexpr int kDecisionSeconds = 20;
+constexpr int kMoreTimeExtraSeconds = 20;
+constexpr int kMaxDecisionSecondsCap = 120;
 
 bool bot_bb_check_or_raise(BotStrategy s, double range_weight, std::mt19937 &rng)
 {
@@ -317,14 +322,15 @@ bool game::wait_for_human_need(int need_chips, Street st)
     pending_human_need_ = need_chips;
     waiting_for_human_ = true;
     human_wanted_call_ = false;
-    decision_seconds_left_ = 20;
+    human_more_time_available_ = true;
+    decision_seconds_left_ = kDecisionSeconds;
 
     human_decision_tick_.disconnect();
     human_decision_deadline_.disconnect();
     human_decision_tick_.setInterval(1000);
     human_decision_tick_.setSingleShot(false);
     human_decision_deadline_.setSingleShot(true);
-    human_decision_deadline_.setInterval(20000);
+    human_decision_deadline_.setInterval(kDecisionSeconds * 1000);
 
     QObject::connect(&human_decision_tick_, &QTimer::timeout, this, [this]() {
         if (decision_seconds_left_ > 0)
@@ -363,9 +369,108 @@ void game::finish_human_decision(bool call_not_fold)
     emit humanDecisionFinished();
 }
 
+bool game::wait_for_human_check_or_bet(Street st)
+{
+    (void)st;
+    if (!m_root)
+        return false;
+
+    waiting_for_human_check_ = true;
+    human_opened_bet_from_check_ = false;
+    human_more_time_available_ = true;
+    decision_seconds_left_ = kDecisionSeconds;
+
+    human_decision_tick_.disconnect();
+    human_decision_deadline_.disconnect();
+    human_decision_tick_.setInterval(1000);
+    human_decision_tick_.setSingleShot(false);
+    human_decision_deadline_.setSingleShot(true);
+    human_decision_deadline_.setInterval(kDecisionSeconds * 1000);
+
+    QObject::connect(&human_decision_tick_, &QTimer::timeout, this, [this]() {
+        if (decision_seconds_left_ > 0)
+        {
+            --decision_seconds_left_;
+            sync_ui();
+        }
+    });
+    QObject::connect(&human_decision_deadline_, &QTimer::timeout, this, [this]() {
+        finish_human_check(false);
+    });
+
+    acting_seat_ = kHumanSeat;
+    human_decision_tick_.start();
+    human_decision_deadline_.start();
+    sync_ui();
+
+    QEventLoop loop;
+    QMetaObject::Connection conn = connect(this, &game::humanCheckFinished, &loop, &QEventLoop::quit);
+    loop.exec();
+    QObject::disconnect(conn);
+
+    human_decision_tick_.stop();
+    human_decision_deadline_.stop();
+
+    acting_seat_ = -1;
+    decision_seconds_left_ = 0;
+    waiting_for_human_check_ = false;
+    sync_ui();
+
+    return human_opened_bet_from_check_;
+}
+
+void game::finish_human_check(bool open_bet)
+{
+    if (!waiting_for_human_check_)
+        return;
+    waiting_for_human_check_ = false;
+    human_opened_bet_from_check_ = false;
+    human_decision_tick_.stop();
+    human_decision_deadline_.stop();
+    if (open_bet && table[static_cast<size_t>(kHumanSeat)].stack >= street_bet_)
+    {
+        pot += table[static_cast<size_t>(kHumanSeat)].take_from_stack(street_bet_);
+        street_contrib_[static_cast<size_t>(kHumanSeat)] += street_bet_;
+        last_raise_increment_ = street_bet_;
+        human_opened_bet_from_check_ = true;
+        emit pot_changed();
+    }
+    emit humanCheckFinished();
+}
+
 void game::setInteractiveHuman(bool enabled)
 {
     interactive_human_ = enabled;
+}
+
+void game::setAutoHandLoop(bool enabled)
+{
+    auto_hand_loop_ = enabled;
+}
+
+void game::requestMoreTime()
+{
+    if ((!waiting_for_human_ && !waiting_for_human_check_) || !m_root || !human_more_time_available_)
+        return;
+    human_more_time_available_ = false;
+    decision_seconds_left_ =
+        std::min(decision_seconds_left_ + kMoreTimeExtraSeconds, kMaxDecisionSecondsCap);
+    human_decision_deadline_.stop();
+    human_decision_deadline_.setSingleShot(true);
+    human_decision_deadline_.setInterval(decision_seconds_left_ * 1000);
+    human_decision_deadline_.start();
+    sync_ui();
+}
+
+void game::schedule_next_hand_if_idle()
+{
+    if (!auto_hand_loop_ || !interactive_human_)
+        return;
+    QTimer::singleShot(1800, this, [this]() {
+        if (!m_root)
+            return;
+        beginNewHand();
+    });
 }
 
 bool game::handle_forced_response(int seat, Street st, int current_max)
@@ -393,7 +498,7 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
         }
 
         acting_seat_ = seat;
-        decision_seconds_left_ = 20;
+        decision_seconds_left_ = kDecisionSeconds;
         flush_ui();
 
         const bool call = wait_for_human_need(need, st);
@@ -480,7 +585,13 @@ bool game::handle_postflop_check_or_bet(Street st)
         if (!in_hand_[static_cast<size_t>(seat)])
             continue;
         if (seat == kHumanSeat)
+        {
+            if (!interactive_human_ || !m_root)
+                continue;
+            if (wait_for_human_check_or_bet(st))
+                return true;
             continue;
+        }
 
         const auto cards = cards_for_strength(seat, st);
         const double hs = hand_strength_01_cards(cards);
@@ -729,6 +840,9 @@ void game::sync_ui()
     m_root->setProperty("buttonSeat", button);
     m_root->setProperty("actingSeat", acting_seat_);
     m_root->setProperty("decisionSecondsLeft", decision_seconds_left_);
+    m_root->setProperty("humanMoreTimeAvailable",
+                        (waiting_for_human_ || waiting_for_human_check_) && human_more_time_available_);
+    m_root->setProperty("humanCanCheck", waiting_for_human_check_);
     m_root->setProperty("smallBlind", small_blind);
     m_root->setProperty("bigBlind", big_blind);
 
@@ -758,11 +872,11 @@ void game::sync_ui()
     m_root->setProperty("seatC2", c2);
     m_root->setProperty("seatInHand", inHand);
 
-    m_root->setProperty("board0", flop.size() > 0 ? card_to_asset(flop[0]) : QString());
-    m_root->setProperty("board1", flop.size() > 1 ? card_to_asset(flop[1]) : QString());
-    m_root->setProperty("board2", flop.size() > 2 ? card_to_asset(flop[2]) : QString());
-    m_root->setProperty("board3", flop.size() >= 3 ? card_to_asset(turn) : QString());
-    m_root->setProperty("board4", flop.size() >= 3 ? card_to_asset(river) : QString());
+    m_root->setProperty("board0", (street >= Street::FLOP && flop.size() > 0) ? card_to_asset(flop[0]) : QString());
+    m_root->setProperty("board1", (street >= Street::FLOP && flop.size() > 1) ? card_to_asset(flop[1]) : QString());
+    m_root->setProperty("board2", (street >= Street::FLOP && flop.size() > 2) ? card_to_asset(flop[2]) : QString());
+    m_root->setProperty("board3", (street >= Street::TURN && flop.size() >= 3) ? card_to_asset(turn) : QString());
+    m_root->setProperty("board4", (street >= Street::RIVER && flop.size() >= 3) ? card_to_asset(river) : QString());
 
     emit ui_state_changed();
 }
@@ -795,6 +909,7 @@ void game::start()
         in_progress = false;
         ui_showdown_ = true;
         flush_ui();
+        schedule_next_hand_if_idle();
         return;
     }
 
@@ -808,6 +923,7 @@ void game::start()
         in_progress = false;
         ui_showdown_ = true;
         flush_ui();
+        schedule_next_hand_if_idle();
         return;
     }
 
@@ -821,6 +937,7 @@ void game::start()
         in_progress = false;
         ui_showdown_ = true;
         flush_ui();
+        schedule_next_hand_if_idle();
         return;
     }
 
@@ -834,6 +951,7 @@ void game::start()
         in_progress = false;
         ui_showdown_ = true;
         flush_ui();
+        schedule_next_hand_if_idle();
         return;
     }
 
@@ -842,6 +960,7 @@ void game::start()
     in_progress = false;
     ui_showdown_ = true;
     flush_ui();
+    schedule_next_hand_if_idle();
 }
 
 void game::beginNewHand()
@@ -872,6 +991,7 @@ void game::clear_for_new_hand()
     acting_seat_ = -1;
     decision_seconds_left_ = 0;
     waiting_for_human_ = false;
+    waiting_for_human_check_ = false;
     human_decision_tick_.stop();
     human_decision_deadline_.stop();
     emit pot_changed();
@@ -972,6 +1092,19 @@ void game::buttonClicked(QString button)
 {
     if (!m_root)
         return;
+    if (button == QStringLiteral("MORE_TIME"))
+    {
+        requestMoreTime();
+        return;
+    }
+    if (waiting_for_human_check_)
+    {
+        if (button == QStringLiteral("CHECK"))
+            finish_human_check(false);
+        else if (button == QStringLiteral("RAISE"))
+            finish_human_check(true);
+        return;
+    }
     if (waiting_for_human_)
     {
         if (button == QStringLiteral("CALL") || button == QStringLiteral("RAISE"))
@@ -984,11 +1117,9 @@ void game::buttonClicked(QString button)
     {
         m_root->setProperty(
             "statusText",
-            QStringLiteral("No bet to face — use New hand when the table is idle."));
+            QStringLiteral("No bet to face right now."));
         return;
     }
     if (button == QStringLiteral("FOLD"))
         return;
-    if (button == QStringLiteral("DEAL"))
-        start();
 }

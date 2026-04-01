@@ -105,6 +105,7 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_started)
 {
   game game;
   game.setInteractiveHuman(false);
+  game.setAutoHandLoop(false);
   game.start();
   BOOST_CHECK_EQUAL(game.players_count(), 6);
   // Full automated hand completes in start(); session is idle until the next deal.
