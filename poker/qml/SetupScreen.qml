@@ -257,7 +257,8 @@ Page {
                                 Label {
                                     text: botNames.displayName(index + 1)
                                     font.pixelSize: Theme.trainerCaptionPx
-                                    color: Theme.hudActionLabel
+                                    font.bold: true
+                                    color: Theme.colorForSeat(index + 1)
                                 }
                                 ThemedSwitch {
                                     checked: pokerGame.seatParticipating(index + 1)
@@ -284,6 +285,14 @@ Page {
                     bottomPadding: 10
                     leftPadding: 14
                     rightPadding: 14
+                    contentItem: Label {
+                        text: parent.text
+                        font: parent.font
+                        color: Theme.colorForSeat(0)
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
                 }
                 Repeater {
                     model: 5
@@ -295,6 +304,14 @@ Page {
                         bottomPadding: 10
                         leftPadding: 14
                         rightPadding: 14
+                        contentItem: Label {
+                            text: parent.text
+                            font: parent.font
+                            color: Theme.colorForSeat(index + 1)
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
                     }
                 }
             }
@@ -490,12 +507,16 @@ Page {
             }
 
             GroupBox {
-                title: botNames.displayName(selectedSeat)
+                title: ""
+                label: Label {
+                    text: botNames.displayName(setup.selectedSeat)
+                    font.bold: true
+                    font.pointSize: Theme.uiGroupTitlePt
+                    color: Theme.colorForSeat(setup.selectedSeat)
+                }
                 Layout.fillWidth: true
                 padding: Theme.uiGroupedPanelPadding
                 topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
                     width: parent.width - 2 * Theme.uiGroupedPanelPadding

@@ -257,7 +257,7 @@ Item {
                         text: qsTr("Act")
                         color: Theme.hudActionLabel
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiMicroPx
+                        font.pixelSize: Theme.uiMicroPx
                         font.bold: true
                         Layout.preferredWidth: visible ? implicitWidth : 0
                     }
@@ -281,7 +281,7 @@ Item {
                         label: qsTr("More")
                         buttonColor: Theme.hudActionPanel
                         textColor: Theme.hudActionBright
-                        implicitHeight: 26
+                        implicitHeight: 34
                         Layout.preferredWidth: visible ? 76 : 0
                         onClicked: {
                             if (pageRoot)
@@ -358,14 +358,17 @@ Item {
                     anchors.topMargin: 10
                     spacing: 8
 
-                    Slider {
-                        id: raiseSlider
+                    RowLayout {
                         width: parent.width
-                        from: game_controls.raiseSpinSafeMin()
-                        to: game_controls.raiseSpinSafeMax()
-                        stepSize: 1
-                        snapMode: Slider.SnapAlways
-                        value: from
+                        spacing: 8
+                        Slider {
+                            id: raiseSlider
+                            Layout.fillWidth: true
+                            from: game_controls.raiseSpinSafeMin()
+                            to: game_controls.raiseSpinSafeMax()
+                            stepSize: 1
+                            snapMode: Slider.SnapAlways
+                            value: from
 
                         function syncRaiseSlider() {
                             raiseSlider.from = game_controls.raiseSpinSafeMin()
@@ -380,6 +383,16 @@ Item {
                         }
 
                         Component.onCompleted: syncRaiseSlider()
+                        }
+                        Text {
+                            Layout.preferredWidth: 52
+                            text: Math.round(raiseSlider.value)
+                            color: Theme.focusGold
+                            font.family: Theme.fontFamilyUi
+                            font.pixelSize: Theme.uiBodyPx
+                            font.bold: true
+                            horizontalAlignment: Text.AlignRight
+                        }
                     }
 
                     Connections {
@@ -467,7 +480,7 @@ Item {
                     label: qsTr("RAISE")
                     pillWidth: 88
                     buttonColor: Theme.successGreen
-                    textColor: "white"
+                    textColor: Theme.onAccentText
                     fontSize: Theme.uiHudButtonPt
                     clickEnabled: game_controls.trainerMode
                             ? (!game_controls.trainerInputLocked && game_controls.facingRaise
@@ -519,7 +532,7 @@ Item {
                     label: qsTr("Bet 75%")
                     pillWidth: 88
                     buttonColor: Theme.successGreen
-                    textColor: "white"
+                    textColor: Theme.onAccentText
                     fontSize: Theme.uiHudButtonPt
                     clickEnabled: !game_controls.trainerInputLocked && game_controls.facingRaise
                             && game_controls.decisionSecondsLeft > 0
@@ -554,14 +567,17 @@ Item {
                     anchors.topMargin: 10
                     spacing: 8
 
-                    Slider {
-                        id: bbPreflopSlider
+                    RowLayout {
                         width: parent.width
-                        from: game_controls.bbPreflopSpinSafeMin()
-                        to: game_controls.bbPreflopSpinSafeMax()
-                        stepSize: 1
-                        snapMode: Slider.SnapAlways
-                        value: from
+                        spacing: 8
+                        Slider {
+                            id: bbPreflopSlider
+                            Layout.fillWidth: true
+                            from: game_controls.bbPreflopSpinSafeMin()
+                            to: game_controls.bbPreflopSpinSafeMax()
+                            stepSize: 1
+                            snapMode: Slider.SnapAlways
+                            value: from
 
                         function syncBbPreflopSlider() {
                             bbPreflopSlider.from = game_controls.bbPreflopSpinSafeMin()
@@ -576,6 +592,16 @@ Item {
                         }
 
                         Component.onCompleted: syncBbPreflopSlider()
+                        }
+                        Text {
+                            Layout.preferredWidth: 52
+                            text: Math.round(bbPreflopSlider.value)
+                            color: Theme.focusGold
+                            font.family: Theme.fontFamilyUi
+                            font.pixelSize: Theme.uiBodyPx
+                            font.bold: true
+                            horizontalAlignment: Text.AlignRight
+                        }
                     }
 
                     Connections {
@@ -634,7 +660,7 @@ Item {
                     label: qsTr("Raise")
                     pillWidth: 96
                     buttonColor: Theme.successGreen
-                    textColor: "white"
+                    textColor: Theme.onAccentText
                     onClicked: {
                         if (game_controls.trainerMode)
                             return
@@ -664,14 +690,17 @@ Item {
                     anchors.topMargin: 10
                     spacing: 8
 
-                    Slider {
-                        id: openRaiseSlider
+                    RowLayout {
                         width: parent.width
-                        from: game_controls.openRaiseSafeMin()
-                        to: game_controls.openRaiseSafeMax()
-                        stepSize: 1
-                        snapMode: Slider.SnapAlways
-                        value: from
+                        spacing: 8
+                        Slider {
+                            id: openRaiseSlider
+                            Layout.fillWidth: true
+                            from: game_controls.openRaiseSafeMin()
+                            to: game_controls.openRaiseSafeMax()
+                            stepSize: 1
+                            snapMode: Slider.SnapAlways
+                            value: from
 
                         function syncOpenRaiseSlider() {
                             openRaiseSlider.from = game_controls.openRaiseSafeMin()
@@ -686,6 +715,16 @@ Item {
                         }
 
                         Component.onCompleted: syncOpenRaiseSlider()
+                        }
+                        Text {
+                            Layout.preferredWidth: 52
+                            text: Math.round(openRaiseSlider.value)
+                            color: Theme.focusGold
+                            font.family: Theme.fontFamilyUi
+                            font.pixelSize: Theme.uiBodyPx
+                            font.bold: true
+                            horizontalAlignment: Text.AlignRight
+                        }
                     }
 
                     Connections {
@@ -752,7 +791,7 @@ Item {
                     label: qsTr("Raise")
                     pillWidth: 88
                     buttonColor: Theme.successGreen
-                    textColor: "white"
+                    textColor: Theme.onAccentText
                     onClicked: {
                         if (game_controls.trainerMode)
                             return
@@ -772,7 +811,7 @@ Item {
                     id: sitOutCheck
                     text: qsTr("Sit out")
                     font.family: Theme.fontFamilyUi
-                    font.pointSize: Theme.uiMicroPx
+                    font.pixelSize: Theme.uiMicroPx
                     padding: 2
                     checked: game_controls.humanSitOut
                     onToggled: {
@@ -849,36 +888,12 @@ Item {
                 visible: !game_controls.trainerMode
                 width: parent.width - 16
                 x: 8
-                implicitHeight: game_controls.trainerMode
-                        ? Math.max(64, statusBannerTrainer.contentHeight + 22)
-                        : (statusTableColumn.implicitHeight + 12)
+                implicitHeight: statusTableColumn.implicitHeight + 12
                 radius: 6
                 color: Theme.inputBg
                 border.color: Theme.inputBorder
                 border.width: 1
                 clip: true
-
-                TextArea {
-                    id: statusBannerTrainer
-                    visible: game_controls.trainerMode
-                    anchors.fill: parent
-                    anchors.margins: 6
-                    readOnly: true
-                    selectByMouse: false
-                    wrapMode: TextArea.Wrap
-                    text: game_controls.statusFullDisplay
-                    color: Theme.textPrimary
-                    font.family: Theme.fontFamilyUi
-                    font.pixelSize: Theme.uiBodyPx
-                    topPadding: 8
-                    bottomPadding: 8
-                    leftPadding: 8
-                    rightPadding: 8
-                    background: Rectangle {
-                        color: "transparent"
-                        border.width: 0
-                    }
-                }
 
                 Column {
                     id: statusTableColumn

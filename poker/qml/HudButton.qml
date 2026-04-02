@@ -17,7 +17,7 @@ Rectangle {
     signal clicked()
 
     implicitWidth: pillWidth > 0 ? pillWidth : Math.max(76, lbl.implicitWidth + horizontalPadding)
-    implicitHeight: 34
+    implicitHeight: 38
     radius: 6
     color: buttonColor
     clip: true

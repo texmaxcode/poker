@@ -76,7 +76,7 @@ Page {
             Label {
                 text: qsTr("Simulation log")
                 font.bold: true
-                font.pointSize: Theme.trainerSectionPx
+                font.pixelSize: Theme.trainerSectionPx
                 color: Theme.gold
             }
 
@@ -144,6 +144,62 @@ Page {
         }
     }
 
+    Connections {
+        target: pokerSolver
+        function onEquityComputationFinished(m) {
+            solverPage.simRunning = false
+            if (m["error"] !== undefined && String(m["error"]).length > 0) {
+                const err = String(m["error"])
+                solverPage.lastFullLog = err
+                solverPage.summaryText = err
+                return
+            }
+            let t = ""
+            t += qsTr("Equity: ") + m.equityPct.toFixed(2) + " %"
+            t += "  (± ~" + m.stdErrPct.toFixed(2) + " % 1σ)\n"
+            t += qsTr("Iterations: ") + m.iterations + "\n"
+            if (m.breakEvenPct !== undefined) {
+                t += qsTr("Break-even equity to call: ") + m.breakEvenPct.toFixed(2) + " %\n"
+                t += qsTr("EV of call: ") + m.evCall.toFixed(3) + "\n"
+                t += qsTr("Suggestion: ") + m.recommendation + "\n"
+            }
+            if (m.mdfPct !== undefined)
+                t += qsTr("MDF heuristic (~defense freq vs this raise): ") + m.mdfPct.toFixed(1) + " %\n"
+            t += "\n" + m.detailText
+            solverPage.lastFullLog = t
+
+            let s = ""
+            s += h1.text + " " + h2.text
+            if (brd.text.trim().length > 0)
+                s += " · " + brd.text.trim()
+            s += "\n"
+            s += qsTr("Equity ") + m.equityPct.toFixed(2) + "% (±" + m.stdErrPct.toFixed(2) + "%) · "
+                    + m.iterations + " " + qsTr("iters")
+            if (m.breakEvenPct !== undefined) {
+                s += "\n" + qsTr("BE ") + m.breakEvenPct.toFixed(1) + "% · EV " + m.evCall.toFixed(3)
+                        + " · " + m.recommendation
+            }
+            if (m.mdfPct !== undefined)
+                s += "\n" + qsTr("MDF ~") + m.mdfPct.toFixed(1) + "%"
+            solverPage.summaryText = s
+        }
+    }
+
+    Connections {
+        target: toyNashSolver
+        function onSolveFinished(m) {
+            solverPage.simRunning = false
+            if (m["error"] !== undefined && String(m["error"]).length > 0) {
+                const err = String(m["error"])
+                solverPage.nashSummaryText = err
+                solverPage.nashDetailText = err
+                return
+            }
+            solverPage.nashSummaryText = String(m.summaryText !== undefined ? m.summaryText : "")
+            solverPage.nashDetailText = String(m.detailText !== undefined ? m.detailText : "")
+        }
+    }
+
     ScrollView {
         id: scroll
         anchors.fill: parent
@@ -158,62 +214,6 @@ Page {
             id: solverCol
             width: Math.max(280, scroll.width - 2 * Theme.uiPagePadding)
             spacing: Theme.uiPageColumnSpacing
-
-            Connections {
-                target: pokerSolver
-                function onEquityComputationFinished(m) {
-                    solverPage.simRunning = false
-                    if (m["error"] !== undefined && String(m["error"]).length > 0) {
-                        const err = String(m["error"])
-                        solverPage.lastFullLog = err
-                        solverPage.summaryText = err
-                        return
-                    }
-                    let t = ""
-                    t += qsTr("Equity: ") + m.equityPct.toFixed(2) + " %"
-                    t += "  (± ~" + m.stdErrPct.toFixed(2) + " % 1σ)\n"
-                    t += qsTr("Iterations: ") + m.iterations + "\n"
-                    if (m.breakEvenPct !== undefined) {
-                        t += qsTr("Break-even equity to call: ") + m.breakEvenPct.toFixed(2) + " %\n"
-                        t += qsTr("EV of call: ") + m.evCall.toFixed(3) + "\n"
-                        t += qsTr("Suggestion: ") + m.recommendation + "\n"
-                    }
-                    if (m.mdfPct !== undefined)
-                        t += qsTr("MDF heuristic (~defense freq vs this raise): ") + m.mdfPct.toFixed(1) + " %\n"
-                    t += "\n" + m.detailText
-                    solverPage.lastFullLog = t
-
-                    let s = ""
-                    s += h1.text + " " + h2.text
-                    if (brd.text.trim().length > 0)
-                        s += " · " + brd.text.trim()
-                    s += "\n"
-                    s += qsTr("Equity ") + m.equityPct.toFixed(2) + "% (±" + m.stdErrPct.toFixed(2) + "%) · "
-                            + m.iterations + " " + qsTr("iters")
-                    if (m.breakEvenPct !== undefined) {
-                        s += "\n" + qsTr("BE ") + m.breakEvenPct.toFixed(1) + "% · EV " + m.evCall.toFixed(3)
-                                + " · " + m.recommendation
-                    }
-                    if (m.mdfPct !== undefined)
-                        s += "\n" + qsTr("MDF ~") + m.mdfPct.toFixed(1) + "%"
-                    solverPage.summaryText = s
-                }
-            }
-
-            Connections {
-                target: toyNashSolver
-                function onSolveFinished(m) {
-                    solverPage.simRunning = false
-                    if (m["error"] !== undefined && String(m["error"]).length > 0) {
-                        const err = String(m["error"])
-                        solverPage.nashSummaryText = err
-                        solverPage.nashDetailText = err
-                        return
-                    }
-                    solverPage.nashSummaryText = String(m.summaryText !== undefined ? m.summaryText : "")
-                    solverPage.nashDetailText = String(m.detailText !== undefined ? m.detailText : "")
-                }
-            }
 
                 Label {
                     Layout.topMargin: 8

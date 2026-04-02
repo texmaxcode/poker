@@ -263,7 +263,8 @@ Page {
             onClicked: tileRoot.clicked()
         }
 
-        // Disable hover "bubble" popups; they were interfering with the lobby UX.
-        ToolTip.visible: false
+        ToolTip.visible: navMa.containsMouse && detailTip.length > 0
+        ToolTip.delay: 800
+        ToolTip.text: detailTip
     }
 }

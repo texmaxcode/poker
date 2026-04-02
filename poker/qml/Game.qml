@@ -177,6 +177,7 @@ Page {
 
                 Player {
                     anchors.fill: parent
+                    seatIndex: index
                     name: botNames.displayName(index)
                     position: game_screen.seatRole(index)
                     isDealer: index === game_screen.buttonSeat

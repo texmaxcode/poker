@@ -18,3 +18,9 @@ target_link_libraries(Poker
     PRIVATE Qt${QT_VERSION_MAJOR}::Quick
     PRIVATE Qt${QT_VERSION_MAJOR}::Qml
 )
+
+if(MSVC)
+    target_compile_options(Poker PRIVATE /W4 /permissive-)
+else()
+    target_compile_options(Poker PRIVATE -Wall -Wextra -Wpedantic)
+endif()

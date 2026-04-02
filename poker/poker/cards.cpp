@@ -1,6 +1,7 @@
 #include "cards.hpp"
 
 #include <array>
+#include <cassert>
 
 namespace {
 
@@ -194,6 +195,7 @@ void card_deck::shuffle()
 
 card card_deck::get_card()
 {
+    assert(!cards.empty());
     auto a_card = cards.back();
     cards.pop_back();
     return a_card;

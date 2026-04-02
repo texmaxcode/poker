@@ -26,9 +26,13 @@ When at least one player is **all-in** for less than others, the **main pot** is
 
 **Antes** are not implemented (optional in many structures).
 
-### Busted stacks
+### Busted stacks and rebuy
 
-Players with **zero chips** are not dealt in as active participants for the next hand (aligned with “cannot play without money” in the app). Rebuy/add-on is not modeled.
+Players with **zero chips** are not dealt in as active participants for the next hand (aligned with “cannot play without money” in the app). If a seat still has **off-table bankroll** (chips not on the stack), they may **buy back in** for one configured buy-in amount when the table is idle (see **Bots & ranges** buy-in and **Bankroll & stats**). **Tournament-style add-ons** or arbitrary mid-hand top-ups are **not** modeled.
+
+### Stake cap (buy-in on table)
+
+Per seat, the amount brought to the table per buy-in / apply is **capped at 100× the big blind** (`maxBuyInChips()`). Any additional bankroll for that seat stays **off the table** until used for rebuy or adjusted in setup.
 
 ### Other table rules
 

@@ -174,18 +174,21 @@ Page {
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                             Layout.preferredWidth: 88
+                            horizontalAlignment: Text.AlignRight
                         }
                         Label {
                             text: qsTr("Off table")
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                             Layout.preferredWidth: 88
+                            horizontalAlignment: Text.AlignRight
                         }
                         Label {
                             text: qsTr("Total")
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
-                            Layout.fillWidth: true
+                            Layout.preferredWidth: 88
+                            horizontalAlignment: Text.AlignRight
                         }
                     }
 
@@ -200,27 +203,31 @@ Page {
                             Label {
                                 text: botNames.displayName(modelData.seat)
                                 Layout.preferredWidth: 120
-                                color: Theme.textPrimary
+                                color: Theme.colorForSeat(modelData.seat)
                                 font.pixelSize: Theme.trainerCaptionPx
+                                font.bold: true
                             }
                             Label {
                                 text: "$" + modelData.stack
                                 Layout.preferredWidth: 88
                                 color: Theme.textSecondary
                                 font.pixelSize: Theme.trainerCaptionPx
+                                horizontalAlignment: Text.AlignRight
                             }
                             Label {
                                 text: "$" + modelData.wallet
                                 Layout.preferredWidth: 88
                                 color: Theme.textSecondary
                                 font.pixelSize: Theme.trainerCaptionPx
+                                horizontalAlignment: Text.AlignRight
                             }
                             Label {
                                 text: "$" + modelData.total
-                                Layout.fillWidth: true
+                                Layout.preferredWidth: 88
                                 color: Theme.gold
                                 font.bold: true
                                 font.pixelSize: Theme.trainerCaptionPx
+                                horizontalAlignment: Text.AlignRight
                             }
                         }
                     }
@@ -278,8 +285,9 @@ Page {
                             Label {
                                 text: botNames.displayName(index)
                                 Layout.preferredWidth: 120
-                                color: Theme.textPrimary
+                                color: Theme.colorForSeat(index)
                                 font.pixelSize: Theme.trainerCaptionPx
+                                font.bold: true
                             }
                             Label {
                                 text: "$" + pokerGame.seatBuyIn(index)
@@ -352,12 +360,14 @@ Page {
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                             Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignRight
                         }
                         Label {
                             text: qsTr("P/L")
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                             Layout.preferredWidth: 72
+                            horizontalAlignment: Text.AlignRight
                         }
                     }
 
@@ -380,20 +390,23 @@ Page {
                             Label {
                                 text: botNames.displayName(modelData.seat)
                                 Layout.preferredWidth: 120
-                                color: Theme.textPrimary
+                                color: Theme.colorForSeat(modelData.seat)
                                 font.pixelSize: Theme.trainerCaptionPx
+                                font.bold: true
                             }
                             Label {
                                 text: "$" + (modelData.total !== undefined ? modelData.total : modelData.stack)
                                 Layout.fillWidth: true
                                 color: Theme.textSecondary
                                 font.pixelSize: Theme.trainerCaptionPx
+                                horizontalAlignment: Text.AlignRight
                             }
                             Label {
                                 text: (modelData.profit >= 0 ? "+" : "") + modelData.profit
                                 Layout.preferredWidth: 72
                                 color: modelData.profit >= 0 ? Theme.profitUp : Theme.profitDown
                                 font.pixelSize: Theme.trainerCaptionPx
+                                horizontalAlignment: Text.AlignRight
                             }
                         }
                     }
@@ -475,7 +488,8 @@ Page {
                                 Label {
                                     text: botNames.displayName(index)
                                     font.pixelSize: Theme.trainerCaptionPx
-                                    color: Theme.textSecondary
+                                    font.bold: true
+                                    color: Theme.colorForSeat(index)
                                 }
                             }
                         }
@@ -489,6 +503,14 @@ Page {
                             id: chartPanelItem
                             Layout.fillWidth: true
                             Layout.preferredHeight: 340
+
+                            Label {
+                                anchors.centerIn: parent
+                                visible: pokerGame.bankrollSnapshotCount() < 1
+                                text: qsTr("No data yet — play a hand to see your bankroll chart.")
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.trainerBodyPx
+                            }
 
                             Canvas {
                                 id: bankCanvas
@@ -742,7 +764,8 @@ Page {
                                                     Label {
                                                         text: botNames.displayName(index)
                                                         font.pixelSize: Theme.trainerCaptionPx
-                                                        color: Theme.textSecondary
+                                                        font.bold: true
+                                                        color: Theme.colorForSeat(index)
                                                     }
                                                     Label {
                                                         font.pixelSize: Theme.trainerCaptionPx + 1

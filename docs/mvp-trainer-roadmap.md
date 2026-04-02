@@ -1,5 +1,7 @@
 # Texas Hold’em Gym — MVP Trainer Roadmap (Implementation Doc)
 
+**Status (repo):** Preflop and flop drill flows, bundled JSON strategies, `TrainingStore` / `TrainingController`, `TrainerHome`, `PreflopTrainer`, and `FlopTrainer` are **implemented**. Training progress appears on **Trainer home** and **Bankroll & stats**. Items below that are still **not** in-tree include **play vs GTO bot**, **range viewer** as a dedicated surface, **turn/river** trainers, and **daily challenge** — treat the rest of this doc as a mix of shipped behavior and future ideas unless a section says otherwise.
+
 This document translates the **MVP Feature List** into concrete engineering changes for the current codebase (Qt Quick QML UI + C++ engine).
 
 ## Goals (V1)

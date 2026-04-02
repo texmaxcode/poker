@@ -88,6 +88,43 @@ Suite suite_from_char(char ch)
     }
 }
 
+bool rank_char_valid(char ch)
+{
+    switch (std::toupper(static_cast<unsigned char>(ch)))
+    {
+    case 'A':
+    case 'K':
+    case 'Q':
+    case 'J':
+    case 'T':
+    case '9':
+    case '8':
+    case '7':
+    case '6':
+    case '5':
+    case '4':
+    case '3':
+    case '2':
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool suite_char_valid(char ch)
+{
+    switch (std::tolower(static_cast<unsigned char>(ch)))
+    {
+    case 'c':
+    case 's':
+    case 'h':
+    case 'd':
+        return true;
+    default:
+        return false;
+    }
+}
+
 std::vector<card> complete_board_random(std::vector<card> board, const std::vector<card> &dead_in,
                                          std::mt19937 &rng)
 {
@@ -128,11 +165,15 @@ bool parse_card_string(const std::string &tok_in, card &out)
         s.pop_back();
     if (s.size() >= 3 && s[0] == '1' && s[1] == '0')
     {
+        if (!suite_char_valid(s[2]))
+            return false;
         out.rank = Rank::TEN;
         out.suite = suite_from_char(s[2]);
         return true;
     }
     if (s.size() < 2)
+        return false;
+    if (!rank_char_valid(s[0]) || !suite_char_valid(s[1]))
         return false;
     out.rank = rank_from_char(s[0]);
     out.suite = suite_from_char(s[1]);

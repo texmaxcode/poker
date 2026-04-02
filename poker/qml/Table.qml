@@ -30,6 +30,7 @@ Item {
 
     readonly property bool showSidePotBreakdown: sidePotAmounts !== undefined && sidePotAmounts !== null
             && sidePotAmounts.length > 1
+    /// Main first, then each side tier; single line in the HUD (e.g. "Main $100 · Side 1 $30 · Side 2 $20").
     readonly property string sidePotBreakdownText: {
         if (!sidePotAmounts || sidePotAmounts.length < 2)
             return ""
@@ -42,7 +43,7 @@ Item {
             else
                 parts.push(qsTr("Side %1 $%2").arg(i).arg(v))
         }
-        return parts.join(" · ")
+        return parts.join(qsTr(" · "))
     }
 
     readonly property color gold: Theme.gold
@@ -78,12 +79,12 @@ Item {
         spacing: 18
         anchors.centerIn: parent
 
-        /// Fixed height: side-pot line always reserves space so the board does not jump when all-ins create tiers.
+        /// Fixed height: side-pot row reserves space so the board does not jump when all-ins create tiers.
         Rectangle {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.min(340, Math.max(260, table_container.width * 0.38))
-            height: 82
+            height: Math.max(82, potHudInner.implicitHeight + 20)
             radius: 14
             color: Theme.hudBg1
             border.width: 2
@@ -102,6 +103,7 @@ Item {
             }
 
             Column {
+                id: potHudInner
                 anchors.centerIn: parent
                 spacing: 4
                 width: parent.width - 12
@@ -150,20 +152,19 @@ Item {
                     }
                 }
 
-                /// Reserved band so layout height does not change when side pots appear (text only when `showSidePotBreakdown`).
+                /// Side tiers when all-ins split the pot (one compact line).
                 Item {
                     width: parent.width
-                    height: 30
+                    height: table_container.showSidePotBreakdown ? sidePotLine.implicitHeight : 30
 
                     Text {
-                        anchors.fill: parent
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
+                        id: sidePotLine
+                        width: parent.width
                         visible: table_container.showSidePotBreakdown
-                        text: table_container.showSidePotBreakdown ? table_container.sidePotBreakdownText : ""
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.NoWrap
+                        elide: Text.ElideMiddle
+                        text: table_container.sidePotBreakdownText
                         color: Theme.textSecondary
                         font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiPotSidePt

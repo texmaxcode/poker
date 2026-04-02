@@ -33,6 +33,8 @@ Item {
     property int handEpoch: 0
     /// Training: show hole cards face-up without flip delay.
     property bool instantHoleCards: false
+    /// Seat index 0–5 for chart-matched name color; `-1` uses default text color.
+    property int seatIndex: -1
 
     readonly property color gold: Theme.gold
     readonly property color borderAct: Theme.seatBorderAct
@@ -59,7 +61,7 @@ Item {
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
     /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
     readonly property int seatInnerPad: 11
-    implicitHeight: 330
+    implicitHeight: 312
     implicitWidth: Theme.holePairTotalWidth + 2 * seatInnerPad
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
@@ -274,7 +276,7 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 6
                         text: root.name
-                        color: Theme.textPrimary
+                        color: root.seatIndex >= 0 ? Theme.colorForSeat(root.seatIndex) : Theme.textPrimary
                         font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiSeatNamePt
                         elide: Text.ElideRight

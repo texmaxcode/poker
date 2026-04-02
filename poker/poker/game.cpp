@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <random>
 
@@ -246,6 +247,7 @@ void game::deal_river()
 
 std::vector<card> game::get_hand_vector(int idx) const
 {
+    assert(flop.size() >= 3);
     std::vector<card> v;
     v.reserve(7);
     v.push_back(table[static_cast<size_t>(idx)].first_card);
@@ -463,7 +465,6 @@ int game::max_street_contrib() const
 
 void game::init_preflop_street_contrib()
 {
-    const int n = players_count();
     clear_street_action_labels();
     street_contrib_.fill(0);
     compute_blind_seats(sb_seat_, bb_seat_);
@@ -1575,11 +1576,10 @@ void game::do_payouts()
 
             if (levels.size() > 1 && !tier_status_lines.isEmpty())
             {
-                QString msg = QStringLiteral("Side pots — ");
-                msg += tier_status_lines.join(QStringLiteral(" · "));
+                QString msg = tier_status_lines.join(QLatin1Char('\n'));
                 const QString brd = board_compact_for_result();
                 if (!brd.isEmpty())
-                    msg += QStringLiteral(" · ") + brd;
+                    msg += QLatin1Char('\n') + brd;
                 set_hand_result_status(msg, result_banner_card_assets_for_seat(banner_seat));
                 return;
             }

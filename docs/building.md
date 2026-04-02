@@ -46,7 +46,8 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$HOME/Qt/6.10.
 
 ### Boost
 
-- **Minimum version:** **1.70** (`find_package(Boost 1.70 REQUIRED COMPONENTS unit_test_framework)`).
+- **Only required when tests are enabled** (CMake **`BUILD_TESTING`** is **ON** by default; pass **`-DBUILD_TESTING=OFF`** to skip tests and omit Boost).
+- **Minimum version:** **1.70** (`find_package(Boost 1.70 REQUIRED COMPONENTS unit_test_framework)` in the tests subtree).
 - **Component used:** **unit_test_framework** only (links into `Test_poker`).
 - You need **development** packages: headers plus the compiled test library (often `libboost-test-dev` or `boost-devel` on Linux).
 

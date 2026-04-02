@@ -416,16 +416,21 @@ Page {
                             }
 
                             Item {
-                                id: trainerSeatWrap
-                                Layout.alignment: Qt.AlignHCenter
-                                Layout.preferredWidth: 218
+                                Layout.fillWidth: true
                                 Layout.preferredHeight: 312
+                                Layout.minimumHeight: 312
                                 Layout.bottomMargin: 4
-                                width: 218
-                                height: 312
+
+                                Item {
+                                    id: trainerSeatWrap
+                                    width: 218
+                                    height: 312
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.horizontalCenterOffset: Theme.trainerDrillSeatCenterOffset
 
                                 Player {
                                     anchors.fill: parent
+                                    seatIndex: 0
                                     name: qsTr("You")
                                     position: "BTN"
                                     first_card: page.hero1
@@ -441,6 +446,7 @@ Page {
                                     isActing: page.decisionSecLeft > 0 && !page.inputLocked
                                     decisionSecondsLeft: page.decisionSecLeft
                                 }
+                                }
                             }
                         }
 
@@ -452,7 +458,18 @@ Page {
                             pokerGame: null
                             embeddedMode: true
                             panelWidth: drillArea.hudPanelW
-                            x: Math.max(6, drillArea.width - flopExerciseHud.width - Theme.trainerHudSeatMargin)
+                            x: {
+                                var hs = drillArea.humanSeat
+                                if (!hs)
+                                    return 8
+                                var gap = Theme.trainerDrillHudSpacing
+                                var w = flopExerciseHud.width
+                                var pos = drillArea.mapFromItem(hs, 0, 0)
+                                var placeRight = pos.x + hs.width + gap
+                                if (placeRight + w <= drillArea.width - 6)
+                                    return placeRight
+                                return Math.max(6, pos.x - w - gap)
+                            }
                             y: {
                                 var hs = drillArea.humanSeat
                                 if (!hs)

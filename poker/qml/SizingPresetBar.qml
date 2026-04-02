@@ -142,31 +142,33 @@ Row {
             }
         ]
 
-        delegate: Rectangle {
+        delegate: Item {
             required property var modelData
             width: modelData.w
-            height: 28
-            radius: 6
-            color: Theme.hudActionPanel
+            height: 36
 
-            Text {
-                anchors.centerIn: parent
-                text: modelData.label
-                color: Theme.textPrimary
-                font.family: Theme.fontFamilyUi
-                font.pointSize: (modelData.kind === "min" || modelData.kind === "pot" || modelData.kind === "all") ? Theme.uiMicroPx : Theme.uiSizingPresetPt
-                font.bold: true
+            Rectangle {
+                anchors.fill: parent
+                radius: 6
+                color: Theme.hudActionPanel
+                opacity: presetMa.pressed ? 0.72 : (presetMa.containsMouse ? 0.88 : 1)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData.label
+                    color: Theme.textPrimary
+                    font.family: Theme.fontFamilyUi
+                    font.pointSize: (modelData.kind === "min" || modelData.kind === "pot" || modelData.kind === "all") ? Theme.uiMicroPx : Theme.uiSizingPresetPt
+                    font.bold: true
+                }
             }
 
             MouseArea {
+                id: presetMa
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.runPreset(modelData.kind)
-                onEntered: parent.opacity = 0.88
-                onExited: parent.opacity = 1
-                onPressed: parent.opacity = 0.72
-                onReleased: parent.opacity = containsMouse ? 0.88 : 1
             }
         }
     }

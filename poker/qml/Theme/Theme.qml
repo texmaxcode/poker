@@ -75,6 +75,14 @@ QtObject {
 
     readonly property var chartLineColors: ["#e8b84a", "#ff7a3a", "#8ec8f0", "#c9a227", "#5cd090", "#ff6a8a"]
 
+    /// Text / accent color for seat `0`…`5` — matches `chartLineColors` and the bankroll chart legend.
+    function colorForSeat(seat) {
+        var c = chartLineColors
+        if (seat === undefined || seat < 0 || seat >= c.length)
+            return textPrimary
+        return c[seat]
+    }
+
     /// Hex strings for Canvas2D (`fillStyle` / `strokeStyle`).
     readonly property string chartPlotFill: "#141016"
     readonly property string chartGridLine: "#2a3040"
@@ -104,6 +112,8 @@ QtObject {
     readonly property int trainerDrillHudSpacing: 12
     /// Inset from drill area right edge for embedded HUD — space between centered seat and controls.
     readonly property int trainerHudSeatMargin: 22
+    /// Nudge hero seat horizontally from panel center (negative = left) so HUD sits clearly to the side.
+    readonly property int trainerDrillSeatCenterOffset: -44
 
     /// Typography for training copy (large for readability). Body = primary reading style (match TrainerHome intro).
     readonly property int trainerTitlePt: 26
@@ -199,4 +209,9 @@ QtObject {
     readonly property color rangeLayerRaise: fire
     /// Open / lead layer — burgundy rose (distinct from raise, readable on dark felt).
     readonly property color rangeLayerOpen: "#a85868"
+
+    /// Text color for labels on accent-colored buttons (gold, green, etc.).
+    readonly property color onAccentText: "#ffffff"
+    /// Short UI transition (hover, border, scale).
+    readonly property int animDurationShort: 120
 }

@@ -261,7 +261,7 @@ Page {
                             label: qsTr("Preflop")
                             pillWidth: 100
                             buttonColor: Theme.successGreen
-                            textColor: "white"
+                            textColor: Theme.onAccentText
                             fontSize: Theme.uiHudButtonPt
                             onClicked: page.go(6)
                         }
@@ -269,7 +269,7 @@ Page {
                             label: qsTr("Flop")
                             pillWidth: 88
                             buttonColor: Theme.successGreen
-                            textColor: "white"
+                            textColor: Theme.onAccentText
                             fontSize: Theme.uiHudButtonPt
                             onClicked: page.go(7)
                         }
