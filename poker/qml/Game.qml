@@ -164,7 +164,7 @@ Page {
                 id: seatWrap
                 required property int index
                 width: 204
-                height: 282
+                height: 290
                 readonly property real angle: Math.PI / 2 - index * 2 * Math.PI / 6
                 readonly property real cornerBoost: (index === 1 || index === 2 || index === 4 || index === 5) ? 1.09 : 1.0
                 readonly property real scx: tableArea.feltCenter.x + tableArea.orbitRx * Math.cos(angle) * cornerBoost

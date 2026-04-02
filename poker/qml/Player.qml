@@ -53,8 +53,11 @@ Item {
     }
 
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
-    implicitHeight: 282
+    implicitHeight: 290
     implicitWidth: 204
+
+    /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
+    readonly property int contentWidth: Theme.holePairTotalWidth
 
     opacity: (foldedDim && seatAtTable) ? 0.52 : 1.0
     Behavior on opacity {
@@ -136,35 +139,42 @@ Item {
                 Layout.preferredHeight: Theme.holeCardHeight + 12
                 Layout.maximumHeight: Theme.holeCardHeight + 12
                 Layout.minimumHeight: Theme.holeCardHeight + 12
-                Layout.fillWidth: true
+                Layout.preferredWidth: root.contentWidth
+                Layout.maximumWidth: root.contentWidth
+                Layout.minimumWidth: root.contentWidth
+                Layout.alignment: Qt.AlignHCenter
                 currentIndex: !root.seatAtTable ? 2 : (root.inHand ? 0 : 1)
 
                 Item {
-                    Card {
-                        id: c1
-                        width: Theme.holeCardWidth
-                        height: Theme.holeCardHeight
-                        anchors.right: parent.horizontalCenter
-                        anchors.rightMargin: 2
-                        anchors.verticalCenter: parent.verticalCenter
-                        card: root.first_card
-                        flipped: root.show_cards && root.first_card.length > 0
-                        dealEpoch: root.handEpoch
-                    }
+                    width: root.contentWidth
+                    height: Theme.holeCardHeight + 12
 
-                    Card {
-                        width: Theme.holeCardWidth
-                        height: Theme.holeCardHeight
-                        anchors.left: parent.horizontalCenter
-                        anchors.leftMargin: 2
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
-                        card: root.second_card
-                        flipped: root.show_cards && root.second_card.length > 0
-                        dealEpoch: root.handEpoch
+                        spacing: Theme.holeCardGap
+
+                        Card {
+                            width: Theme.holeCardWidth
+                            height: Theme.holeCardHeight
+                            card: root.first_card
+                            flipped: root.show_cards && root.first_card.length > 0
+                            dealEpoch: root.handEpoch
+                        }
+
+                        Card {
+                            width: Theme.holeCardWidth
+                            height: Theme.holeCardHeight
+                            card: root.second_card
+                            flipped: root.show_cards && root.second_card.length > 0
+                            dealEpoch: root.handEpoch
+                        }
                     }
                 }
 
                 Item {
+                    width: root.contentWidth
+                    height: Theme.holeCardHeight + 12
                     Text {
                         anchors.fill: parent
                         anchors.margins: 4
@@ -182,6 +192,8 @@ Item {
                 }
 
                 Item {
+                    width: root.contentWidth
+                    height: Theme.holeCardHeight + 12
                     Text {
                         anchors.fill: parent
                         anchors.margins: 4
@@ -201,12 +213,13 @@ Item {
                 Layout.preferredHeight: 22
                 Layout.maximumHeight: 22
                 Layout.minimumHeight: 22
-                Layout.fillWidth: true
+                Layout.preferredWidth: root.contentWidth
+                Layout.maximumWidth: root.contentWidth
+                Layout.minimumWidth: root.contentWidth
+                Layout.alignment: Qt.AlignHCenter
 
                 Rectangle {
                     anchors.fill: parent
-                    anchors.leftMargin: 2
-                    anchors.rightMargin: 2
                     visible: root.inHand && root.seatAtTable && root.streetActionText.length > 0
                     radius: 4
                     color: Theme.hudBg1
@@ -234,6 +247,9 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredHeight: 34
                 Layout.maximumHeight: 34
+                Layout.preferredWidth: root.contentWidth
+                Layout.maximumWidth: root.contentWidth
+                Layout.minimumWidth: root.contentWidth
                 spacing: 4
 
                 Rectangle {
@@ -259,7 +275,7 @@ Item {
 
                 Rectangle {
                     Layout.preferredWidth: 40
-                    Layout.preferredHeight: 28
+                    Layout.preferredHeight: 34
                     Layout.alignment: Qt.AlignVCenter
                     radius: 6
                     color: root.isDealer ? Theme.hudBg0 : Theme.panelElevated
@@ -282,7 +298,10 @@ Item {
 
             Item {
                 id: thinkBarSlot
-                Layout.fillWidth: true
+                Layout.preferredWidth: root.contentWidth
+                Layout.maximumWidth: root.contentWidth
+                Layout.minimumWidth: root.contentWidth
+                Layout.alignment: Qt.AlignHCenter
                 Layout.preferredHeight: 12
                 Layout.maximumHeight: 12
                 Layout.minimumHeight: 12
@@ -292,8 +311,6 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.leftMargin: 4
-                    anchors.rightMargin: 4
                     height: 6
                     enabled: root.isActing
                     opacity: root.isActing ? 1 : 0
@@ -331,11 +348,14 @@ Item {
 
             ColumnLayout {
                 Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: root.contentWidth
+                Layout.maximumWidth: root.contentWidth
+                Layout.minimumWidth: root.contentWidth
                 spacing: 2
 
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: 180
+                    Layout.fillWidth: true
                     Layout.preferredHeight: 30
                     Layout.maximumHeight: 30
                     radius: 6

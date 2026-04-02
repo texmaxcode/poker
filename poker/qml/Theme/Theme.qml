@@ -80,9 +80,11 @@ QtObject {
     readonly property color profitUp: "#6fdc8c"
     readonly property color profitDown: "#ff8a8a"
 
-    /// Playing cards (~1 : 1.48 width:height). Hole pair fits 204px seat (2×width + gap + margins).
-    readonly property int holeCardWidth: 92
-    readonly property int holeCardHeight: 136
+    /// Playing cards (~1 : 1.48 width:height). Pair width matches 204px seat inner (margins 4).
+    readonly property int holeCardWidth: 96
+    readonly property int holeCardHeight: 142
+    readonly property int holeCardGap: 4
+    readonly property int holePairTotalWidth: 2 * holeCardWidth + holeCardGap
     /// Board / default `Card` footprint — five across + spacing fits centered on typical table width.
     readonly property int boardCardWidth: 108
     readonly property int boardCardHeight: 160
