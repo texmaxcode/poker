@@ -1,10 +1,11 @@
 import QtQuick
+import Theme 1.0
 
 /// Community card: staggered deal-in, then flip from back to face (natural pace).
 Item {
     id: root
-    width: 100
-    height: 148
+    width: Theme.boardCardWidth
+    height: Theme.boardCardHeight
 
     property string card: ""
     property int staggerIndex: 0
@@ -22,8 +23,8 @@ Item {
 
     transform: Scale {
         id: sc
-        origin.x: 50
-        origin.y: 74
+        origin.x: root.width * 0.5
+        origin.y: root.height * 0.5
         xScale: 0.88
         yScale: 0.88
     }

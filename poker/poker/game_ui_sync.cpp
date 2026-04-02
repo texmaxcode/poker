@@ -17,6 +17,7 @@ void game::sync_ui()
     m_root->setProperty("showdown", ui_showdown_);
     m_root->setProperty("handSeq", hand_seq_);
     m_root->setProperty("pot", pot);
+    m_root->setProperty("sidePotAmounts", side_pot_amounts_for_ui());
     m_root->setProperty("buttonSeat", button);
     m_root->setProperty("sbSeat", sb_seat_);
     m_root->setProperty("bbSeat", bb_seat_);
@@ -56,13 +57,25 @@ void game::sync_ui()
     }
     if (waiting_for_human_check_)
     {
-        m_root->setProperty("openRaiseMinChips", street_bet_);
+        /// Human may open for any amount from 1 chip to stack (NL).
+        m_root->setProperty("openRaiseMinChips", 1);
         m_root->setProperty("openRaiseMaxChips", table[static_cast<size_t>(kHumanSeat)].stack);
     }
     else
     {
         m_root->setProperty("openRaiseMinChips", 0);
         m_root->setProperty("openRaiseMaxChips", 0);
+    }
+    if (waiting_for_human_bb_preflop_)
+    {
+        const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
+        m_root->setProperty("bbPreflopMinChips", std::max(1, inc));
+        m_root->setProperty("bbPreflopMaxChips", table[static_cast<size_t>(kHumanSeat)].stack);
+    }
+    else
+    {
+        m_root->setProperty("bbPreflopMinChips", 0);
+        m_root->setProperty("bbPreflopMaxChips", 0);
     }
     m_root->setProperty("smallBlind", small_blind);
     m_root->setProperty("bigBlind", big_blind);

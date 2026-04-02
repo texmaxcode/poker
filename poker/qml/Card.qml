@@ -1,9 +1,10 @@
 import QtQuick
+import Theme 1.0
 
 Flipable {
     id: flipable
-    width: 100
-    height: 148
+    width: Theme.boardCardWidth
+    height: Theme.boardCardHeight
 
     property bool flipped: false
     property string card: "spades_ace.svg"

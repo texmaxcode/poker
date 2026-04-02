@@ -80,6 +80,13 @@ QtObject {
     readonly property color profitUp: "#6fdc8c"
     readonly property color profitDown: "#ff8a8a"
 
+    /// Playing cards (~1 : 1.48 width:height). Hole pair fits 204px seat (2×width + gap + margins).
+    readonly property int holeCardWidth: 92
+    readonly property int holeCardHeight: 136
+    /// Board / default `Card` footprint — five across + spacing fits centered on typical table width.
+    readonly property int boardCardWidth: 108
+    readonly property int boardCardHeight: 160
+
     /// 13×13 range editor: heatmap and composite layers (gold / fire / burgundy — matches logo banner & type).
     readonly property color rangeHeatLo: panel
     readonly property color rangeHeatHi: gold

@@ -133,17 +133,17 @@ Item {
 
             /// Same height for cards / folded / inactive so the seat does not shift between states.
             StackLayout {
-                Layout.preferredHeight: 148
-                Layout.maximumHeight: 148
-                Layout.minimumHeight: 148
+                Layout.preferredHeight: Theme.holeCardHeight + 12
+                Layout.maximumHeight: Theme.holeCardHeight + 12
+                Layout.minimumHeight: Theme.holeCardHeight + 12
                 Layout.fillWidth: true
                 currentIndex: !root.seatAtTable ? 2 : (root.inHand ? 0 : 1)
 
                 Item {
                     Card {
                         id: c1
-                        width: 86
-                        height: 127
+                        width: Theme.holeCardWidth
+                        height: Theme.holeCardHeight
                         anchors.right: parent.horizontalCenter
                         anchors.rightMargin: 2
                         anchors.verticalCenter: parent.verticalCenter
@@ -153,8 +153,8 @@ Item {
                     }
 
                     Card {
-                        width: 86
-                        height: 127
+                        width: Theme.holeCardWidth
+                        height: Theme.holeCardHeight
                         anchors.left: parent.horizontalCenter
                         anchors.leftMargin: 2
                         anchors.verticalCenter: parent.verticalCenter

@@ -13,6 +13,8 @@ Page {
     }
 
     property int pot: 0
+    /// Per-tier side pot sizes (main first); length > 1 means multiple pots — see `Table` HUD.
+    property var sidePotAmounts: []
     property var seatStacks: [100, 100, 100, 100, 100, 100]
     property var seatC1: ["", "", "", "", "", ""]
     property var seatC2: ["", "", "", "", "", ""]
@@ -48,6 +50,8 @@ Page {
     property int facingPotAmount: 0
     property int openRaiseMinChips: 0
     property int openRaiseMaxChips: 0
+    property int bbPreflopMinChips: 0
+    property int bbPreflopMaxChips: 0
     property int humanStackChips: 0
     property bool humanBbCanRaise: false
     property var pokerGameAccess: null
@@ -80,18 +84,21 @@ Page {
             return "SB"
         if (bb >= 0 && seat === bb)
             return "BB"
+        // Clockwise from BB: non-blind seats are UTG, then optional middle(s), then CO (last before BTN).
+        // 6-max: UTG — HJ — CO; 5-max: UTG — CO only (second seat is not "HJ"). Matches common charts / WPF flow.
         var order = []
         for (var k = 1; k <= n; k++) {
             var s = (bb + k) % n
             if (s !== btn && s !== sb && s !== bb && inDealingPool(s))
                 order.push(s)
         }
-        if (order.length > 0 && seat === order[0])
+        var m = order.length
+        if (m > 0 && seat === order[0])
             return "UTG"
-        if (order.length > 1 && seat === order[1])
-            return "HJ"
-        if (order.length > 2 && seat === order[2])
+        if (m >= 2 && seat === order[m - 1])
             return "CO"
+        if (m >= 3 && seat === order[m - 2])
+            return "HJ"
         return "—"
     }
 
@@ -137,6 +144,7 @@ Page {
             z: 3
             anchors.fill: parent
             pot_amount: game_screen.pot
+            sidePotAmounts: game_screen.sidePotAmounts
             actingSeat: game_screen.actingSeat
             decisionSecondsLeft: game_screen.decisionSecondsLeft
             facingNeedChips: game_screen.facingNeedChips
@@ -241,6 +249,8 @@ Page {
             facingPotAmount: game_screen.facingPotAmount
             openRaiseMinChips: game_screen.openRaiseMinChips
             openRaiseMaxChips: game_screen.openRaiseMaxChips
+            bbPreflopMinChips: game_screen.bbPreflopMinChips
+            bbPreflopMaxChips: game_screen.bbPreflopMaxChips
             humanStackChips: game_screen.humanStackChips
             humanBbCanRaise: game_screen.humanBbCanRaise
             humanSitOut: game_screen.humanSittingOut
@@ -256,6 +266,7 @@ Page {
             onClicked: {
                 game_controls.raiseSizingExpanded = false
                 game_controls.openRaiseSizingExpanded = false
+                game_controls.bbPreflopSizingExpanded = false
             }
         }
     }

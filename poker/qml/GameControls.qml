@@ -33,6 +33,8 @@ Item {
     property int facingPotAmount: 0
     property int openRaiseMinChips: 0
     property int openRaiseMaxChips: 0
+    property int bbPreflopMinChips: 0
+    property int bbPreflopMaxChips: 0
     property int humanStackChips: 0
     property bool humanCanBuyBackIn: false
     property int buyInChips: 100
@@ -66,8 +68,11 @@ Item {
     property bool raiseSizingExpanded: false
     /// Show open-raise slider + presets only after Raise (first in on the street).
     property bool openRaiseSizingExpanded: false
+    /// BB preflop: choose amount to add over the big blind.
+    property bool bbPreflopSizingExpanded: false
 
     readonly property bool sizingDialogOpen: raiseSizingExpanded || openRaiseSizingExpanded
+            || bbPreflopSizingExpanded
 
     function raiseSpinSafeMin() {
         return Math.min(facingMinRaiseChips, facingMaxChips)
@@ -83,6 +88,21 @@ Item {
 
     function openRaiseSafeMax() {
         return Math.max(openRaiseMinChips, openRaiseMaxChips)
+    }
+
+    function bbPreflopSpinSafeMin() {
+        return Math.min(bbPreflopMinChips, bbPreflopMaxChips)
+    }
+
+    function bbPreflopSpinSafeMax() {
+        return Math.max(bbPreflopMinChips, bbPreflopMaxChips)
+    }
+
+    function submitBbPreflopRaise() {
+        if (!pokerGame || !game_controls.bbPreflopSizingExpanded || !game_controls.humanBbPreflopOption
+                || !game_controls.humanBbCanRaise)
+            return
+        pokerGame.submitBbPreflopRaise(Math.round(bbPreflopSlider.value))
     }
 
     function submitFacingRaise() {
@@ -125,6 +145,7 @@ Item {
             if (!game_controls.humanDecisionActive) {
                 game_controls.raiseSizingExpanded = false
                 game_controls.openRaiseSizingExpanded = false
+                game_controls.bbPreflopSizingExpanded = false
             }
         }
         function onCheckOrRaiseSizedChanged() {
@@ -138,6 +159,10 @@ Item {
         function onCanOpenRaiseChanged() {
             if (!game_controls.canOpenRaise)
                 game_controls.openRaiseSizingExpanded = false
+        }
+        function onHumanBbPreflopOptionChanged() {
+            if (!game_controls.humanBbPreflopOption)
+                game_controls.bbPreflopSizingExpanded = false
         }
     }
 
@@ -361,6 +386,81 @@ Item {
                 }
             }
 
+            // BB preflop raise sizing (chips to add on top of posting BB)
+            Rectangle {
+                visible: game_controls.showHumanActions && game_controls.showWagerUi
+                        && game_controls.humanDecisionActive
+                        && game_controls.humanBbPreflopOption
+                        && game_controls.humanBbCanRaise
+                        && game_controls.bbPreflopSizingExpanded
+                        && game_controls.bbPreflopMaxChips >= game_controls.bbPreflopMinChips
+                width: parent.width
+                height: visible ? bbPreflopSizerCol.implicitHeight + 16 : 0
+                color: Theme.panelElevated
+                border.color: Theme.inputBorder
+                border.width: 1
+                clip: true
+
+                Column {
+                    id: bbPreflopSizerCol
+                    width: parent.width - 16
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 8
+                    spacing: 6
+
+                    Slider {
+                        id: bbPreflopSlider
+                        width: parent.width
+                        from: game_controls.bbPreflopSpinSafeMin()
+                        to: game_controls.bbPreflopSpinSafeMax()
+                        stepSize: 1
+                        snapMode: Slider.SnapAlways
+                        value: from
+
+                        function syncBbPreflopSlider() {
+                            bbPreflopSlider.from = game_controls.bbPreflopSpinSafeMin()
+                            bbPreflopSlider.to = game_controls.bbPreflopSpinSafeMax()
+                            if (bbPreflopSlider.to < bbPreflopSlider.from) {
+                                bbPreflopSlider.value = bbPreflopSlider.from
+                                return
+                            }
+                            bbPreflopSlider.value = Math.min(
+                                Math.max(game_controls.bbPreflopMinChips, bbPreflopSlider.from),
+                                bbPreflopSlider.to)
+                        }
+
+                        Component.onCompleted: syncBbPreflopSlider()
+                    }
+
+                    Connections {
+                        target: bbPreflopSlider
+                        function onPressedChanged() {
+                            if (!bbPreflopSlider.pressed)
+                                game_controls.submitBbPreflopRaise()
+                        }
+                    }
+
+                    Connections {
+                        target: game_controls
+                        function onBbPreflopMinChipsChanged() {
+                            bbPreflopSlider.syncBbPreflopSlider()
+                        }
+                        function onBbPreflopMaxChipsChanged() {
+                            bbPreflopSlider.syncBbPreflopSlider()
+                        }
+                    }
+
+                    SizingPresetBar {
+                        width: parent.width
+                        hud: game_controls
+                        slider: bbPreflopSlider
+                        flavor: "bb"
+                        afterPreset: game_controls.submitBbPreflopRaise
+                    }
+                }
+            }
+
             // BB preflop option
             Row {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
@@ -383,14 +483,12 @@ Item {
 
                 HudButton {
                     visible: game_controls.humanBbCanRaise && game_controls.humanHasChips
+                            && !game_controls.bbPreflopSizingExpanded
                     label: qsTr("Raise")
                     pillWidth: 96
                     buttonColor: Theme.successGreen
                     textColor: "white"
-                    onClicked: {
-                        if (pageRoot)
-                            pageRoot.buttonClicked("RAISE")
-                    }
+                    onClicked: game_controls.bbPreflopSizingExpanded = true
                 }
             }
 

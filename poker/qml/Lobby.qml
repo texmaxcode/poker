@@ -31,7 +31,38 @@ Page {
             Layout.preferredHeight: Math.min(400, lobbyPage.height * 0.46)
             Layout.maximumHeight: 500
 
+            /// Radial fade behind the logo (Canvas: `RadialGradient` is not a Rectangle gradient type in Qt 6 Quick).
+            Canvas {
+                id: logoBackdropFade
+                z: 0
+                anchors.centerIn: parent
+                width: Math.min(560, parent.width - 16)
+                height: Math.min(parent.height - 8, width * 0.78)
+                readonly property color stopMid: Qt.alpha(Theme.bgGradientMid, 0.14)
+                readonly property color stopBot: Qt.alpha(Theme.bgGradientBottom, 0.42)
+
+                onPaint: {
+                    var ctx = getContext("2d")
+                    if (width < 8 || height < 8)
+                        return
+                    ctx.clearRect(0, 0, width, height)
+                    var cx = width * 0.5
+                    var cy = height * 0.42
+                    var r = Math.max(width, height) * 0.72
+                    var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+                    g.addColorStop(0, "rgba(0,0,0,0)")
+                    g.addColorStop(0.45, stopMid.toString())
+                    g.addColorStop(1, stopBot.toString())
+                    ctx.fillStyle = g
+                    ctx.fillRect(0, 0, width, height)
+                }
+                onWidthChanged: Qt.callLater(requestPaint)
+                onHeightChanged: Qt.callLater(requestPaint)
+                Component.onCompleted: Qt.callLater(requestPaint)
+            }
+
             Image {
+                z: 1
                 anchors.centerIn: parent
                 width: Math.min(540, parent.width - 24)
                 height: Math.min(parent.height, width * 0.72)

@@ -16,6 +16,7 @@
 #include <QSettings>
 #include <QString>
 #include <QTimer>
+#include <QVariantList>
 #include <QVariantMap>
 
 namespace {
@@ -279,6 +280,47 @@ QString game::human_hand_line_for_ui() const
     return QString::fromStdString(describe_holdem_hand(v));
 }
 
+QVariantList game::side_pot_amounts_for_ui() const
+{
+    QVariantList out;
+    const int n = players_count();
+    if (n < 2 || pot <= 0)
+        return out;
+
+    int sum_contrib = 0;
+    for (int i = 0; i < n; ++i)
+        sum_contrib += hand_contrib_[static_cast<size_t>(i)];
+    if (sum_contrib != pot)
+        return out;
+
+    std::vector<int> levels;
+    for (int i = 0; i < n; ++i)
+    {
+        const int c = hand_contrib_[static_cast<size_t>(i)];
+        if (c > 0)
+            levels.push_back(c);
+    }
+    std::sort(levels.begin(), levels.end());
+    levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
+
+    int prev = 0;
+    for (int level : levels)
+    {
+        const int increment = level - prev;
+        int n_cover = 0;
+        for (int i = 0; i < n; ++i)
+        {
+            if (hand_contrib_[static_cast<size_t>(i)] >= level)
+                ++n_cover;
+        }
+        const int tier_chips = increment * n_cover;
+        if (tier_chips > 0)
+            out.append(tier_chips);
+        prev = level;
+    }
+    return out;
+}
+
 // Preflop: first actor is UTG — clockwise after the big blind (heads-up: button / small blind first).
 // Flop+: first actor is clockwise from the button (small blind if still in; heads-up: big blind first).
 std::vector<int> game::action_order(Street st) const
@@ -373,7 +415,9 @@ void game::wait_for_human_need(int need_chips, Street st, int raise_increment_ch
     if (need_chips <= 0)
         return;
 
-    pending_human_need_ = need_chips;
+    /// Effective call (short stacks all-in for less than full `need_chips`).
+    pending_human_need_ =
+        std::min(need_chips, std::max(0, table[static_cast<size_t>(kHumanSeat)].stack));
     pending_human_raise_inc_ = raise_increment_chips;
     waiting_for_human_ = true;
     human_facing_action_ = -1;
@@ -495,8 +539,10 @@ void game::finish_human_check(bool check, int bet_chips)
     if (!check)
     {
         const size_t hi = static_cast<size_t>(kHumanSeat);
-        const int chips = std::clamp(bet_chips, street_bet_, table[hi].stack);
-        if (chips < street_bet_)
+        /// NL: allow any open size from 1 chip up to stack (bots still use `street_bet_` as default open).
+        const int min_open = 1;
+        const int chips = std::clamp(bet_chips, min_open, table[hi].stack);
+        if (chips < min_open)
         {
             emit humanCheckFinished();
             return;
@@ -565,28 +611,49 @@ void game::finish_human_bb_preflop(bool raise)
 {
     if (!waiting_for_human_bb_preflop_)
         return;
+    if (raise)
+        return;
     waiting_for_human_bb_preflop_ = false;
     human_bb_preflop_raised_ = false;
     human_decision_tick_.stop();
     human_decision_deadline_.stop();
-    if (raise)
+    set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
+    emit humanBbPreflopFinished();
+}
+
+void game::submitBbPreflopRaise(int chips_to_add)
+{
+    if (!waiting_for_human_bb_preflop_)
+        return;
+    waiting_for_human_bb_preflop_ = false;
+    human_bb_preflop_raised_ = false;
+    human_decision_tick_.stop();
+    human_decision_deadline_.stop();
+
+    const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
+    const size_t bi = static_cast<size_t>(kHumanSeat);
+    if (inc <= 0 || max_street_contrib() != big_blind || table[bi].stack <= 0)
     {
-        const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
-        const size_t bi = static_cast<size_t>(kHumanSeat);
-        if (inc > 0 && table[bi].stack >= inc && max_street_contrib() == big_blind)
-        {
-            const int taken = table[bi].take_from_stack(inc);
-            add_chips_to_pot(kHumanSeat, taken);
-            street_contrib_[bi] += taken;
-            last_raise_increment_ = inc;
-            human_bb_preflop_raised_ = true;
-            set_seat_street_action(kHumanSeat,
-                                   QStringLiteral("Raise to $%1").arg(static_cast<int>(street_contrib_[bi])));
-            emit pot_changed();
-        }
-    }
-    else
         set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
+        emit humanBbPreflopFinished();
+        return;
+    }
+    const int c = std::clamp(chips_to_add, inc, table[bi].stack);
+    if (c < inc)
+    {
+        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
+        emit humanBbPreflopFinished();
+        return;
+    }
+    const int taken = table[bi].take_from_stack(c);
+    add_chips_to_pot(kHumanSeat, taken);
+    street_contrib_[bi] += taken;
+    last_raise_increment_ = taken;
+    human_bb_preflop_raised_ = true;
+    bb_preflop_option_open_ = false;
+    set_seat_street_action(kHumanSeat,
+                           QStringLiteral("Raise to $%1").arg(static_cast<int>(street_contrib_[bi])));
+    emit pot_changed();
     emit humanBbPreflopFinished();
 }
 
@@ -801,11 +868,6 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
 
     if (seat == kHumanSeat)
     {
-        if (table[si].stack < need)
-        {
-            in_hand_[si] = false;
-            return true;
-        }
         if (!interactive_human_ || !m_root)
         {
             const int stack_before = table[si].stack;
@@ -842,10 +904,19 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             if (chips <= 0)
                 chips = need + inc;
             chips = std::min(chips, table[si].stack);
-            if (chips < need)
+            if (chips <= 0)
             {
                 set_seat_street_action(seat, QStringLiteral("Fold"));
                 in_hand_[si] = false;
+                return true;
+            }
+            if (chips < need)
+            {
+                const int taken_short = table[si].take_from_stack(chips);
+                add_chips_to_pot(seat, taken_short);
+                street_contrib_[si] += taken_short;
+                set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(taken_short));
+                emit pot_changed();
                 return true;
             }
             const int stack_before_raise = table[si].stack;
@@ -872,12 +943,6 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             return true;
         }
 
-        if (table[si].stack < need)
-        {
-            set_seat_street_action(seat, QStringLiteral("Fold"));
-            in_hand_[si] = false;
-            return true;
-        }
         const int stack_before_call = table[si].stack;
         const int taken_call = table[si].take_from_stack(need);
         add_chips_to_pot(seat, taken_call);
@@ -956,14 +1021,6 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
         }
     }
 
-    if (table[si].stack < need)
-    {
-        set_seat_street_action(seat, QStringLiteral("Fold"));
-        in_hand_[si] = false;
-        acting_seat_ = -1;
-        sync_ui();
-        return true;
-    }
     const int stack_before_bot_call = table[si].stack;
     const int taken_bot = table[si].take_from_stack(need);
     add_chips_to_pot(seat, taken_bot);
@@ -1156,11 +1213,13 @@ bool game::run_street_betting(Street st)
             if (!in_hand_[static_cast<size_t>(seat)])
                 continue;
             const int need = max_c - street_contrib_[static_cast<size_t>(seat)];
-            if (need > 0)
-            {
-                first_behind = seat;
-                break;
-            }
+            if (need <= 0)
+                continue;
+            /// Skip all-in players who already put everything in this street (side-pot case).
+            if (table[static_cast<size_t>(seat)].stack <= 0)
+                continue;
+            first_behind = seat;
+            break;
         }
 
         if (first_behind >= 0)
@@ -2101,8 +2160,6 @@ void game::buttonClicked(QString button)
     {
         if (button == QStringLiteral("CHECK"))
             finish_human_bb_preflop(false);
-        else if (button == QStringLiteral("RAISE"))
-            finish_human_bb_preflop(true);
         return;
     }
     if (waiting_for_human_check_)

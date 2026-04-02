@@ -167,8 +167,10 @@ public:
     Q_INVOKABLE bool autoHandLoop() const { return auto_hand_loop_; }
     /// Facing a raise: 0=fold, 1=call, 2=raise; raiseChips = total chips to add from stack this action (min raise to all-in).
     Q_INVOKABLE void submitFacingAction(int action, int raiseChips);
-    /// No wager yet: check=true to check; else raise by betChips (>= min raise, up to stack).
+    /// No wager yet: check=true to check; else bet `betChips` from stack (>= 1 chip, up to stack).
     Q_INVOKABLE void submitCheckOrBet(bool check, int betChips);
+    /// BB preflop option: add `chipsToAdd` from stack (>= min raise increment, up to stack).
+    Q_INVOKABLE void submitBbPreflopRaise(int chipsToAdd);
     /// Fold when checked to with no raise yet; mucks the hand.
     Q_INVOKABLE void submitFoldFromCheck();
 
@@ -274,6 +276,8 @@ private:
     void do_payouts();
     void switch_button();
     QString human_hand_line_for_ui() const;
+    /// Chip counts per side-pot tier (main first), aligned with `do_payouts`; empty if inconsistent.
+    QVariantList side_pot_amounts_for_ui() const;
     void sync_ui();
     void flush_ui();
 };

@@ -9,7 +9,7 @@ Row {
 
     required property var hud
     required property Slider slider
-    /// `"raise"` = facing a raise; `"open"` = first raise on a street.
+    /// `"raise"` = facing a raise; `"open"` = first raise on a street; `"bb"` = BB preflop raise (chips to add).
     property string flavor: "raise"
     /// Called after a preset updates the slider (e.g. submit bet/raise in the parent HUD).
     property var afterPreset: null
@@ -30,6 +30,11 @@ Row {
         slider.value = clampToSlider(v)
     }
 
+    function applyBbRaise(v) {
+        v = Math.max(v, hud.bbPreflopMinChips)
+        slider.value = clampToSlider(v)
+    }
+
     function applyPotFrac(num, den) {
         if (root.flavor === "raise")
             applyRaiseTotal(hud.facingNeedChips + Math.floor(hud.facingPotAmount * num / den))
@@ -40,6 +45,34 @@ Row {
     }
 
     function runPreset(kind) {
+        if (root.flavor === "bb") {
+            switch (kind) {
+            case "min":
+                applyBbRaise(hud.bbPreflopMinChips)
+                break
+            case "third":
+                applyBbRaise(Math.floor(hud.facingPotAmount / 3))
+                break
+            case "half":
+                applyBbRaise(Math.floor(hud.facingPotAmount / 2))
+                break
+            case "twothirds":
+                applyBbRaise(Math.floor(hud.facingPotAmount * 2 / 3))
+                break
+            case "pot":
+                applyBbRaise(Math.min(hud.bbPreflopMaxChips,
+                        Math.max(hud.bbPreflopMinChips, hud.facingPotAmount)))
+                break
+            case "all":
+                applyBbRaise(hud.bbPreflopMaxChips)
+                break
+            default:
+                return
+            }
+            if (root.afterPreset)
+                root.afterPreset()
+            return
+        }
         switch (kind) {
         case "min":
             if (root.flavor === "raise")
