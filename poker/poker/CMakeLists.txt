@@ -14,6 +14,7 @@ qt_add_library(poker
   bot.cpp
   equity_engine.cpp
   poker_solver.cpp
+  toy_nash_solver.cpp
   session_store.cpp
 )
 

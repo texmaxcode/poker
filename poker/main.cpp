@@ -7,6 +7,7 @@
 #include "game.hpp"
 #include "poker_solver.hpp"
 #include "session_store.hpp"
+#include "toy_nash_solver.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -17,12 +18,24 @@ int main(int argc, char *argv[])
     game poker_game;
     poker_game.loadPersistedSettings();
     PokerSolver poker_solver;
+    ToyNashSolver toy_nash_solver;
     SessionStore session_store;
+
+    // Headless self-test for debugging crashes in toy solver code paths.
+    const QStringList args = QCoreApplication::arguments();
+    if (args.contains(QStringLiteral("--selftest-leduc")))
+    {
+        const QVariantMap r = toy_nash_solver.solveLeduc(2000);
+        const QString s = r.value(QStringLiteral("summaryText")).toString();
+        qInfo().noquote() << s;
+        return 0;
+    }
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/"));
     engine.rootContext()->setContextProperty(QStringLiteral("pokerGame"), &poker_game);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerSolver"), &poker_solver);
+    engine.rootContext()->setContextProperty(QStringLiteral("toyNashSolver"), &toy_nash_solver);
     engine.rootContext()->setContextProperty(QStringLiteral("sessionStore"), &session_store);
 
     QObject::connect(&app, &QGuiApplication::aboutToQuit, &poker_game, [&poker_game]() {

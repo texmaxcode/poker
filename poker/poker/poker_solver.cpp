@@ -141,8 +141,8 @@ QVariantMap compute_equity_impl(const QString &hero1,
 
     QString detail;
     detail += QStringLiteral(
-        "Monte Carlo equity (chip expectation from showdown). This is not a full CFR Nash solution for "
-        "multi-street play; use commercial solvers (Pio, GTO+, etc.) for precise multi-street strategies.\n\n");
+        "Monte Carlo equity (chip expectation from showdown). This is not a Nash-equilibrium solver for "
+        "no-limit hold'em strategy trees; it estimates equity and simple pot-odds / chip-EV call models.\n\n");
     detail += QStringLiteral("Estimated equity: %1% ± ~%2% (1 std err).\n")
                   .arg(eq * 100.0, 0, 'f', 2)
                   .arg(er.std_err * 100.0, 0, 'f', 2);

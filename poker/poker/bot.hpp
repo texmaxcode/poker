@@ -16,7 +16,7 @@ enum class BotStrategy : int
     LooseAggressive,
     Balanced,
     Maniac,
-    /// Frequency-shaped “solver-like” heuristic — not a full Nash solver; tunable like other archetypes.
+    /// Frequency-shaped “solver-like” heuristic — not a Nash-equilibrium solver; tunable like other archetypes.
     GTOHeuristic,
     Count
 };

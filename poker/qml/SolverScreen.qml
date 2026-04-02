@@ -12,6 +12,8 @@ Page {
     property string lastFullLog: ""
     /// Short lines for the main panel (spot + key numbers).
     property string summaryText: qsTr("Run a simulation for a brief summary. Open Full log for the complete output.")
+    property string nashSummaryText: qsTr("Pick a toy game and run CFR+ to compute an approximate Nash equilibrium.")
+    property string nashDetailText: ""
 
     function applySavedSolver(m) {
         if (m.hero1 !== undefined && m.hero1.length > 0)
@@ -193,6 +195,21 @@ Page {
                 }
             }
 
+            Connections {
+                target: toyNashSolver
+                function onSolveFinished(m) {
+                    solverPage.simRunning = false
+                    if (m["error"] !== undefined && String(m["error"]).length > 0) {
+                        const err = String(m["error"])
+                        solverPage.nashSummaryText = err
+                        solverPage.nashDetailText = err
+                        return
+                    }
+                    solverPage.nashSummaryText = String(m.summaryText !== undefined ? m.summaryText : "")
+                    solverPage.nashDetailText = String(m.detailText !== undefined ? m.detailText : "")
+                }
+            }
+
                 Label {
                     Layout.topMargin: 8
                     Layout.fillWidth: true
@@ -209,9 +226,10 @@ Page {
                     ToolTip.visible: solverIntroHover.hovered
                     ToolTip.delay: 400
                     ToolTip.text: qsTr(
-                        "Monte Carlo estimates equity against a villain range (or two exact hole cards). "
-                        + "Pot odds and chip-EV lines are study aids for calling decisions — not a multi-street "
-                        + "Nash solution; use dedicated solvers (Pio, GTO+, etc.) for full GTO trees.")
+                        "This tool runs Monte Carlo equity vs a villain range (or exact hand). "
+                        + "It helps with pot-odds and chip-EV for call/fold decisions.\n\n"
+                        + "A true Nash-equilibrium solver for full no-limit Texas Hold'em requires large game-tree "
+                        + "abstractions (bet sizes, states) and CFR-style algorithms; that's not implemented here.")
                 }
 
                 GroupBox {
@@ -452,6 +470,94 @@ Page {
 
                             Item {
                                 Layout.fillWidth: true
+                            }
+                        }
+                    }
+                }
+
+                GroupBox {
+                    title: qsTr("Nash solver (CFR+) — toy games")
+                    Layout.fillWidth: true
+                    padding: 8
+                    topPadding: 20
+                    font.bold: true
+                    font.pointSize: 11
+
+                    ColumnLayout {
+                        width: parent.width - 8
+                        spacing: 8
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: qsTr("Computes an approximate Nash equilibrium for small benchmark poker games. ")
+                                  + qsTr("This is the same family of algorithms used by full Hold'em solvers, ")
+                                  + qsTr("but on tiny games so it runs locally.")
+                            wrapMode: Text.Wrap
+                            color: Theme.textSecondary
+                            font.pixelSize: 12
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+
+                            ComboBox {
+                                id: nashGame
+                                Layout.preferredWidth: 220
+                                model: [qsTr("Kuhn (3-card)"), qsTr("Leduc (toy Hold'em)")]
+                                currentIndex: 0
+                            }
+
+                            SpinBox {
+                                id: nashIters
+                                from: 100
+                                to: 500000
+                                value: 5000
+                                stepSize: 100
+                                editable: true
+                                Layout.maximumWidth: 220
+                                implicitWidth: 220
+                            }
+
+                            Button {
+                                text: qsTr("Run CFR+")
+                                highlighted: true
+                                enabled: !solverPage.simRunning && !toyNashSolver.solveRunning()
+                                onClicked: {
+                                    solverPage.simRunning = true
+                                    solverPage.nashSummaryText = qsTr("Solving…")
+                                    solverPage.nashDetailText = ""
+                                    if (nashGame.currentIndex === 0)
+                                        toyNashSolver.solveKuhnAsync(nashIters.value)
+                                    else
+                                        toyNashSolver.solveLeducAsync(nashIters.value)
+                                }
+                            }
+
+                            BusyIndicator {
+                                visible: toyNashSolver.solveRunning() || solverPage.simRunning
+                                running: visible
+                                Layout.preferredWidth: 32
+                                Layout.preferredHeight: 32
+                            }
+
+                            Item { Layout.fillWidth: true }
+                        }
+
+                        TextArea {
+                            Layout.fillWidth: true
+                            Layout.minimumHeight: 150
+                            readOnly: true
+                            wrapMode: TextArea.Wrap
+                            font.family: "monospace"
+                            font.pixelSize: 10
+                            color: Theme.textPrimary
+                            text: solverPage.nashSummaryText + "\n\n" + solverPage.nashDetailText
+                            background: Rectangle {
+                                color: Theme.bgGradientMid
+                                border.color: Theme.headerRule
+                                border.width: 1
+                                radius: 8
                             }
                         }
                     }

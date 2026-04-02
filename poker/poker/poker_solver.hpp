@@ -7,8 +7,9 @@
 
 #include <atomic>
 
-/// UI-facing equity + chip-EV / pot-odds helper (Monte Carlo). Full multi-street GTO requires CFR
-/// solvers; this tool estimates equity vs a range or exact hand and compares to calling pot odds.
+/// UI-facing equity + chip-EV / pot-odds helper (Monte Carlo).
+/// This is not an equilibrium solver for no-limit hold'em; it estimates showdown equity vs a range
+/// or exact hand and compares to simple pot-odds / chip-EV calling models.
 class PokerSolver : public QObject
 {
     Q_OBJECT
