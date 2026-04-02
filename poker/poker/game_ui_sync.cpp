@@ -12,10 +12,7 @@
 void game::sync_ui()
 {
     if (!m_root)
-    {
-        emit ui_state_changed();
         return;
-    }
 
     m_root->setProperty("showdown", ui_showdown_);
     m_root->setProperty("handSeq", hand_seq_);
@@ -193,8 +190,6 @@ void game::sync_ui()
                         (street >= Street::TURN && flop.size() >= 3) ? card_to_qml_asset_path(turn) : QString());
     m_root->setProperty("board4",
                         (street >= Street::RIVER && flop.size() >= 3) ? card_to_qml_asset_path(river) : QString());
-
-    emit ui_state_changed();
 }
 
 void game::flush_ui()

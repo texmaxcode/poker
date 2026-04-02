@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Theme 1.0
 
-/// Pot + blinds in one HUD; street + board below. Pot ticks up with animation; pot bumps when chips grow.
+/// Pot HUD + board below. Pot ticks up with animation; pot bumps when chips grow.
 Item {
     id: table_container
     anchors.fill: parent
@@ -12,10 +12,6 @@ Item {
     property int decisionSecondsLeft: 0
     property int facingNeedChips: 0
     property bool humanSittingOut: false
-    property var seatStreetActions: ["", "", "", "", "", ""]
-    property int maxStreetContrib: 0
-    property int playerCount: 6
-
     readonly property bool humanDeciding: actingSeat === 0 && decisionSecondsLeft > 0 && !humanSittingOut
     readonly property bool showToCallHint: humanDeciding && facingNeedChips > 0
 
@@ -24,23 +20,18 @@ Item {
     property string board2: ""
     property string board3: ""
     property string board4: ""
-    property string streetPhase: ""
 
     readonly property color gold: Theme.gold
 
     /// Animated display value (counts toward current pot)
     property int potShown: 0
     property int _prevPotForBump: 0
-    property bool _streetReady: false
 
     readonly property int _potAnimDuration: 320
 
     Component.onCompleted: {
         potShown = pot_amount
         _prevPotForBump = pot_amount
-        Qt.callLater(function () {
-            table_container._streetReady = true
-        })
     }
 
     onPot_amountChanged: {
@@ -55,11 +46,6 @@ Item {
             duration: table_container._potAnimDuration
             easing.type: Easing.OutCubic
         }
-    }
-
-    onStreetPhaseChanged: {
-        if (_streetReady && streetPhase.length > 0)
-            streetPhaseAnim.restart()
     }
 
     Column {
@@ -92,7 +78,7 @@ Item {
 
             Row {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 10
 
                 Text {
                     id: potValueText
@@ -118,16 +104,16 @@ Item {
                     text: qsTr("·")
                     color: Theme.textMuted
                     font.bold: true
-                    font.pointSize: 18
+                    font.pointSize: 16
                 }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: table_container.showToCallHint
-                    text: qsTr("To call $%1").arg(table_container.facingNeedChips)
+                    text: qsTr("Call $%1").arg(table_container.facingNeedChips)
                     color: Theme.focusGold
                     font.bold: true
-                    font.pointSize: 14
+                    font.pointSize: 17
                 }
             }
 
@@ -163,63 +149,6 @@ Item {
                         to: 1.0
                         duration: 160
                         easing.type: Easing.OutCubic
-                    }
-                }
-            }
-        }
-
-        Item {
-            id: streetWrap
-            width: Math.max(streetText.implicitWidth, 80)
-            height: streetText.implicitHeight
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: table_container.streetPhase.length > 0
-            opacity: 1
-
-            Text {
-                id: streetText
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: table_container.streetPhase
-                color: Theme.accentBlue
-                font.pointSize: 12
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            transform: Scale {
-                id: streetScale
-                origin.x: streetWrap.width * 0.5
-                origin.y: streetWrap.height * 0.5
-                xScale: 1
-                yScale: 1
-            }
-
-            SequentialAnimation {
-                id: streetPhaseAnim
-                ParallelAnimation {
-                    NumberAnimation {
-                        target: streetWrap
-                        property: "opacity"
-                        from: 0.2
-                        to: 1.0
-                        duration: 260
-                        easing.type: Easing.OutCubic
-                    }
-                    NumberAnimation {
-                        target: streetScale
-                        property: "xScale"
-                        from: 0.88
-                        to: 1.0
-                        duration: 280
-                        easing.type: Easing.OutBack
-                    }
-                    NumberAnimation {
-                        target: streetScale
-                        property: "yScale"
-                        from: 0.88
-                        to: 1.0
-                        duration: 280
-                        easing.type: Easing.OutBack
                     }
                 }
             }

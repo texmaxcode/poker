@@ -1,7 +1,6 @@
 #ifndef TEXAS_HOLDEM_GYM_GAME_H
 #define TEXAS_HOLDEM_GYM_GAME_H
 
-#include <algorithm>
 #include <array>
 #include <functional>
 #include <random>
@@ -181,7 +180,6 @@ public:
 
 signals:
     void pot_changed();
-    void ui_state_changed();
     void sessionStatsChanged();
     void humanDecisionFinished();
     void humanCheckFinished();

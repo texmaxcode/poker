@@ -11,8 +11,6 @@ Page {
     property StackLayout stackLayout: null
 
     readonly property color gold: Theme.gold
-    readonly property color silver: Theme.textSecondary
-    readonly property color accentFire: Theme.fire
 
     background: BrandedBackground {
         anchors.fill: parent

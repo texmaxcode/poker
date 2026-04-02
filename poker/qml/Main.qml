@@ -37,7 +37,7 @@ ApplicationWindow {
 
     header: ToolBar {
         visible: stack.currentIndex > 0
-        implicitHeight: 28
+        implicitHeight: 42
 
         background: Rectangle {
             color: Theme.headerBg
@@ -51,10 +51,10 @@ ApplicationWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 6
-            anchors.rightMargin: 6
-            anchors.topMargin: 1
-            anchors.bottomMargin: 1
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            anchors.topMargin: 5
+            anchors.bottomMargin: 5
             spacing: 8
 
             ToolButton {
@@ -62,13 +62,20 @@ ApplicationWindow {
                 text: qsTr("Lobby")
                 font.family: win.fontUiBold
                 font.bold: true
-                font.pointSize: 7
+                font.pointSize: 8
                 icon.source: "qrc:/assets/icons/home.svg"
-                icon.width: 14
-                icon.height: 14
+                icon.width: 16
+                icon.height: 16
                 display: AbstractButton.TextBesideIcon
-                padding: 2
+                padding: 4
                 flat: false
+                hoverEnabled: true
+                Accessible.role: Accessible.Button
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    acceptedButtons: Qt.NoButton
+                }
                 background: Rectangle {
                     anchors.fill: parent
                     radius: 8
@@ -96,10 +103,10 @@ ApplicationWindow {
                     }
                 }
                 contentItem: RowLayout {
-                    spacing: 3
+                    spacing: 4
                     Image {
-                        width: 14
-                        height: 14
+                        width: 16
+                        height: 16
                         source: backBtn.icon.source
                         opacity: backBtn.enabled ? 1 : 0.45
                     }

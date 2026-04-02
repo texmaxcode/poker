@@ -8,7 +8,7 @@
 
 ## What’s in the box
 
-- **Lobby & table** — configurable blinds and stacks; human vs bots; sit-out; timed decisions; pot and board display.
+- **Lobby & table** — configurable blinds and stacks; human vs bots; sit-out; timed decisions; pot + call indicator; Min / ⅓ / ½ / ⅔ / Pot / All bet-sizing presets.
 - **Bots & ranges** — per-seat bot style and editable opening ranges (matrix / text).
 - **Solver & equity** — preflop solver and equity runs (work is off the UI thread where applicable).
 - **Core engine** — full hand from deal through showdown: blinds, streets, betting order, hand evaluation (best five of seven), simplified pot award (see [Rules & limitations](docs/rules-and-limitations.md)).

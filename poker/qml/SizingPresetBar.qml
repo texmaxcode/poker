@@ -63,8 +63,10 @@ Row {
                 if (root.afterPreset)
                     root.afterPreset()
             }
-            onPressed: parent.opacity = 0.85
-            onReleased: parent.opacity = 1
+            onEntered: parent.opacity = 0.88
+            onExited: parent.opacity = 1
+            onPressed: parent.opacity = 0.72
+            onReleased: parent.opacity = containsMouse ? 0.88 : 1
         }
     }
 
@@ -85,8 +87,10 @@ Row {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: root.applyPotFrac(1, 3)
-            onPressed: parent.opacity = 0.85
-            onReleased: parent.opacity = 1
+            onEntered: parent.opacity = 0.88
+            onExited: parent.opacity = 1
+            onPressed: parent.opacity = 0.72
+            onReleased: parent.opacity = containsMouse ? 0.88 : 1
         }
     }
 
@@ -107,8 +111,10 @@ Row {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: root.applyPotFrac(1, 2)
-            onPressed: parent.opacity = 0.85
-            onReleased: parent.opacity = 1
+            onEntered: parent.opacity = 0.88
+            onExited: parent.opacity = 1
+            onPressed: parent.opacity = 0.72
+            onReleased: parent.opacity = containsMouse ? 0.88 : 1
         }
     }
 
@@ -129,8 +135,10 @@ Row {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: root.applyPotFrac(2, 3)
-            onPressed: parent.opacity = 0.85
-            onReleased: parent.opacity = 1
+            onEntered: parent.opacity = 0.88
+            onExited: parent.opacity = 1
+            onPressed: parent.opacity = 0.72
+            onReleased: parent.opacity = containsMouse ? 0.88 : 1
         }
     }
 
@@ -158,8 +166,10 @@ Row {
                 if (root.afterPreset)
                     root.afterPreset()
             }
-            onPressed: parent.opacity = 0.85
-            onReleased: parent.opacity = 1
+            onEntered: parent.opacity = 0.88
+            onExited: parent.opacity = 1
+            onPressed: parent.opacity = 0.72
+            onReleased: parent.opacity = containsMouse ? 0.88 : 1
         }
     }
 
@@ -187,8 +197,10 @@ Row {
                 if (root.afterPreset)
                     root.afterPreset()
             }
-            onPressed: parent.opacity = 0.85
-            onReleased: parent.opacity = 1
+            onEntered: parent.opacity = 0.88
+            onExited: parent.opacity = 1
+            onPressed: parent.opacity = 0.72
+            onReleased: parent.opacity = containsMouse ? 0.88 : 1
         }
     }
 }

@@ -221,8 +221,10 @@ Item {
                             if (pageRoot)
                                 pageRoot.buttonClicked("MORE_TIME")
                         }
-                        onPressed: parent.opacity = 0.85
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
 
@@ -280,8 +282,10 @@ Item {
                                 if (pageRoot)
                                     pageRoot.buttonClicked("MORE_TIME")
                             }
-                            onPressed: parent.opacity = 0.85
-                            onReleased: parent.opacity = 1
+                            onEntered: parent.opacity = 0.92
+                            onExited: parent.opacity = 1
+                            onPressed: parent.opacity = 0.80
+                            onReleased: parent.opacity = containsMouse ? 0.92 : 1
                         }
                     }
 
@@ -417,8 +421,10 @@ Item {
                             if (pageRoot && game_controls.facingRaise)
                                 pageRoot.buttonClicked("FOLD")
                         }
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
 
@@ -445,8 +451,10 @@ Item {
                             if (pageRoot && game_controls.facingRaise)
                                 pageRoot.buttonClicked("CALL")
                         }
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
 
@@ -468,8 +476,10 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: game_controls.raiseSizingExpanded = true
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
             }
@@ -503,8 +513,10 @@ Item {
                             if (pageRoot)
                                 pageRoot.buttonClicked("CHECK")
                         }
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
 
@@ -529,8 +541,10 @@ Item {
                             if (pageRoot)
                                 pageRoot.buttonClicked("RAISE")
                         }
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
             }
@@ -633,8 +647,10 @@ Item {
                             if (pokerGame)
                                 pokerGame.submitCheckOrBet(true, 0)
                         }
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
 
@@ -658,8 +674,10 @@ Item {
                             if (pokerGame)
                                 pokerGame.submitFoldFromCheck()
                         }
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
 
@@ -681,8 +699,10 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: game_controls.openRaiseSizingExpanded = true
-                        onPressed: parent.opacity = 0.88
-                        onReleased: parent.opacity = 1
+                        onEntered: parent.opacity = 0.92
+                        onExited: parent.opacity = 1
+                        onPressed: parent.opacity = 0.80
+                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
                     }
                 }
             }

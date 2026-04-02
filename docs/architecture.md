@@ -27,7 +27,7 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 - **`game`** holds `QObject* m_root` to the table **`Page`**. It connects to **`buttonClicked(QString)`** for HUD actions (fold, call, check, raise, “more time”) from **`GameControls`**.
 - Betting runs in C++; when the human must act, the code can spin a **local event loop** (with timers) until QML submits an action via **`submitFacingAction`**, **`submitCheckOrBet`**, etc.
-- State is pushed to QML with **`QObject::setProperty`** on the root: pot, board card asset names, per-seat stacks/cards/in-hand flags, button/SB/BB seats, acting seat, timers, street label, and related fields. **`sync_ui()`** centralizes this; **`pot_changed`** / **`ui_state_changed`** notify listeners.
+- State is pushed to QML with **`QObject::setProperty`** on the root: pot, board card asset names, per-seat stacks/cards/in-hand flags, button/SB/BB seats, acting seat, timers, hand sequence counter, and related fields. **`sync_ui()`** centralizes this; **`pot_changed`** triggers a pot-only refresh.
 - The live path for a new hand is **`beginNewHand()`** → **`start()`** (full hand through streets and **`do_payouts()`** when appropriate). **`game::start()`** remains usable from tests or automation.
 
 ## Core C++ modules (`poker/poker/`)
@@ -50,8 +50,8 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 |-------------|------|
 | **`Main.qml`** | Shell: navigation, **`pokerGame`** / **`pokerSolver`** bindings |
 | **`Game.qml`** | Table layout, **`game_screen`**, **`Player`** delegates, **`GameControls`** |
-| **`GameControls.qml`**, **`SizingPresetBar.qml`** | Fold / call / raise / check / bet, timers, sit-out; shared raise/bet sizing presets |
-| **`Table.qml`** | Pot + blinds HUD, board, street label |
+| **`GameControls.qml`**, **`SizingPresetBar.qml`** | Fold / call / raise / check / bet, timers, sit-out; Min / ⅓ / ½ / ⅔ / Pot / All presets |
+| **`Table.qml`** | Pot HUD (with call amount), community board cards |
 | **`SetupScreen.qml`**, solver screens | Ranges, strategies, solver/equity UI |
 
 Assets (cards, logo) are embedded via **`application.qrc`**.

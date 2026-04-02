@@ -10,10 +10,10 @@
 #include <random>
 
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QEventLoop>
 #include <QSettings>
 #include <QString>
-#include <QThread>
 #include <QTimer>
 
 namespace {
@@ -730,9 +730,10 @@ bool game::apply_buy_back_in_internal(int seat)
 {
     if (seat < 0 || seat >= players_count())
         return false;
-    if (in_progress)
-        return false;
     const size_t si = static_cast<size_t>(seat);
+    /// No rebuy while still contesting the current pot (e.g. all-in with 0 chips shown).
+    if (in_progress && in_hand_[si])
+        return false;
     if (table[si].stack > 0)
         return false;
     if (seat_wallet_[si] < starting_stack_)
@@ -760,7 +761,10 @@ void game::try_auto_rebuys_for_busted_bots()
 void game::bot_action_pause()
 {
     const int ms = bot_slow_actions_ ? 2600 : 550;
-    QThread::msleep(ms);
+    QElapsedTimer t;
+    t.start();
+    while (t.elapsed() < ms)
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 16);
 }
 
 void game::bot_record_postflop_check(int seat)
@@ -1795,9 +1799,9 @@ bool game::canBuyBackIn(int seat) const
 {
     if (seat < 0 || seat >= players_count())
         return false;
-    if (in_progress)
-        return false;
     const size_t si = static_cast<size_t>(seat);
+    if (in_progress && in_hand_[si])
+        return false;
     if (table[si].stack > 0)
         return false;
     return seat_wallet_[si] >= starting_stack_;

@@ -44,7 +44,8 @@ Flipable {
             target: rotation
             angle: 180
         }
-        when: tableCard || flipable.flipped
+        /// Hole cards: never rotate to the rank/suit side without a real card string (avoids stuck / phantom faces).
+        when: tableCard || (flipable.flipped && card.length > 0)
     }
 
     transitions: [
@@ -70,7 +71,14 @@ Flipable {
     onDealEpochChanged: {
         if (tableCard)
             return
-        rotation.angle = (tableCard || flipable.flipped) ? 180 : 0
+        rotation.angle = 0
+    }
+
+    onCardChanged: {
+        if (tableCard)
+            return
+        if (card.length === 0)
+            rotation.angle = 0
     }
 
     MouseArea {

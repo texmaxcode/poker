@@ -144,15 +144,11 @@ Page {
             decisionSecondsLeft: game_screen.decisionSecondsLeft
             facingNeedChips: game_screen.facingNeedChips
             humanSittingOut: game_screen.humanSittingOut
-            seatStreetActions: game_screen.seatStreetActions
-            maxStreetContrib: game_screen.maxStreetContrib
-            playerCount: game_screen.playerCount
             board0: game_screen.board0
             board1: game_screen.board1
             board2: game_screen.board2
             board3: game_screen.board3
             board4: game_screen.board4
-            streetPhase: game_screen.streetPhase
         }
 
         Repeater {
@@ -193,16 +189,15 @@ Page {
                     streetBetChips: game_screen.seatStreetChips[index] !== undefined ? game_screen.seatStreetChips[index] : 0
                     streetActionText: game_screen.seatStreetActions[index] !== undefined
                                       ? game_screen.seatStreetActions[index] : ""
-                    maxStreetContrib: game_screen.maxStreetContrib
-                    tablePotChips: game_screen.pot
                     show_cards: seatAtTable && (game_screen.seatInHand[index] !== false)
-                                  && (game_screen.showdown || index === 0)
+                                  && (game_screen.showdown
+                                      || (index === 0 && game_screen.seatC1[index] !== undefined
+                                          && game_screen.seatC1[index] !== ""))
                     isActing: game_screen.actingSeat === index
                     isHumanSeat: index === 0
                     decisionSecondsLeft: game_screen.decisionSecondsLeft
                     foldedDim: (game_screen.seatInHand[index] === false)
                     humanWatching: index === 0 && game_screen.humanSittingOut
-                    reserveChips: game_screen.seatWallets[index] !== undefined ? game_screen.seatWallets[index] : 0
                     handEpoch: game_screen.handSeq
                 }
             }

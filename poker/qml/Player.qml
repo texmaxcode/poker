@@ -6,8 +6,6 @@ import Theme 1.0
 /// Seat panel — hole cards hidden when folded; street chips shown in gold.
 Item {
     id: root
-    Layout.fillWidth: true
-    Layout.fillHeight: true
 
     property string name: "Default"
     property string first_card: ""
@@ -31,11 +29,6 @@ Item {
     property int streetBetChips: 0
     /// Engine label: Call / Raise / Check / Fold / SB / BB.
     property string streetActionText: ""
-    property int maxStreetContrib: 0
-    /// Table pot before this seat’s call (same as center HUD); used for pot-odds copy on the seat.
-    property int tablePotChips: 0
-    /// Off-table reserve (for busted seats; can buy back in).
-    property int reserveChips: 0
     /// From `Game.handSeq`: new value each hand so hole cards snap face-down and stagger resets.
     property int handEpoch: 0
 
@@ -179,7 +172,7 @@ Item {
                         anchors.rightMargin: 2
                         anchors.verticalCenter: parent.verticalCenter
                         card: root.first_card
-                        flipped: root.show_cards
+                        flipped: root.show_cards && root.first_card.length > 0
                         dealEpoch: root.handEpoch
                     }
 
@@ -190,7 +183,7 @@ Item {
                         anchors.leftMargin: 2
                         anchors.verticalCenter: parent.verticalCenter
                         card: root.second_card
-                        flipped: root.show_cards && root.secondHoleRevealed
+                        flipped: root.show_cards && root.secondHoleRevealed && root.second_card.length > 0
                         dealEpoch: root.handEpoch
                     }
                 }
@@ -380,26 +373,6 @@ Item {
                         color: Theme.textPrimary
                         font.pointSize: 12
                         font.bold: true
-                    }
-                }
-
-                Item {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredHeight: 14
-                    Layout.maximumHeight: 14
-                    Layout.minimumHeight: 14
-                    Layout.fillWidth: true
-
-                    Text {
-                        anchors.centerIn: parent
-                        width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        visible: root.stackChips === 0 && root.reserveChips > 0
-                        text: qsTr("Reserve $%1").arg(root.reserveChips)
-                        color: Theme.textSecondary
-                        font.pointSize: 9
-                        font.bold: true
-                        elide: Text.ElideRight
                     }
                 }
             }
