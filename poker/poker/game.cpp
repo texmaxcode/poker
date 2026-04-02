@@ -293,31 +293,63 @@ QVariantList game::side_pot_amounts_for_ui() const
     if (sum_contrib != pot)
         return out;
 
-    std::vector<int> levels;
+    // Main pot = matched up to the shortest all-in; side pots = tiers above that (standard NLHE).
+    std::vector<int> all_in_seats;
+    for (int i = 0; i < n; ++i)
+    {
+        if (hand_contrib_[static_cast<size_t>(i)] <= 0)
+            continue;
+        if (table[static_cast<size_t>(i)].stack <= 0)
+            all_in_seats.push_back(i);
+    }
+    if (all_in_seats.empty())
+        return out;
+
+    int S = hand_contrib_[static_cast<size_t>(all_in_seats[0])];
+    for (int s : all_in_seats)
+        S = std::min(S, hand_contrib_[static_cast<size_t>(s)]);
+
+    int main_amt = 0;
+    for (int i = 0; i < n; ++i)
+        main_amt += std::min(S, hand_contrib_[static_cast<size_t>(i)]);
+
+    std::vector<int> high_levels;
     for (int i = 0; i < n; ++i)
     {
         const int c = hand_contrib_[static_cast<size_t>(i)];
-        if (c > 0)
-            levels.push_back(c);
+        if (c > S)
+            high_levels.push_back(c);
     }
-    std::sort(levels.begin(), levels.end());
-    levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
+    std::sort(high_levels.begin(), high_levels.end());
+    high_levels.erase(std::unique(high_levels.begin(), high_levels.end()), high_levels.end());
 
-    int prev = 0;
-    for (int level : levels)
+    QVariantList sides;
+    int prev = S;
+    for (int L : high_levels)
     {
-        const int increment = level - prev;
+        const int increment = L - prev;
         int n_cover = 0;
         for (int i = 0; i < n; ++i)
         {
-            if (hand_contrib_[static_cast<size_t>(i)] >= level)
+            if (hand_contrib_[static_cast<size_t>(i)] >= L)
                 ++n_cover;
         }
         const int tier_chips = increment * n_cover;
         if (tier_chips > 0)
-            out.append(tier_chips);
-        prev = level;
+            sides.append(tier_chips);
+        prev = L;
     }
+
+    int sides_sum = 0;
+    for (int i = 0; i < sides.size(); ++i)
+        sides_sum += sides[i].toInt();
+
+    if (main_amt + sides_sum != pot)
+        return {};
+
+    out.append(main_amt);
+    for (int i = 0; i < sides.size(); ++i)
+        out.append(sides[i]);
     return out;
 }
 

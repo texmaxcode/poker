@@ -276,7 +276,8 @@ private:
     void do_payouts();
     void switch_button();
     QString human_hand_line_for_ui() const;
-    /// Chip counts per side-pot tier (main first), aligned with `do_payouts`; empty if inconsistent.
+    /// When at least one seat is all-in: main pot = Σ min(S, contrib) with S = min contrib among
+    /// all-in seats; then side pot tiers above S. Empty if no all-in or pot ≠ recorded contributions.
     QVariantList side_pot_amounts_for_ui() const;
     void sync_ui();
     void flush_ui();

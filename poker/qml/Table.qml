@@ -21,7 +21,8 @@ Item {
     property string board3: ""
     property string board4: ""
 
-    /// Per-tier pot sizes from engine (`side_pot_amounts_for_ui`); length > 1 ⇒ show breakdown line.
+    /// From engine: main pot = up to shortest all-in; following entries = side pots (deeper stacks).
+    /// Shown only when length > 1 (requires an all-in and at least one side tier).
     property var sidePotAmounts: []
 
     readonly property bool showSidePotBreakdown: sidePotAmounts !== undefined && sidePotAmounts !== null
