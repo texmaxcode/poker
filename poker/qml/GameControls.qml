@@ -56,7 +56,7 @@ Item {
 
     readonly property bool humanDecisionActive: trainerMode
             ? (!trainerInputLocked && decisionSecondsLeft > 0)
-            : (decisionSecondsLeft > 0)
+            : (decisionSecondsLeft > 0 && humanStackChips > 0)
     readonly property bool humanHasChips: humanStackChips > 0
     /// Busted (0 stack) players watch but do not get the action UI.
     readonly property bool showWagerUi: !humanSitOut && humanStackChips > 0

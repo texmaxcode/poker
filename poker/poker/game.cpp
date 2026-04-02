@@ -499,6 +499,18 @@ void game::wait_for_human_need(int need_chips, Street st, int raise_increment_ch
     if (need_chips <= 0)
         return;
 
+    const size_t hi = static_cast<size_t>(kHumanSeat);
+    if (table[hi].stack <= 0)
+    {
+        /// Defensive: should be handled in `handle_forced_response` — resolve as call for 0 chips.
+        human_facing_action_ = 1;
+        human_facing_raise_chips_ = 0;
+        pending_human_need_ = 0;
+        pending_human_raise_inc_ = raise_increment_chips;
+        sync_ui();
+        return;
+    }
+
     /// Effective call (short stacks all-in for less than full `need_chips`).
     pending_human_need_ =
         std::min(need_chips, std::max(0, table[static_cast<size_t>(kHumanSeat)].stack));
@@ -569,7 +581,13 @@ bool game::wait_for_human_check_or_bet(Street st)
         return false;
 
     if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
+    {
+        /// Cannot open — auto check (all-in players still "pass" when checked around to them).
+        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
+        push_human_action_status(QStringLiteral("Check"));
+        sync_ui();
         return false;
+    }
 
     waiting_for_human_check_ = true;
     human_opened_bet_from_check_ = false;
@@ -660,7 +678,12 @@ bool game::wait_for_human_bb_preflop()
     if (!m_root)
         return false;
     if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
+    {
+        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
+        push_human_action_status(QStringLiteral("Check"));
+        sync_ui();
         return false;
+    }
 
     waiting_for_human_bb_preflop_ = true;
     human_bb_preflop_raised_ = false;
@@ -988,6 +1011,10 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             emit pot_changed();
             return true;
         }
+
+        /// No chips behind — already all-in for this street; do not open the human action UI.
+        if (table[si].stack <= 0)
+            return true;
 
         acting_seat_ = seat;
         decision_seconds_left_ = kDecisionSeconds;

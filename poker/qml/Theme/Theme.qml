@@ -73,7 +73,16 @@ QtObject {
     readonly property color seatBorderAct: "#ff8c42"
     readonly property color progressTrack: "#1e1e26"
 
-    readonly property var chartLineColors: ["#e8b84a", "#ff7a3a", "#8ec8f0", "#c9a227", "#5cd090", "#ff6a8a"]
+    /// Per-seat accents (names, setup tabs, stats, bankroll chart) — subdued metallics + burgundy + gunmetal
+    /// to match the logo banner, chrome “GYM” type, and dumbbell steel (not neon primaries).
+    readonly property var chartLineColors: [
+        "#c6a86c",
+        "#a07078",
+        "#8b93a4",
+        "#a8926a",
+        "#6d8a7c",
+        "#9e7a82"
+    ]
 
     /// Text / accent color for seat `0`…`5` — matches `chartLineColors` and the bankroll chart legend.
     function colorForSeat(seat) {
