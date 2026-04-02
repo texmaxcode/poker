@@ -89,6 +89,56 @@ QtObject {
     readonly property int boardCardWidth: 108
     readonly property int boardCardHeight: 160
 
+    /// Training / drill screens: keep readable line length and controls off ultra-wide edges.
+    readonly property int trainerContentMaxWidth: 800
+
+    /// Typography for training copy (large for readability).
+    readonly property int trainerTitlePt: 24
+    readonly property int trainerPageHeadlinePt: 20
+    readonly property int trainerSectionPx: 18
+    readonly property int trainerBodyPx: 16
+    readonly property int trainerBodyMutedPx: 15
+    readonly property int trainerCaptionPx: 14
+    readonly property int trainerStatusPx: 18
+    readonly property int trainerMetricLabelPx: 14
+    readonly property int trainerMetricValuePx: 22
+    readonly property int trainerToolButtonPx: 15
+    readonly property int trainerGroupTitlePt: 14
+
+    readonly property int trainerColumnSpacing: 12
+    readonly property int trainerPanelPadding: 12
+    readonly property int trainerPanelRadius: 10
+    readonly property int trainerButtonPadding: 10
+    readonly property int trainerSpinBoxWidth: 100
+
+    /// Application-wide UI (lobby, stats, setup, solver, table, HUD).
+    readonly property int uiBasePt: 13
+    readonly property int uiToolBarTitlePt: 13
+    readonly property int uiToolBarBackPt: 11
+    readonly property int uiGroupTitlePt: 13
+    readonly property int uiBodyPx: 14
+    readonly property int uiSmallPx: 12
+    readonly property int uiMicroPx: 11
+    readonly property int uiMonoPx: 13
+    readonly property int uiLobbyTitlePt: 15
+    readonly property int uiLobbySubPt: 12
+    readonly property int uiPotMainPt: 22
+    readonly property int uiPotSepPt: 18
+    readonly property int uiPotCallPt: 18
+    readonly property int uiPotSidePt: 12
+    readonly property int uiSeatFoldPt: 12
+    readonly property int uiSeatStreetPt: 11
+    readonly property int uiSeatNamePt: 12
+    readonly property int uiSeatPosPt: 12
+    readonly property int uiStackPt: 18
+    readonly property int uiHudButtonPt: 11
+    readonly property int uiGameHudPx: 14
+    readonly property int uiChartLegendPx: 12
+    readonly property int uiChartCanvasPx: 12
+    readonly property int uiRangeGridAxisPx: 13
+    readonly property int uiRangeGridLegendPx: 12
+    readonly property int uiSizingPresetPt: 11
+
     /// 13×13 range editor: heatmap and composite layers (gold / fire / burgundy — matches logo banner & type).
     readonly property color rangeHeatLo: panel
     readonly property color rangeHeatHi: gold

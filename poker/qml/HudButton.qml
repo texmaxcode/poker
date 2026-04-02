@@ -8,7 +8,7 @@ Rectangle {
     property alias label: lbl.text
     property color buttonColor: Theme.panelBorder
     property color textColor: Theme.textPrimary
-    property int fontSize: 12
+    property int fontSize: 14
     property bool boldFont: true
     property bool clickEnabled: true
     property int pillWidth: 0
@@ -17,7 +17,7 @@ Rectangle {
     signal clicked()
 
     implicitWidth: pillWidth > 0 ? pillWidth : Math.max(76, lbl.implicitWidth + horizontalPadding)
-    implicitHeight: 32
+    implicitHeight: 34
     radius: 6
     color: buttonColor
     clip: true

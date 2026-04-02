@@ -112,7 +112,7 @@ Item {
                         text: "$" + Math.round(table_container.potShown)
                         color: gold
                         font.bold: true
-                        font.pointSize: 20
+                        font.pointSize: Theme.uiPotMainPt
                         horizontalAlignment: Text.AlignHCenter
 
                         transform: Scale {
@@ -130,7 +130,7 @@ Item {
                         text: qsTr("·")
                         color: Theme.textMuted
                         font.bold: true
-                        font.pointSize: 16
+                        font.pointSize: Theme.uiPotSepPt
                     }
 
                     Text {
@@ -139,7 +139,7 @@ Item {
                         text: qsTr("Call $%1").arg(table_container.facingNeedChips)
                         color: Theme.focusGold
                         font.bold: true
-                        font.pointSize: 17
+                        font.pointSize: Theme.uiPotCallPt
                     }
                 }
 
@@ -152,7 +152,7 @@ Item {
                     elide: Text.ElideRight
                     text: table_container.sidePotBreakdownText
                     color: Theme.textSecondary
-                    font.pointSize: 10
+                    font.pointSize: Theme.uiPotSidePt
                     font.bold: true
                 }
             }

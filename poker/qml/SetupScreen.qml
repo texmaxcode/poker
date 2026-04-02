@@ -121,7 +121,7 @@ Page {
                     "Turn bots on or off by name, pick a tab to edit that player’s settings, then play from the table. "
                     + "On the “You” tab, the 13×13 range grid is hidden until you enable “Full range editor” below; "
                     + "until then the archetype preset is applied without cell editing. Bot tabs always show the full grid.")
-                font.pixelSize: 12
+                font.pixelSize: Theme.uiBodyPx
                 color: Theme.textSecondary
             }
 
@@ -131,7 +131,7 @@ Page {
                 padding: 8
                 topPadding: 22
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
                     width: parent.width - 8
@@ -140,7 +140,7 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.uiSmallPx
                         color: Theme.textMuted
                         text: qsTr("When a bot is off, they sit out (not dealt in) until you turn them back on.")
                     }
@@ -158,7 +158,7 @@ Page {
 
                                 Label {
                                     text: botNames.displayName(index + 1)
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                     color: Theme.hudActionLabel
                                 }
                                 ThemedSwitch {
@@ -205,7 +205,7 @@ Page {
                 padding: 8
                 topPadding: 22
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
                     width: parent.width - 8
@@ -219,7 +219,7 @@ Page {
                         text: qsTr(
                             "Browse archetypes here without changing any player. The chart is read-only. "
                             + "To actually assign Rock / LAG / etc. to a seat, use Archetype on that player’s tab.")
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.uiSmallPx
                         color: Theme.textMuted
 
                         HoverHandler {
@@ -246,7 +246,7 @@ Page {
                         elide: Text.ElideRight
                         maximumLineCount: 3
                         color: Theme.textSecondary
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.uiSmallPx
                         text: pokerGame.getStrategySummary(previewStrat.currentIndex)
 
                         HoverHandler {
@@ -272,7 +272,7 @@ Page {
                 padding: 8
                 topPadding: 20
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
                     width: parent.width - 8
@@ -352,7 +352,7 @@ Page {
                 padding: 8
                 topPadding: 22
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
                     width: parent.width - 4
@@ -365,14 +365,14 @@ Page {
                         text: qsTr(
                             "Archetype below loads that strategy’s default chart into the engine. "
                             + "To edit cells, paste range text, or see the 13×13 grid, check “Full range editor” at the bottom of this section.")
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.uiSmallPx
                         color: Theme.textMuted
                     }
 
                     Label {
                         text: qsTr("Archetype")
                         font.bold: true
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.uiSmallPx
                     }
                     ComboBox {
                         id: stratCombo
@@ -395,7 +395,7 @@ Page {
                         elide: Text.ElideRight
                         maximumLineCount: 3
                         color: Theme.textSecondary
-                        font.pixelSize: 9
+                        font.pixelSize: Theme.uiMicroPx
                         text: pokerGame.getStrategySummary(stratCombo.currentIndex)
 
                         HoverHandler {
@@ -413,7 +413,7 @@ Page {
                         padding: 8
                         topPadding: 20
                         font.bold: true
-                        font.pointSize: 10
+                        font.pointSize: Theme.uiSmallPx
 
                         ColumnLayout {
                             width: parent.width - 8
@@ -422,7 +422,7 @@ Page {
                             Label {
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
-                                font.pixelSize: 9
+                                font.pixelSize: Theme.uiMicroPx
                                 color: Theme.textMuted
                                 text: qsTr(
                                     "Preflop/postflop exponents shape how chart weight and hand strength map to "
@@ -438,81 +438,81 @@ Page {
 
                                 Label {
                                     text: qsTr("Preflop exponent")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_pf_pre
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Postflop exponent")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_pf_post
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Facing raise bonus")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_fr_bonus
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Facing raise tight ×")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_fr_tight
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Open raise bonus")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_ob_bonus
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Open raise tight ×")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_ob_tight
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("BB check-raise bonus")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_bb_bonus
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("BB check-raise tight ×")
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiMicroPx
                                 }
                                 TextField {
                                     id: strat_bb_tight
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
@@ -522,12 +522,12 @@ Page {
                                 spacing: 8
                                 Button {
                                     text: qsTr("Apply parameters")
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     onClicked: setup.applyParamFields()
                                 }
                                 Button {
                                     text: qsTr("Reset to archetype")
-                                    font.pixelSize: 10
+                                    font.pixelSize: Theme.uiSmallPx
                                     flat: true
                                     onClicked: {
                                         pokerGame.setSeatStrategy(setup.selectedSeat, stratCombo.currentIndex)
@@ -557,17 +557,17 @@ Page {
                         Layout.fillWidth: true
                         TabButton {
                             text: qsTr("Call")
-                            font.pixelSize: 10
+                            font.pixelSize: Theme.uiSmallPx
                             font.bold: true
                         }
                         TabButton {
                             text: qsTr("Raise")
-                            font.pixelSize: 10
+                            font.pixelSize: Theme.uiSmallPx
                             font.bold: true
                         }
                         TabButton {
                             text: qsTr("Open / lead")
-                            font.pixelSize: 10
+                            font.pixelSize: Theme.uiSmallPx
                             font.bold: true
                         }
                     }
@@ -575,7 +575,7 @@ Page {
                     Label {
                         visible: showFullRangeEditor
                         wrapMode: Text.WordWrap
-                        font.pixelSize: 9
+                        font.pixelSize: Theme.uiMicroPx
                         color: Theme.textMuted
                         text: qsTr(
                             "Stacked colors: gold = call, fire = raise, burgundy = open / lead. "
@@ -593,7 +593,7 @@ Page {
                     Label {
                         visible: showFullRangeEditor
                         text: qsTr("Range text")
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.uiSmallPx
                         font.bold: true
                     }
                     TextArea {
@@ -602,7 +602,7 @@ Page {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 52
                         wrapMode: TextArea.Wrap
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.uiSmallPx
                         placeholderText: "AA,AKs,AKo,TT+"
                     }
                     RowLayout {

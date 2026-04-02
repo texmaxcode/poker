@@ -8,6 +8,8 @@
 #include "poker_solver.hpp"
 #include "session_store.hpp"
 #include "toy_nash_solver.hpp"
+#include "training_store.hpp"
+#include "training_controller.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -19,6 +21,8 @@ int main(int argc, char *argv[])
     poker_game.loadPersistedSettings();
     PokerSolver poker_solver;
     ToyNashSolver toy_nash_solver;
+    TrainingStore training_store;
+    TrainingController trainer(&training_store);
     SessionStore session_store;
 
     // Headless self-test for debugging crashes in toy solver code paths.
@@ -36,6 +40,8 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("pokerGame"), &poker_game);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerSolver"), &poker_solver);
     engine.rootContext()->setContextProperty(QStringLiteral("toyNashSolver"), &toy_nash_solver);
+    engine.rootContext()->setContextProperty(QStringLiteral("trainingStore"), &training_store);
+    engine.rootContext()->setContextProperty(QStringLiteral("trainer"), &trainer);
     engine.rootContext()->setContextProperty(QStringLiteral("sessionStore"), &session_store);
 
     QObject::connect(&app, &QGuiApplication::aboutToQuit, &poker_game, [&poker_game]() {

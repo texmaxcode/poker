@@ -77,7 +77,7 @@ Page {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("Choose a screen")
             color: Theme.goldMuted
-            font.pointSize: 12
+            font.pointSize: Theme.uiLobbyTitlePt
             font.bold: true
             font.letterSpacing: 1.2
             opacity: 0.92
@@ -116,6 +116,14 @@ Page {
                 onClicked: lobbyPage.go(3)
             }
             LobbyNavTile {
+                title: qsTr("Training")
+                sub: qsTr("Drills")
+                detailTip: qsTr(
+                    "Preflop and postflop trainers with immediate feedback, mistake tracking, and progress stats.")
+                iconSource: "qrc:/assets/icons/bots.svg"
+                onClicked: lobbyPage.go(5)
+            }
+            LobbyNavTile {
                 title: qsTr("Bankroll & stats")
                 sub: qsTr("Ranks & charts")
                 detailTip: qsTr(
@@ -139,9 +147,9 @@ Page {
         property string iconSource: ""
         signal clicked()
 
-        Layout.preferredWidth: Math.min(188, (lobbyPage.width - 80) / 4)
+        Layout.preferredWidth: Math.min(188, (lobbyPage.width - 96) / 5)
         Layout.minimumWidth: 128
-        Layout.preferredHeight: 108
+        Layout.preferredHeight: 118
 
         Rectangle {
             id: tileFace
@@ -195,7 +203,7 @@ Page {
                     Layout.fillWidth: true
                     text: title
                     color: Qt.lighter(lobbyPage.gold, navMa.containsMouse ? 1.04 : 1.0)
-                    font.pointSize: 13
+                    font.pointSize: Theme.uiLobbyTitlePt
                     font.bold: true
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
@@ -204,7 +212,7 @@ Page {
                     Layout.fillWidth: true
                     text: sub
                     color: Theme.textSecondary
-                    font.pointSize: 10
+                    font.pointSize: Theme.uiLobbySubPt
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                 }

@@ -208,7 +208,7 @@ Item {
                     Text {
                         text: qsTr("Act")
                         color: Theme.hudActionLabel
-                        font.pointSize: 9
+                        font.pointSize: Theme.uiMicroPx
                         font.bold: true
                     }
 
@@ -216,7 +216,7 @@ Item {
                         visible: game_controls.humanDecisionActive
                         text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
                         color: Theme.seatBorderAct
-                        font.pointSize: 10
+                        font.pointSize: Theme.uiSmallPx
                         font.bold: true
                         Layout.preferredWidth: visible ? implicitWidth : 0
                     }
@@ -225,7 +225,7 @@ Item {
                         visible: game_controls.humanDecisionActive && game_controls.humanMoreTimeAvailable
                         pillWidth: 76
                         horizontalPadding: 14
-                        fontSize: 9
+                        fontSize: Theme.uiHudButtonPt
                         label: qsTr("More")
                         buttonColor: Theme.hudActionPanel
                         textColor: Theme.hudActionBright
@@ -369,7 +369,7 @@ Item {
                     pillWidth: 108
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
-                    fontSize: 11
+                    fontSize: Theme.uiHudButtonPt
                     onClicked: {
                         if (pageRoot && game_controls.facingRaise)
                             pageRoot.buttonClicked("CALL")
@@ -611,7 +611,7 @@ Item {
                 ThemedCheckBox {
                     id: sitOutCheck
                     text: qsTr("Sit out")
-                    font.pointSize: 9
+                    font.pointSize: Theme.uiMicroPx
                     padding: 2
                     checked: game_controls.humanSitOut
                     onToggled: {
@@ -638,7 +638,7 @@ Item {
 
                 HudButton {
                     label: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
-                    fontSize: 9
+                    fontSize: Theme.uiHudButtonPt
                     pillWidth: 0
                     horizontalPadding: 16
                     implicitHeight: 30
@@ -683,7 +683,7 @@ Item {
                     elide: Text.ElideRight
                     text: game_controls.statusFullDisplay
                     color: Theme.textPrimary
-                    font.pixelSize: game_controls.embeddedMode ? 12 : 13
+                    font.pixelSize: game_controls.embeddedMode ? Theme.uiSmallPx : Theme.uiBodyPx
                     lineHeight: 1.12
                 }
             }

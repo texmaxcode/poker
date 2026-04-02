@@ -17,9 +17,21 @@ Page {
     }
 
     readonly property var lineColors: Theme.chartLineColors
+    property var trainingProgress: ({})
 
     function refreshChart() {
         bankCanvas.requestPaint()
+    }
+
+    function refreshTraining() {
+        trainingProgress = trainingStore.loadProgress()
+    }
+
+    Connections {
+        target: trainingStore
+        function onProgressChanged() {
+            statsPage.refreshTraining()
+        }
     }
 
     ScrollView {
@@ -42,7 +54,7 @@ Page {
                 text: qsTr(
                     "Starting bankroll applies to everyone when you apply settings (same as Bots & ranges). "
                     + "The chart records stack size after each completed hand. Reset session re-baselines profit from current stacks.")
-                font.pixelSize: 11
+                font.pixelSize: Theme.uiBodyPx
                 color: Theme.textSecondary
             }
 
@@ -52,7 +64,7 @@ Page {
                 padding: 8
                 topPadding: 22
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiGroupTitlePt
 
                 RowLayout {
                     width: parent.width - 8
@@ -89,7 +101,7 @@ Page {
                 padding: 8
                 topPadding: 22
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
                     width: parent.width - 8
@@ -160,7 +172,7 @@ Page {
                 padding: 8
                 topPadding: 22
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
                     width: parent.width - 8
@@ -182,7 +194,7 @@ Page {
                                 }
                                 Label {
                                     text: botNames.displayName(index)
-                                    font.pixelSize: 9
+                                    font.pixelSize: Theme.uiChartLegendPx
                                     color: Theme.textMuted
                                 }
                             }
@@ -237,7 +249,7 @@ Page {
                             ctx.stroke()
 
                             ctx.fillStyle = Theme.chartAxisText
-                            ctx.font = "10px sans-serif"
+                            ctx.font = Theme.uiChartCanvasPx + "px sans-serif"
                             ctx.fillText("0", 4, padT + plotH + 4)
                             ctx.fillText(String(maxY), 4, padT + 10)
 
@@ -280,6 +292,109 @@ Page {
                     }
                 }
             }
+
+            GroupBox {
+                title: qsTr("Training progress")
+                Layout.fillWidth: true
+                padding: 10
+                topPadding: 24
+                font.bold: true
+                font.pointSize: Theme.trainerGroupTitlePt
+
+                ColumnLayout {
+                    id: trainingProgressCol
+                    width: parent.width - 8
+                    spacing: 12
+
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        text: qsTr(
+                            "Counts every trainer answer. Accuracy is the share graded “Correct” (frequency ≥70% in the loaded strategy). "
+                            + "EV lost adds flop EV gaps in big blinds vs the best line; preflop rows add 0 EV here. Reset clears stats but keeps your auto-advance delay.")
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.trainerBodyPx
+                        lineHeight: 1.3
+                    }
+
+                    readonly property int totalD: Number(statsPage.trainingProgress.totalDecisions || 0)
+                    readonly property int totalC: Number(statsPage.trainingProgress.totalCorrect || 0)
+                    readonly property real totalEv: Number(statsPage.trainingProgress.totalEvLossBb || 0)
+                    readonly property real accPct: totalD > 0 ? (100.0 * totalC / totalD) : 0
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: trainingMetricsCol.implicitHeight + 22
+                            radius: 10
+                            color: Theme.panelElevated
+                            border.width: 1
+                            border.color: Qt.alpha(Theme.chromeLine, 0.55)
+                            Column {
+                                id: trainingMetricsCol
+                                x: 10
+                                y: 10
+                                width: parent.width - 20
+                                spacing: 4
+                                Text { text: qsTr("Decisions"); color: Theme.textMuted; font.pixelSize: Theme.trainerMetricLabelPx }
+                                Text { text: String(trainingProgressCol.totalD); color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: trainingAccCol.implicitHeight + 22
+                            radius: 10
+                            color: Theme.panelElevated
+                            border.width: 1
+                            border.color: Qt.alpha(Theme.chromeLine, 0.55)
+                            Column {
+                                id: trainingAccCol
+                                x: 10
+                                y: 10
+                                width: parent.width - 20
+                                spacing: 4
+                                Text { text: qsTr("Accuracy"); color: Theme.textMuted; font.pixelSize: Theme.trainerMetricLabelPx }
+                                Text { text: trainingProgressCol.accPct.toFixed(1) + "%"; color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: trainingEvCol.implicitHeight + 22
+                            radius: 10
+                            color: Theme.panelElevated
+                            border.width: 1
+                            border.color: Qt.alpha(Theme.chromeLine, 0.55)
+                            Column {
+                                id: trainingEvCol
+                                x: 10
+                                y: 10
+                                width: parent.width - 20
+                                spacing: 4
+                                Text { text: qsTr("EV lost"); color: Theme.textMuted; font.pixelSize: Theme.trainerMetricLabelPx }
+                                Text { text: trainingProgressCol.totalEv.toFixed(3) + " bb"; color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Button {
+                            text: qsTr("Reset training progress")
+                            font.pixelSize: Theme.trainerCaptionPx
+                            padding: Theme.trainerButtonPadding
+                            onClicked: trainingStore.resetProgress()
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                }
+            }
         }
     }
 
@@ -292,6 +407,7 @@ Page {
     }
 
     Component.onCompleted: {
+        refreshTraining()
         bankSpin.value = pokerGame.configuredStartStack()
         Qt.callLater(refreshChart)
     }

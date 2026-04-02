@@ -113,7 +113,7 @@ Item {
                     }
                     Label {
                         text: modelData.label
-                        font.pixelSize: 10
+                        font.pixelSize: Theme.uiRangeGridLegendPx
                         color: Theme.textMuted
                         font.bold: root.editLayer === index
                     }
@@ -134,7 +134,7 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     Layout.preferredWidth: 34
                     font.bold: true
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.uiRangeGridAxisPx
                 }
             }
         }
@@ -149,7 +149,7 @@ Item {
                     text: rankLabels[rowItem.row]
                     Layout.preferredWidth: 26
                     font.bold: true
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.uiRangeGridAxisPx
                 }
                 Repeater {
                     model: 13

@@ -9,7 +9,7 @@ ApplicationWindow {
     width: 1400
     height: 900
     minimumWidth: 720
-    minimumHeight: 520
+    minimumHeight: 560
     title: qsTr("Texas Hold'em Gym")
     color: Theme.bgWindow
 
@@ -31,13 +31,13 @@ ApplicationWindow {
     readonly property string fontUiBold: oswaldBold.status === FontLoader.Ready ? oswaldBold.name : fontUi
 
     font.family: fontUi
-    font.pointSize: 11
+    font.pointSize: Theme.uiBasePt
 
     Component.onCompleted: showMaximized()
 
     header: ToolBar {
         visible: stack.currentIndex > 0
-        implicitHeight: 42
+        implicitHeight: 48
 
         background: Rectangle {
             color: Theme.headerBg
@@ -62,10 +62,10 @@ ApplicationWindow {
                 text: qsTr("Lobby")
                 font.family: win.fontUiBold
                 font.bold: true
-                font.pointSize: 8
+                font.pointSize: Theme.uiToolBarBackPt
                 icon.source: "qrc:/assets/icons/home.svg"
-                icon.width: 16
-                icon.height: 16
+                icon.width: 18
+                icon.height: 18
                 display: AbstractButton.TextBesideIcon
                 padding: 4
                 flat: false
@@ -105,8 +105,8 @@ ApplicationWindow {
                 contentItem: RowLayout {
                     spacing: 4
                     Image {
-                        width: 16
-                        height: 16
+                        width: 18
+                        height: 18
                         source: backBtn.icon.source
                         opacity: backBtn.enabled ? 1 : 0.45
                     }
@@ -125,7 +125,7 @@ ApplicationWindow {
                 horizontalAlignment: Text.AlignHCenter
                 font.family: win.fontUiBold
                 font.bold: true
-                font.pointSize: 11
+                font.pointSize: Theme.uiToolBarTitlePt
                 color: Theme.gold
                 text: {
                     switch (stack.currentIndex) {
@@ -137,6 +137,12 @@ ApplicationWindow {
                         return qsTr("Solver & equity")
                     case 4:
                         return qsTr("Bankroll & stats")
+                    case 5:
+                        return qsTr("Training")
+                    case 6:
+                        return qsTr("Preflop trainer")
+                    case 7:
+                        return qsTr("Flop trainer")
                     default:
                         return ""
                     }
@@ -173,6 +179,18 @@ ApplicationWindow {
         }
 
         StatsScreen {
+        }
+
+        TrainerHome {
+            stackLayout: stack
+        }
+
+        PreflopTrainer {
+            stackLayout: stack
+        }
+
+        FlopTrainer {
+            stackLayout: stack
         }
     }
 }

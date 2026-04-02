@@ -75,7 +75,7 @@ Page {
             Label {
                 text: qsTr("Simulation log")
                 font.bold: true
-                font.pointSize: 12
+                font.pointSize: Theme.uiGroupTitlePt
                 color: Theme.gold
             }
 
@@ -93,7 +93,7 @@ Page {
                     readOnly: true
                     wrapMode: TextArea.Wrap
                     font.family: "monospace"
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.uiMonoPx
                     color: Theme.textPrimary
                     text: solverPage.lastFullLog
                     padding: 10
@@ -217,7 +217,7 @@ Page {
                     wrapMode: Text.WordWrap
                     elide: Text.ElideRight
                     text: qsTr("Monte Carlo equity vs range or exact cards — pot odds & chip-EV (not full GTO).")
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.uiBodyPx
                     color: Theme.textSecondary
 
                     HoverHandler {
@@ -238,7 +238,7 @@ Page {
                     padding: 8
                     topPadding: 20
                     font.bold: true
-                    font.pointSize: 11
+                    font.pointSize: Theme.uiGroupTitlePt
 
                     GridLayout {
                         width: parent.width - 16
@@ -321,7 +321,7 @@ Page {
                     padding: 8
                     topPadding: 20
                     font.bold: true
-                    font.pointSize: 11
+                    font.pointSize: Theme.uiGroupTitlePt
 
                     GridLayout {
                         width: parent.width - 16
@@ -411,7 +411,7 @@ Page {
                         visible: solverPage.simRunning
                         text: qsTr("Working…")
                         color: Theme.focusGold
-                        font.pixelSize: 12
+                        font.pixelSize: Theme.uiSmallPx
                     }
 
                     Item {
@@ -425,7 +425,7 @@ Page {
                     padding: 8
                     topPadding: 20
                     font.bold: true
-                    font.pointSize: 11
+                    font.pointSize: Theme.uiGroupTitlePt
 
                     ColumnLayout {
                         width: parent.width - 8
@@ -437,7 +437,7 @@ Page {
                             text: solverPage.summaryText
                             wrapMode: Text.Wrap
                             color: Theme.textPrimary
-                            font.pixelSize: 11
+                            font.pixelSize: Theme.uiMonoPx
                             font.family: "monospace"
                             HoverHandler {
                                 id: summaryHover
@@ -481,7 +481,7 @@ Page {
                     padding: 8
                     topPadding: 20
                     font.bold: true
-                    font.pointSize: 11
+                    font.pointSize: Theme.uiGroupTitlePt
 
                     ColumnLayout {
                         width: parent.width - 8
@@ -494,7 +494,7 @@ Page {
                                   + qsTr("but on tiny games so it runs locally.")
                             wrapMode: Text.Wrap
                             color: Theme.textSecondary
-                            font.pixelSize: 12
+                            font.pixelSize: Theme.uiBodyPx
                         }
 
                         RowLayout {
@@ -550,7 +550,7 @@ Page {
                             readOnly: true
                             wrapMode: TextArea.Wrap
                             font.family: "monospace"
-                            font.pixelSize: 10
+                            font.pixelSize: Theme.uiMonoPx
                             color: Theme.textPrimary
                             text: solverPage.nashSummaryText + "\n\n" + solverPage.nashDetailText
                             background: Rectangle {

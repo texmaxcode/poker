@@ -53,7 +53,7 @@ Item {
     }
 
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
-    implicitHeight: 290
+    implicitHeight: 298
     implicitWidth: 204
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
@@ -180,7 +180,7 @@ Item {
                         anchors.margins: 4
                         text: root.humanWatching ? qsTr("WATCHING") : qsTr("FOLDED")
                         color: root.humanWatching ? Theme.accentBlue : Theme.textMuted
-                        font.pointSize: 11
+                        font.pointSize: Theme.uiSeatFoldPt
                         font.bold: true
                         font.letterSpacing: 1
                         horizontalAlignment: Text.AlignHCenter
@@ -199,7 +199,7 @@ Item {
                         anchors.margins: 4
                         text: qsTr("INACTIVE")
                         color: Theme.textMuted
-                        font.pointSize: 11
+                        font.pointSize: Theme.uiSeatFoldPt
                         font.bold: true
                         font.letterSpacing: 1
                         horizontalAlignment: Text.AlignHCenter
@@ -210,9 +210,9 @@ Item {
 
             /// Reserved row: same height always (no jump when street label appears).
             Item {
-                Layout.preferredHeight: 22
-                Layout.maximumHeight: 22
-                Layout.minimumHeight: 22
+                Layout.preferredHeight: 26
+                Layout.maximumHeight: 26
+                Layout.minimumHeight: 26
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
                 Layout.minimumWidth: root.contentWidth
@@ -235,7 +235,7 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         text: root.streetActionText
                         color: root.streetActionColor
-                        font.pointSize: 9
+                        font.pointSize: Theme.uiSeatStreetPt
                         font.bold: true
                         elide: Text.ElideRight
                         maximumLineCount: 1
@@ -245,8 +245,8 @@ Item {
 
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredHeight: 34
-                Layout.maximumHeight: 34
+                Layout.preferredHeight: 38
+                Layout.maximumHeight: 38
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
                 Layout.minimumWidth: root.contentWidth
@@ -254,7 +254,7 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 34
+                    Layout.preferredHeight: 38
                     radius: 6
                     color: Theme.panelElevated
                     clip: true
@@ -264,7 +264,7 @@ Item {
                         anchors.margins: 3
                         text: root.name
                         color: Theme.textPrimary
-                        font.pointSize: 9
+                        font.pointSize: Theme.uiSeatNamePt
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -275,7 +275,7 @@ Item {
 
                 Rectangle {
                     Layout.preferredWidth: 40
-                    Layout.preferredHeight: 34
+                    Layout.preferredHeight: 38
                     Layout.alignment: Qt.AlignVCenter
                     radius: 6
                     color: root.isDealer ? Theme.hudBg0 : Theme.panelElevated
@@ -288,7 +288,7 @@ Item {
                         width: parent.width - 4
                         text: root.position
                         color: root.isDealer ? Theme.textPrimary : Theme.textSecondary
-                        font.pointSize: 10
+                        font.pointSize: Theme.uiSeatPosPt
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
@@ -367,7 +367,7 @@ Item {
                         anchors.centerIn: parent
                         text: "$" + root.stackDisplay
                         color: Theme.textPrimary
-                        font.pointSize: 12
+                        font.pointSize: Theme.uiStackPt
                         font.bold: true
                     }
                 }

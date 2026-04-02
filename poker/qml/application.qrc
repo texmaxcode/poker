@@ -9,6 +9,9 @@
         <file>SetupScreen.qml</file>
         <file>SolverScreen.qml</file>
         <file>StatsScreen.qml</file>
+        <file>TrainerHome.qml</file>
+        <file>PreflopTrainer.qml</file>
+        <file>FlopTrainer.qml</file>
         <file>RangeGrid.qml</file>
         <file>Card.qml</file>
         <file>Game.qml</file>
@@ -36,6 +39,10 @@
         <!-- Brand -->
         <file>assets/images/logo.png</file>
         <file>assets/images/bg_vignette.svg</file>
+
+        <!-- Training assets -->
+        <file>assets/training/preflop_ranges_v1.json</file>
+        <file>assets/training/spots_v1.json</file>
 
         <!-- Playing cards (SVG) -->
         <file>assets/cards/blue2.svg</file>
