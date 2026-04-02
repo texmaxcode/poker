@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
+import PokerUi 1.0
 
 Page {
     id: page
@@ -51,15 +52,6 @@ Page {
                 Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, scrollView.availableWidth - 40))
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
                 spacing: Theme.trainerColumnSpacing
-
-                Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Training")
-                    font.pointSize: Theme.trainerTitlePt
-                    font.bold: true
-                    color: Theme.gold
-                    horizontalAlignment: Text.AlignHCenter
-                }
 
                 Label {
                     Layout.fillWidth: true
@@ -257,20 +249,22 @@ Page {
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
                         spacing: Theme.trainerDrillHudSpacing
-                        HudButton {
-                            label: qsTr("Preflop")
+                        GameButton {
+                            text: qsTr("Preflop")
                             pillWidth: 100
                             buttonColor: Theme.successGreen
                             textColor: Theme.onAccentText
                             fontSize: Theme.uiHudButtonPt
+                            overrideHeight: 34
                             onClicked: page.go(6)
                         }
-                        HudButton {
-                            label: qsTr("Flop")
+                        GameButton {
+                            text: qsTr("Flop")
                             pillWidth: 88
                             buttonColor: Theme.successGreen
                             textColor: Theme.onAccentText
                             fontSize: Theme.uiHudButtonPt
+                            overrideHeight: 34
                             onClicked: page.go(7)
                         }
                     }

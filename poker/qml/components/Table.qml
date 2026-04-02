@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Theme 1.0
+import PokerUi 1.0
 
 /// Pot HUD + board below. Pot ticks up with animation; pot bumps when chips grow.
 Item {
@@ -21,7 +22,7 @@ Item {
     property string board3: ""
     property string board4: ""
 
-    /// From engine: main = matched to shortest all-in; following entries = side pots (deeper stacks).
+    /// From engine: tier sizes match payout — shortest contribution level is main; each higher level is the next side pot.
     /// Shown only when length > 1 (requires an all-in and at least one side tier).
     property var sidePotAmounts: []
 

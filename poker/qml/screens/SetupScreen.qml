@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
+import PokerUi 1.0
 
 Page {
     id: setup
@@ -324,104 +325,6 @@ Page {
             }
 
             GroupBox {
-                title: qsTr("Strategy presets (reference only)")
-                Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
-
-                ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
-                    spacing: Theme.uiGroupInnerSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-
-                        Label {
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                            text: qsTr(
-                                "Browse archetypes here without changing any player. The chart is read-only. "
-                                + "To actually assign Rock / LAG / etc. to a seat, use Archetype on that player’s tab.")
-                            font.pixelSize: Theme.trainerBodyPx
-                            lineHeight: 1.25
-                            color: Theme.textSecondary
-                        }
-
-                        ToolButton {
-                            text: qsTr("?")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerSectionPx
-                            flat: true
-                            padding: 8
-                            focusPolicy: Qt.NoFocus
-                            Accessible.name: qsTr("Full description")
-                            Accessible.description: qsTr("Opens the full help text in a scrollable window")
-
-                            onClicked: setup.openStrategyLogPopup(
-                                    qsTr("Strategy presets (reference)"),
-                                    qsTr(
-                                        "This block is a library preview: default 13×13 weights and strategy notes. "
-                                        + "It does not edit saved ranges. On each seat tab, the Archetype control loads that preset into that player; "
-                                        + "you can then customize cells or text (for yourself, enable “Full range editor” first)."))
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-
-                        ComboBox {
-                            id: previewStrat
-                            model: strategyNames
-                            Layout.fillWidth: true
-                        }
-
-                        ToolButton {
-                            text: qsTr("?")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerSectionPx
-                            flat: true
-                            padding: 8
-                            focusPolicy: Qt.NoFocus
-                            Accessible.name: qsTr("Full strategy log")
-                            Accessible.description: qsTr("Opens the full strategy description for the selected preset")
-
-                            onClicked: setup.openStrategyLogPopup(
-                                    qsTr("%1 — strategy").arg(setup.strategyNames[previewStrat.currentIndex]),
-                                    pokerGame.getStrategySummary(previewStrat.currentIndex))
-                        }
-                    }
-
-                    Label {
-                        Layout.fillWidth: true
-                        Layout.maximumHeight: 120
-                        wrapMode: Text.WordWrap
-                        elide: Text.ElideRight
-                        maximumLineCount: 8
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.trainerBodyPx
-                        lineHeight: 1.25
-                        text: pokerGame.getStrategySummary(previewStrat.currentIndex)
-                    }
-
-                    RangeGrid {
-                        readOnly: true
-                        seatIndex: 0
-                        Layout.fillWidth: true
-                        weights: pokerGame.getPresetRangeGrid(previewStrat.currentIndex)
-                    }
-                }
-            }
-
-            GroupBox {
                 title: qsTr("Table stakes & pacing")
                 Layout.fillWidth: true
                 padding: Theme.uiGroupedPanelPadding
@@ -541,7 +444,9 @@ Page {
                             to: setup.buyInCapChips
                             stepSize: 1
                             editable: true
-                            Layout.fillWidth: true
+                            Layout.fillWidth: false
+                            Layout.preferredWidth: 200
+                            Layout.maximumWidth: 280
 
                             function refreshFromGame() {
                                 value = Math.min(pokerGame.seatBuyIn(setup.selectedSeat), setup.buyInCapChips)
@@ -623,16 +528,14 @@ Page {
                             }
                         }
 
-                        ToolButton {
+                        GameButton {
+                            style: "form"
+                            formFlat: true
                             text: qsTr("?")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerSectionPx
-                            flat: true
-                            padding: 8
-                            focusPolicy: Qt.NoFocus
-                            Accessible.name: qsTr("Full strategy log")
-                            Accessible.description: qsTr("Opens the full strategy description for the selected archetype")
-
+                            formBold: true
+                            formFontPixelSize: Theme.trainerSectionPx
+                            textColor: Theme.textPrimary
+                            horizontalPadding: 8
                             onClicked: setup.openStrategyLogPopup(
                                     qsTr("%1 — strategy").arg(setup.strategyNames[stratCombo.currentIndex]),
                                     pokerGame.getStrategySummary(stratCombo.currentIndex))

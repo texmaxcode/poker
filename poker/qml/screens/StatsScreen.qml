@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
+import PokerUi 1.0
 
 /// Session bankroll, leaderboard, training progress, and bankroll-over-time chart.
 Page {

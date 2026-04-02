@@ -345,64 +345,44 @@ QVariantList game::side_pot_amounts_for_ui() const
     if (sum_contrib != pot)
         return out;
 
-    // Main pot = everyone matches up to the shortest all-in; side pots = tiers for the excess the
-    // deeper stacks still contest (standard NLHE labeling — short stack is only in for the main).
-    std::vector<int> all_in_seats;
-    for (int i = 0; i < n; ++i)
-    {
-        if (hand_contrib_[static_cast<size_t>(i)] <= 0)
-            continue;
-        if (table[static_cast<size_t>(i)].stack <= 0)
-            all_in_seats.push_back(i);
-    }
-    if (all_in_seats.empty())
-        return out;
-
-    int S = hand_contrib_[static_cast<size_t>(all_in_seats[0])];
-    for (int s : all_in_seats)
-        S = std::min(S, hand_contrib_[static_cast<size_t>(s)]);
-
-    int main_amt = 0;
-    for (int i = 0; i < n; ++i)
-        main_amt += std::min(S, hand_contrib_[static_cast<size_t>(i)]);
-
-    std::vector<int> high_levels;
+    // Same tier sizes as `do_payouts`: sort unique contribution amounts ascending; each step from
+    // `prev` to `level` adds (level - prev) * (# seats with contrib >= level). Shortest stack’s
+    // total is the first level — that tier is the main pot; higher levels are side pots.
+    std::vector<int> levels;
     for (int i = 0; i < n; ++i)
     {
         const int c = hand_contrib_[static_cast<size_t>(i)];
-        if (c > S)
-            high_levels.push_back(c);
+        if (c > 0)
+            levels.push_back(c);
     }
-    std::sort(high_levels.begin(), high_levels.end());
-    high_levels.erase(std::unique(high_levels.begin(), high_levels.end()), high_levels.end());
+    if (levels.size() < 2)
+        return out;
 
-    QVariantList sides;
-    int prev = S;
-    for (int L : high_levels)
+    std::sort(levels.begin(), levels.end());
+    levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
+
+    int distributed = 0;
+    int prev = 0;
+    for (int level : levels)
     {
-        const int increment = L - prev;
+        const int increment = level - prev;
         int n_cover = 0;
         for (int i = 0; i < n; ++i)
         {
-            if (hand_contrib_[static_cast<size_t>(i)] >= L)
+            if (hand_contrib_[static_cast<size_t>(i)] >= level)
                 ++n_cover;
         }
         const int tier_chips = increment * n_cover;
         if (tier_chips > 0)
-            sides.append(tier_chips);
-        prev = L;
+        {
+            out.append(tier_chips);
+            distributed += tier_chips;
+        }
+        prev = level;
     }
 
-    int sides_sum = 0;
-    for (int i = 0; i < sides.size(); ++i)
-        sides_sum += sides[i].toInt();
-
-    if (main_amt + sides_sum != pot)
+    if (distributed != pot || out.size() < 2)
         return {};
-
-    out.append(main_amt);
-    for (int i = 0; i < sides.size(); ++i)
-        out.append(sides[i]);
     return out;
 }
 

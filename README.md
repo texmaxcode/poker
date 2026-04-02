@@ -61,7 +61,7 @@ QT_LIBS=/path/to/Qt/6.10.0/gcc_64 ./build.sh
 ./build/poker/Poker
 ```
 
-The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, **solver & equity**, **training**, or **bankroll & stats**. The live table page is `Game.qml` (`objectName: game_screen`), connected after load so the engine can sync state.
+The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, **solver & equity**, **training**, or **bankroll & stats**. The live table page is `screens/GameScreen.qml` (`objectName: game_screen`), connected after load so the engine can sync state.
 
 ### Saved configuration
 

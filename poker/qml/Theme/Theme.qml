@@ -117,7 +117,7 @@ QtObject {
     /// Flop trainer: community cards match table scale so pot + board + seat fit without overlap.
     readonly property int trainerFlopBoardCardWidth: 100
     readonly property int trainerFlopBoardCardHeight: 148
-    /// Gap between drill cards and between `HudButton` rows — matches `GameControls` action spacing (12).
+    /// Gap between drill cards and between HUD action rows — matches `GameControls` action spacing (12).
     readonly property int trainerDrillHudSpacing: 12
     /// Inset from drill area right edge for embedded HUD — space between centered seat and controls.
     readonly property int trainerHudSeatMargin: 22

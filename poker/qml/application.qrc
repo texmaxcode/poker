@@ -1,50 +1,50 @@
 <RCC>
     <qresource prefix="/">
+        <file>PokerUi/qmldir</file>
         <file>Theme/qmldir</file>
         <file>Theme/Theme.qml</file>
-        <!-- QML -->
-        <file>Main.qml</file>
-        <file>Lobby.qml</file>
-        <file>BotNames.qml</file>
-        <file>SetupScreen.qml</file>
-        <file>SolverScreen.qml</file>
-        <file>StatsScreen.qml</file>
-        <file>TrainerHome.qml</file>
-        <file>PreflopTrainer.qml</file>
-        <file>FlopTrainer.qml</file>
-        <file>RangeGrid.qml</file>
-        <file>Card.qml</file>
-        <file>Game.qml</file>
-        <file>TableFelt.qml</file>
-        <file>Player.qml</file>
-        <file>Table.qml</file>
-        <file>TableBoardCard.qml</file>
-        <file>GameControls.qml</file>
-        <file>ThemedSwitch.qml</file>
-        <file>ThemedCheckBox.qml</file>
-        <file>HudButton.qml</file>
-        <file>SizingPresetBar.qml</file>
-        <file>BrandedBackground.qml</file>
+        <file>theme/Metrics.qml</file>
+        <file>theme/Fonts.qml</file>
 
-        <!-- Typography (SIL Open Font License — Oswald, Google Fonts) -->
+        <file>Main.qml</file>
+
+        <file>components/GameButton.qml</file>
+        <file>components/BrandedBackground.qml</file>
+        <file>components/ThemedCheckBox.qml</file>
+        <file>components/ThemedSwitch.qml</file>
+        <file>components/SizingPresetBar.qml</file>
+        <file>components/BotNames.qml</file>
+        <file>components/Card.qml</file>
+        <file>components/Table.qml</file>
+        <file>components/TableFelt.qml</file>
+        <file>components/TableBoardCard.qml</file>
+        <file>components/Player.qml</file>
+        <file>components/GameControls.qml</file>
+        <file>components/RangeGrid.qml</file>
+
+        <file>screens/LobbyScreen.qml</file>
+        <file>screens/GameScreen.qml</file>
+        <file>screens/SetupScreen.qml</file>
+        <file>screens/SolverScreen.qml</file>
+        <file>screens/StatsScreen.qml</file>
+        <file>screens/TrainerHome.qml</file>
+        <file>screens/PreflopTrainer.qml</file>
+        <file>screens/FlopTrainer.qml</file>
+
         <file>assets/fonts/Oswald-Regular.ttf</file>
         <file>assets/fonts/Oswald-Bold.ttf</file>
 
-        <!-- Icons -->
         <file>assets/icons/home.svg</file>
         <file>assets/icons/table.svg</file>
         <file>assets/icons/bots.svg</file>
         <file>assets/icons/solver.svg</file>
 
-        <!-- Brand -->
         <file>assets/images/logo.png</file>
         <file>assets/images/bg_vignette.svg</file>
 
-        <!-- Training assets -->
         <file>assets/training/preflop_ranges_v1.json</file>
         <file>assets/training/spots_v1.json</file>
 
-        <!-- Playing cards (SVG) -->
         <file>assets/cards/blue2.svg</file>
         <file>assets/cards/clubs_ace.svg</file>
         <file>assets/cards/clubs_king.svg</file>

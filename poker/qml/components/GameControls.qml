@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
+import PokerUi 1.0
 
 /// Bottom HUD (full width) or floating panel beside the human seat (`embeddedMode`).
 Item {
@@ -13,7 +14,7 @@ Item {
 
     /// When true, use compact timer row instead of full-width status row.
     property bool embeddedMode: false
-    /// Used when `embeddedMode` is true; set from `Game.qml` so the panel does not span the table width.
+    /// Used when `embeddedMode` is true; set from `GameScreen` so the panel does not span the table width.
     property real panelWidth: 0
 
     property var pageRoot: null
@@ -272,16 +273,16 @@ Item {
                         Layout.preferredWidth: visible ? implicitWidth : 0
                     }
 
-                    HudButton {
+                    GameButton {
                         visible: !game_controls.trainerMode && game_controls.humanDecisionActive
                                 && game_controls.humanMoreTimeAvailable
                         pillWidth: 76
                         horizontalPadding: 14
                         fontSize: Theme.uiHudButtonPt
-                        label: qsTr("More")
+                        text: qsTr("More")
                         buttonColor: Theme.hudActionPanel
                         textColor: Theme.hudActionBright
-                        implicitHeight: 34
+                        overrideHeight: 34
                         Layout.preferredWidth: visible ? 76 : 0
                         onClicked: {
                             if (pageRoot)
@@ -428,9 +429,9 @@ Item {
                 x: 8
                 spacing: 12
 
-                HudButton {
+                GameButton {
                     visible: !game_controls.trainerMode || !game_controls.trainerFlopStreet
-                    label: qsTr("FOLD")
+                    text: qsTr("FOLD")
                     pillWidth: 76
                     buttonColor: Theme.dangerBg
                     textColor: Theme.dangerText
@@ -450,10 +451,10 @@ Item {
                     }
                 }
 
-                HudButton {
+                GameButton {
                     visible: game_controls.canFacingCall
                             && (!game_controls.trainerMode || !game_controls.trainerFlopStreet)
-                    label: game_controls.facingNeedChips > 0
+                    text: game_controls.facingNeedChips > 0
                           ? qsTr("Call %1").arg(game_controls.facingNeedChips)
                           : qsTr("CALL")
                     pillWidth: 108
@@ -474,10 +475,10 @@ Item {
                     }
                 }
 
-                HudButton {
+                GameButton {
                     visible: game_controls.canRaiseFacing && !game_controls.raiseSizingExpanded
                             && (!game_controls.trainerMode || !game_controls.trainerFlopStreet)
-                    label: qsTr("RAISE")
+                    text: qsTr("RAISE")
                     pillWidth: 88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
@@ -495,9 +496,9 @@ Item {
                     }
                 }
 
-                HudButton {
+                GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
-                    label: qsTr("CHECK")
+                    text: qsTr("CHECK")
                     pillWidth: 76
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
@@ -511,9 +512,9 @@ Item {
                     }
                 }
 
-                HudButton {
+                GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
-                    label: qsTr("Bet 33%")
+                    text: qsTr("Bet 33%")
                     pillWidth: 108
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
@@ -527,9 +528,9 @@ Item {
                     }
                 }
 
-                HudButton {
+                GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
-                    label: qsTr("Bet 75%")
+                    text: qsTr("Bet 75%")
                     pillWidth: 88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
@@ -641,8 +642,8 @@ Item {
                 x: 8
                 spacing: 12
 
-                HudButton {
-                    label: qsTr("CHECK")
+                GameButton {
+                    text: qsTr("CHECK")
                     pillWidth: 96
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
@@ -654,10 +655,10 @@ Item {
                     }
                 }
 
-                HudButton {
+                GameButton {
                     visible: game_controls.humanBbCanRaise && game_controls.humanHasChips
                             && !game_controls.bbPreflopSizingExpanded
-                    label: qsTr("Raise")
+                    text: qsTr("Raise")
                     pillWidth: 96
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
@@ -760,8 +761,8 @@ Item {
                 x: 8
                 spacing: 12
 
-                HudButton {
-                    label: qsTr("CHECK")
+                GameButton {
+                    text: qsTr("CHECK")
                     pillWidth: 88
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
@@ -773,8 +774,8 @@ Item {
                     }
                 }
 
-                HudButton {
-                    label: qsTr("FOLD")
+                GameButton {
+                    text: qsTr("FOLD")
                     pillWidth: 76
                     buttonColor: Theme.dangerBg
                     textColor: Theme.dangerText
@@ -786,9 +787,9 @@ Item {
                     }
                 }
 
-                HudButton {
+                GameButton {
                     visible: game_controls.canOpenRaise && !game_controls.openRaiseSizingExpanded
-                    label: qsTr("Raise")
+                    text: qsTr("Raise")
                     pillWidth: 88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
@@ -836,12 +837,12 @@ Item {
                 x: 8
                 spacing: 10
 
-                HudButton {
-                    label: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
+                GameButton {
+                    text: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
                     fontSize: Theme.uiHudButtonPt
                     pillWidth: 0
                     horizontalPadding: 16
-                    implicitHeight: 30
+                    overrideHeight: 30
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
                     clickEnabled: game_controls.pokerGame !== null

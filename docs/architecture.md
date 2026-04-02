@@ -52,13 +52,15 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 | File / area | Role |
 |-------------|------|
 | **`Main.qml`** | Shell: navigation, **`pokerGame`** / **`pokerSolver`** / **`trainer`** bindings |
-| **`Lobby.qml`** | Entry: logo + tiles to table, setup, solver, training, stats |
-| **`Game.qml`** | Table layout, **`game_screen`**, **`Player`** delegates, **`GameControls`** |
-| **`GameControls.qml`**, **`SizingPresetBar.qml`** | Fold / call / raise / check / bet, timers, sit-out; Min / ⅓ / ½ / ⅔ / Pot / All presets |
-| **`Table.qml`** | Pot HUD (with call amount), community board cards |
-| **`SetupScreen.qml`**, **`SolverScreen.qml`** | Ranges, strategies, solver/equity UI |
-| **`StatsScreen.qml`** | Bankroll tables, leaderboard, chart |
-| **`TrainerHome.qml`**, **`PreflopTrainer.qml`**, **`FlopTrainer.qml`** | Training hub and drills |
+| **`screens/LobbyScreen.qml`** | Entry: logo + tiles to table, setup, solver, training, stats |
+| **`screens/GameScreen.qml`** | Table layout, **`game_screen`**, **`Player`** delegates, **`GameControls`** |
+| **`components/GameControls.qml`**, **`components/SizingPresetBar.qml`** | Fold / call / raise / check / bet, timers, sit-out; Min / ⅓ / ½ / ⅔ / Pot / All presets |
+| **`components/Table.qml`** | Pot HUD (with call amount), community board cards |
+| **`screens/SetupScreen.qml`**, **`screens/SolverScreen.qml`** | Ranges, strategies, solver/equity UI |
+| **`screens/StatsScreen.qml`** | Bankroll tables, leaderboard, chart |
+| **`screens/TrainerHome.qml`**, **`PreflopTrainer.qml`**, **`FlopTrainer.qml`** | Training hub and drills |
+| **`components/GameButton.qml`** | Shared **`hud` / `chrome` / `form` / `chip`** buttons (toolbar, HUD, trainers) |
+| **`PokerUi/qmldir`** | QML module registering **`components/`** and **`screens/`** types |
 
 Bundled training JSON lives under **`poker/qml/assets/training/`** (e.g. `preflop_ranges_v1.json`, `spots_v1.json`). Assets are embedded via **`application.qrc`**.
 

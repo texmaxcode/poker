@@ -1,5 +1,6 @@
 import QtQuick
 import Theme 1.0
+import PokerUi 1.0
 
 /// Community card: staggered deal-in, then flip from back to face (natural pace).
 Item {

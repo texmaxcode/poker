@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
+import PokerUi 1.0
 
 Page {
     id: page
@@ -10,24 +11,26 @@ Page {
 
     property StackLayout stackLayout: null
 
-    property string statusLine: qsTr("Starting…")
-    property string board0: ""
-    property string board1: ""
-    property string board2: ""
-    property string hero1: ""
-    property string hero2: ""
-    property string spotId: ""
+    property string position: "BTN"
+    property string mode: "open"
+    property string card1: ""
+    property string card2: ""
+    property string statusLine: qsTr("Load ranges and start a drill.")
     property bool inputLocked: false
     property int secLeft: 0
+    /// Seconds left to answer (mirrors table decision clock).
     property int decisionSecLeft: 0
+    /// Wall-clock ms deadlines so timers stay correct after app background or tab switch.
     property real decisionDeadlineMs: 0
     property real advanceDeadlineMs: 0
+    /// Bumps when the hand changes so `Player` hole cards re-deal like at the table.
     property int seatVisualEpoch: 0
+    /// True after user navigates away so we start a new drill question when they come back.
     property bool _returningFromHidden: false
+    /// Avoid treating initial `visible: false` at startup as "left the page".
     property bool _drillSurfaceShown: false
-    readonly property real flopSpotPotBb: 5.5
-    /// $2 BB → chip pot for display (matches ~5.5 bb spot).
-    readonly property int trainerPotChips: Math.round(page.flopSpotPotBb * 2)
+    /// Matches HUD pot / sizing context ($2 BB training table).
+    readonly property int trainerPotChips: 12
     background: BrandedBackground { anchors.fill: parent }
 
     Timer {
@@ -63,7 +66,7 @@ Page {
             decisionTimer.stop()
             decisionSecLeft = 0
             decisionDeadlineMs = 0
-            submit("check")
+            submit("fold")
         }
     }
 
@@ -74,15 +77,18 @@ Page {
             secTimer.stop()
             advanceDeadlineMs = 0
             inputLocked = false
-            next()
+            nextQuestion()
         }
     }
 
+    /// Resync after app resume or tab change. Wall-clock deadlines stay valid; QML `Timer` can stall
+    /// after suspend while still reporting `running`, so always `restart()` when time remains.
     function syncTrainerClocks() {
+        // Recover stuck "feedback / next hand" lock if deadlines were cleared without advancing (e.g. suspend).
         if (inputLocked && advanceDeadlineMs <= 0 && decisionDeadlineMs <= 0) {
             secTimer.stop()
             inputLocked = false
-            next()
+            nextQuestion()
             return
         }
         if (!inputLocked && decisionDeadlineMs > 0) {
@@ -92,7 +98,7 @@ Page {
                 decisionTimer.stop()
                 decisionSecLeft = 0
                 decisionDeadlineMs = 0
-                submit("check")
+                submit("fold")
             } else {
                 decisionTimer.restart()
             }
@@ -104,7 +110,7 @@ Page {
                 secTimer.stop()
                 advanceDeadlineMs = 0
                 inputLocked = false
-                next()
+                nextQuestion()
             } else {
                 secTimer.restart()
             }
@@ -134,13 +140,16 @@ Page {
             stackLayout.currentIndex = 5
     }
 
+    /// Stop timers when leaving this screen; stack may keep the page alive.
     function stopDrillWhileAway() {
         cancelPendingAdvance()
     }
 
+    /// New question + clock after returning from another screen.
     function restartDrillAfterReturn() {
-        trainer.startFlopDrill("srp_btn_bb")
-        next()
+        statusLine = qsTr("Ready.")
+        trainer.startPreflopDrill(position, mode)
+        nextQuestion()
     }
 
     onVisibleChanged: {
@@ -171,30 +180,25 @@ Page {
     Component.onCompleted: {
         delaySecSpin.value = Math.round(trainingStore.trainerAutoAdvanceMs / 1000)
         timeLimitSpin.value = trainingStore.trainerDecisionSeconds
-        const ok = trainer.loadFlopSpots("qrc:/assets/training/spots_v1.json")
-        trainer.startFlopDrill("srp_btn_bb")
-        if (!ok) {
-            statusLine = qsTr("Could not load flop spots.")
-            return
-        }
-        next()
+        const ok = trainer.loadPreflopRanges("qrc:/assets/training/preflop_ranges_v1.json")
+        statusLine = ok ? qsTr("Ready.") : qsTr("Could not load ranges.")
+        trainer.startPreflopDrill(position, mode)
+        nextQuestion()
     }
 
-    function next() {
+    function nextQuestion() {
         cancelPendingAdvance()
-        const q = trainer.nextFlopQuestion()
+        const q = trainer.nextPreflopQuestion()
         if (q.error !== undefined) {
             statusLine = String(q.error)
             return
         }
-        spotId = String(q.spotId)
-        hero1 = String(q.hero1)
-        hero2 = String(q.hero2)
-        board0 = String(q.board0)
-        board1 = String(q.board1)
-        board2 = String(q.board2)
+        position = String(q.position)
+        mode = String(q.mode)
+        card1 = String(q.card1)
+        card2 = String(q.card2)
         seatVisualEpoch++
-        statusLine = qsTr("Spot %1").arg(spotId)
+        statusLine = qsTr("%1 (%2)").arg(position).arg(mode)
         startDecisionClock()
     }
 
@@ -202,17 +206,16 @@ Page {
         decisionTimer.stop()
         decisionSecLeft = 0
         decisionDeadlineMs = 0
-        const r = trainer.submitFlopAnswer(a)
+        const r = trainer.submitPreflopAnswer(a, 0)
         if (r.error !== undefined) {
             statusLine = String(r.error)
             startAutoAdvance()
             return
         }
-        statusLine = qsTr("%1 — %2 (freq %3%) · EV loss %4 bb")
-                .arg(spotId)
-                .arg(String(r.grade))
-                .arg(Math.round(Number(r.chosenFreq) * 100))
-                .arg(Number(r.evLossBb).toFixed(3))
+        const grade = String(r.grade)
+        const freq = Number(r.chosenFreq)
+        const best = String(r.bestAction)
+        statusLine = qsTr("%1 — %2 (%3%) · best: %4").arg(position).arg(grade).arg(Math.round(freq * 100)).arg(best)
         startAutoAdvance()
     }
 
@@ -239,20 +242,21 @@ Page {
                     Layout.fillWidth: true
                     spacing: 10
 
-                    ToolButton {
+                    GameButton {
+                        style: "form"
+                        formFlat: true
                         text: qsTr("Training picks")
-                        flat: true
-                        font.pixelSize: Theme.trainerToolButtonPx
-                        leftPadding: 10
-                        rightPadding: 14
+                        formFontPixelSize: Theme.trainerToolButtonPx
+                        textColor: Theme.textPrimary
+                        horizontalPadding: 14
                         onClicked: page.goTrainingHome()
                     }
 
                     Label {
-                        text: qsTr("Flop (BTN vs BB)")
-                        color: Theme.gold
+                        text: qsTr("Preflop")
                         font.pointSize: Theme.trainerPageHeadlinePt
                         font.bold: true
+                        color: Theme.gold
                     }
 
                     Item { Layout.fillWidth: true }
@@ -298,6 +302,35 @@ Page {
                         onValueModified: trainingStore.trainerDecisionSeconds = value
                     }
 
+                    Label {
+                        text: qsTr("Pos")
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.trainerCaptionPx
+                    }
+                    ComboBox {
+                        id: posPick
+                        font.pixelSize: Theme.trainerCaptionPx
+                        Layout.preferredWidth: 112
+                        enabled: !page.inputLocked
+                        model: ["UTG", "CO", "BTN", "SB", "BB"]
+                        currentIndex: model.indexOf(page.position)
+                        onActivated: function (index) {
+                            cancelPendingAdvance()
+                            page.position = String(model[index])
+                            trainer.startPreflopDrill(page.position, page.mode)
+                            page.nextQuestion()
+                        }
+                    }
+
+                    ComboBox {
+                        id: modePick
+                        font.pixelSize: Theme.trainerCaptionPx
+                        Layout.preferredWidth: 104
+                        model: ["open"]
+                        currentIndex: 0
+                        enabled: false
+                    }
+
                     Item { Layout.fillWidth: true }
                 }
 
@@ -315,8 +348,9 @@ Page {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                     text: qsTr(
-                        "Single raised pot, flop only. Spots cycle in file order. Check, or bet 33% / 75% pot — same grading bands from strategy frequency; "
-                        + "EV loss (bb) vs the best option is tracked in progress. Bundled EVs are illustrative; edit spots JSON to match your study material.")
+                        "Random two cards each hand. Your choice is scored against the 13×13 weights for the position/mode (see JSON). "
+                        + "Grade uses that action’s frequency: ≥70% Correct, ≥5% Mix, else Wrong. Feedback shows the highest-weight action as “best”. "
+                        + "Changing position reloads the scenario; use Training picks to leave.")
                     color: Theme.textSecondary
                     font.pixelSize: Theme.trainerBodyPx
                     lineHeight: 1.25
@@ -345,68 +379,30 @@ Page {
                         /// Same formula as `Game.qml` table HUD (seat is nested in a layout — use `mapFromItem` below).
                         readonly property real hudPanelW: Math.min(400, Math.max(Theme.trainerEmbeddedHudMinWidth,
                                 drillArea.width * 0.36))
-                        readonly property int flopBoardStripWidth: 3 * Theme.trainerFlopBoardCardWidth
-                                + 2 * Theme.trainerDrillHudSpacing
 
                         ColumnLayout {
-                            id: flopDrillStack
+                            id: preflopDrillStack
                             anchors.fill: parent
                             spacing: 10
 
-                            Column {
+                            Rectangle {
                                 Layout.alignment: Qt.AlignHCenter
                                 Layout.topMargin: 6
-                                spacing: 8
-                                width: drillArea.flopBoardStripWidth
+                                width: trainerPotBanner.implicitWidth + 22
+                                height: trainerPotBanner.implicitHeight + 12
+                                radius: 8
+                                color: Theme.hudBg1
+                                border.color: Theme.hudBorder
+                                border.width: 2
 
-                                Rectangle {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: flopPotBanner.implicitWidth + 22
-                                    height: flopPotBanner.implicitHeight + 12
-                                    radius: 8
-                                    color: Theme.hudBg1
-                                    border.color: Theme.hudBorder
-                                    border.width: 2
-
-                                    Label {
-                                        id: flopPotBanner
-                                        anchors.centerIn: parent
-                                        text: qsTr("Pot $%1").arg(page.trainerPotChips)
-                                        color: Theme.gold
-                                        font.family: Theme.fontFamilyUi
-                                        font.pixelSize: Theme.trainerCaptionPx
-                                        font.bold: true
-                                    }
-                                }
-
-                                Row {
-                                    id: flopBoardRow
-                                    spacing: Theme.trainerDrillHudSpacing
-                                    width: drillArea.flopBoardStripWidth
-                                    Card {
-                                        width: Theme.trainerFlopBoardCardWidth
-                                        height: Theme.trainerFlopBoardCardHeight
-                                        card: board0
-                                        flipped: true
-                                        tableCard: true
-                                        instantFace: true
-                                    }
-                                    Card {
-                                        width: Theme.trainerFlopBoardCardWidth
-                                        height: Theme.trainerFlopBoardCardHeight
-                                        card: board1
-                                        flipped: true
-                                        tableCard: true
-                                        instantFace: true
-                                    }
-                                    Card {
-                                        width: Theme.trainerFlopBoardCardWidth
-                                        height: Theme.trainerFlopBoardCardHeight
-                                        card: board2
-                                        flipped: true
-                                        tableCard: true
-                                        instantFace: true
-                                    }
+                                Label {
+                                    id: trainerPotBanner
+                                    anchors.centerIn: parent
+                                    text: qsTr("Pot $%1").arg(page.trainerPotChips)
+                                    color: Theme.gold
+                                    font.family: Theme.fontFamilyUi
+                                    font.pixelSize: Theme.trainerCaptionPx
+                                    font.bold: true
                                 }
                             }
 
@@ -432,14 +428,14 @@ Page {
                                     anchors.fill: parent
                                     seatIndex: 0
                                     name: qsTr("You")
-                                    position: "BTN"
-                                    first_card: page.hero1
-                                    second_card: page.hero2
+                                    position: page.position
+                                    first_card: page.card1
+                                    second_card: page.card2
                                     show_cards: true
                                     inHand: true
                                     seatAtTable: true
                                     stackChips: 200
-                                    streetActionText: page.spotId.length ? page.spotId : qsTr("Flop")
+                                    streetActionText: page.position + " · " + page.mode
                                     handEpoch: page.seatVisualEpoch
                                     instantHoleCards: true
                                     isHumanSeat: true
@@ -451,10 +447,10 @@ Page {
                         }
 
                         GameControls {
-                            id: flopExerciseHud
+                            id: exerciseHud
                             z: 20
                             trainerMode: true
-                            trainerFlopStreet: true
+                            trainerFlopStreet: false
                             pokerGame: null
                             embeddedMode: true
                             panelWidth: drillArea.hudPanelW
@@ -463,7 +459,7 @@ Page {
                                 if (!hs)
                                     return 8
                                 var gap = Theme.trainerDrillHudSpacing
-                                var w = flopExerciseHud.width
+                                var w = exerciseHud.width
                                 var pos = drillArea.mapFromItem(hs, 0, 0)
                                 var placeRight = pos.x + hs.width + gap
                                 if (placeRight + w <= drillArea.width - 6)
@@ -475,8 +471,8 @@ Page {
                                 if (!hs)
                                     return 8
                                 var pos = drillArea.mapFromItem(hs, 0, 0)
-                                var ideal = pos.y + hs.height - flopExerciseHud.height
-                                return Math.min(Math.max(6, ideal), drillArea.height - flopExerciseHud.height - 6)
+                                var ideal = pos.y + hs.height - exerciseHud.height
+                                return Math.min(Math.max(6, ideal), drillArea.height - exerciseHud.height - 6)
                             }
                             trainerInputLocked: page.inputLocked
                             humanSitOut: false
@@ -491,7 +487,7 @@ Page {
                             humanCanCheck: false
                             humanBbPreflopOption: false
                             humanCanRaiseFacing: true
-                            facingNeedChips: 0
+                            facingNeedChips: 3
                             facingMinRaiseChips: 6
                             facingMaxChips: 200
                             facingPotAmount: page.trainerPotChips
@@ -501,26 +497,26 @@ Page {
                         }
 
                         Connections {
-                            target: flopExerciseHud
+                            target: exerciseHud
                             function onTrainerAction(action, amount) {
                                 const u = String(action).toUpperCase()
-                                if (u === "CHECK")
-                                    page.submit("check")
-                                else if (u === "BET33")
-                                    page.submit("bet33")
-                                else if (u === "BET75")
-                                    page.submit("bet75")
+                                if (u === "FOLD")
+                                    page.submit("fold")
+                                else if (u === "CALL")
+                                    page.submit("call")
+                                else if (u === "RAISE")
+                                    page.submit("raise")
                             }
                         }
 
                         MouseArea {
                             z: 19
                             anchors.fill: parent
-                            visible: flopExerciseHud.sizingDialogOpen
+                            visible: exerciseHud.sizingDialogOpen
                             onClicked: {
-                                flopExerciseHud.raiseSizingExpanded = false
-                                flopExerciseHud.openRaiseSizingExpanded = false
-                                flopExerciseHud.bbPreflopSizingExpanded = false
+                                exerciseHud.raiseSizingExpanded = false
+                                exerciseHud.openRaiseSizingExpanded = false
+                                exerciseHud.bbPreflopSizingExpanded = false
                             }
                         }
                     }

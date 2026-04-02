@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
+import PokerUi 1.0
 
 /// Seat panel — hole cards hidden when folded; street chips shown in gold.
 Item {
