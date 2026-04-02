@@ -7,7 +7,9 @@
 #include <vector>
 
 #include <QObject>
+#include <QtGlobal>
 #include <QString>
+#include <QStringList>
 #include <QTimer>
 #include <QVariant>
 #include <QVariantMap>
@@ -51,6 +53,8 @@ class game : public QObject
     Street street = Street::PRE_FLOP;
     card_deck deck;
     int starting_stack_ = 100;
+    /// Per-seat default stack / off-table bankroll and rebuy unit (see `configure` / Bankroll UI).
+    std::array<int, kMaxPlayers> seat_buy_in_{};
     bool ui_showdown_ = false;
     /// True after `deal_hold_cards()`; false after `clear_for_new_hand()`.
     /// Prevents `sync_ui()` from sending stale card paths (which kept QML flipped-state stuck).
@@ -90,7 +94,6 @@ class game : public QObject
     /// Adds chips to `pot` and `hand_contrib_` for this seat (must match chips taken from `stack`).
     void add_chips_to_pot(int seat, int chips);
     void note_river_aggressor(Street st, int seat);
-    int first_active_clockwise_from_button() const;
 
 public:
     explicit game(QObject *parent = nullptr);
@@ -127,6 +130,16 @@ public:
     Q_INVOKABLE int configuredBigBlind() const { return big_blind; }
     Q_INVOKABLE int configuredStreetBet() const { return street_bet_; }
     Q_INVOKABLE int configuredStartStack() const { return starting_stack_; }
+    /// Maximum chips a seat may bring to the table per buy-in / apply (100× big blind).
+    Q_INVOKABLE int maxBuyInChips() const;
+    /// Per-seat buy-in (target stack; capped at `maxBuyInChips()`; excess stays off-table as bankroll).
+    Q_INVOKABLE int seatBuyIn(int seat) const;
+    Q_INVOKABLE void setSeatBuyIn(int seat, int chips);
+    /// Push `seat_buy_in_` to table stacks + off-table bankroll (no-op if a hand is in progress).
+    Q_INVOKABLE void applySeatBuyInsToStacks();
+    /// True when buy-ins were edited during a hand; call `applySeatBuyInsToStacks()` when idle.
+    Q_INVOKABLE bool pendingSeatBuyInsApply() const { return pending_seat_buyins_apply_; }
+    Q_INVOKABLE bool gameInProgress() const { return in_progress; }
     Q_INVOKABLE int seatStrategyIndex(int seat) const;
     Q_INVOKABLE void loadPersistedSettings();
     Q_INVOKABLE void savePersistedSettings() const;
@@ -179,19 +192,23 @@ public:
     /// Stack after each recorded snapshot for `seat` (same length for all seats).
     Q_INVOKABLE QVariantList bankrollSeries(int seat) const;
     Q_INVOKABLE int bankrollSnapshotCount() const;
+    /// Wall-clock ms since epoch for each bankroll snapshot (same length as `bankrollSeries`).
+    Q_INVOKABLE QVariantList bankrollSnapshotTimesMs() const;
     Q_INVOKABLE int sessionBaselineStack(int seat) const;
     /// Clear history and re-baseline from current stacks (one snapshot).
     Q_INVOKABLE void resetBankrollSession();
+    /// Sets total chips for `seat` (table stack = total, off-table bankroll cleared, buy-in updated). Idle hands only.
+    Q_INVOKABLE void setSeatBankrollTotal(int seat, int totalChips);
 
     /// Blind seats and first actor seats for the current `button` / `in_hand_` state (tests / diagnostics).
     /// Preflop first = UTG (clockwise after BB); post-flop first = first active after button (SB or next).
     Q_INVOKABLE QVariantMap bettingAnchors() const;
 
-    /// Off-table chips available for rebuy (session reserve per seat).
+    /// Off-table portion of bankroll, available for rebuy (starts at 0 after apply; persistence may restore a reserve).
     Q_INVOKABLE int seatWallet(int seat) const;
-    /// `stack == 0`, hand idle, and wallet has at least one full buy-in (`configuredStartStack()`).
+    /// `stack == 0`, hand idle, and off-table bankroll has at least one full buy-in for that seat (`seatBuyIn(seat)`).
     Q_INVOKABLE bool canBuyBackIn(int seat) const;
-    /// Move `configuredStartStack()` from wallet to stack. No-op if not allowed.
+    /// Move one `seatBuyIn(seat)` from off-table bankroll to stack. No-op if not allowed.
     Q_INVOKABLE bool tryBuyBackIn(int seat);
 
 signals:
@@ -232,11 +249,20 @@ private:
     bool bot_action_delay_enabled_ = true;
     /// Per-hand stack traces (after each completed hand) for bankroll charts.
     std::vector<std::array<int, kMaxPlayers>> bankroll_history_{};
+    /// Parallel to `bankroll_history_`: snapshot timestamp (ms since epoch).
+    std::vector<qint64> bankroll_snapshot_times_ms_{};
     std::array<int, kMaxPlayers> session_baseline_{};
     /// Chips not on the table; used to buy back in after busting (`starting_stack_` per rebuy).
     std::array<int, kMaxPlayers> seat_wallet_{};
     int pending_human_need_ = 0;
     int pending_human_raise_inc_ = 0;
+    /// QML `statusText`: last pot result; kept visible until the next hand awards the pot.
+    QString last_hand_result_message_{};
+    /// QML `resultBannerCardAssets`: best 5-card combination (`qrc:/assets/cards/` filenames).
+    QStringList last_hand_result_card_assets_{};
+    /// If `setSeatBuyIn()` is called while a hand is running, we defer applying the stacks
+    /// until the next hand starts (so the current pot / contributions stay consistent).
+    bool pending_seat_buyins_apply_ = false;
     QTimer human_decision_tick_;
     QTimer human_decision_deadline_;
 
@@ -258,13 +284,24 @@ private:
     /// Applies rebuy without recording snapshots (engine use).
     bool apply_buy_back_in_internal(int seat);
     void record_bankroll_snapshot();
+    void sync_seat_buy_in_from_table_when_wallet_empty();
     void init_bankroll_after_configure();
+    void apply_seat_buy_ins_to_table();
     void bot_action_pause();
     /// Postflop: no open bet — record a check and pause (mirrors human `Check` label).
     void bot_record_postflop_check(int seat);
     void clear_for_new_hand();
     void clear_street_action_labels();
     void set_seat_street_action(int seat, const QString &label);
+    /// Reserved for future HUD hooks; does not write `statusText` (banner shows last hand result only).
+    void push_human_action_status(const QString &actionLabel);
+    void set_hand_result_status(const QString &msg, const QStringList &cardAssets = {});
+    QString board_compact_for_result() const;
+    /// `Name — [hand name] — holes · board` (viz still shows the 5-card combination).
+    QString hand_result_status_line(int seat) const;
+    /// Human-readable winning holding from holes + board at `street` (e.g. “Two pair, Q and 10”).
+    QString winning_hand_label(int seat) const;
+    QStringList result_banner_card_assets_for_seat(int seat) const;
     /// First seat clockwise after `prev_seat` that is still in the hand (-1 if none).
     int first_in_hand_after(int prev_seat) const;
     /// In rotation for the button: has chips, human not sitting out, bots not opted out.
@@ -276,8 +313,13 @@ private:
     void do_payouts();
     void switch_button();
     QString human_hand_line_for_ui() const;
-    /// When at least one seat is all-in: main pot = Σ min(S, contrib) with S = min contrib among
-    /// all-in seats; then side pot tiers above S. Empty if no all-in or pot ≠ recorded contributions.
+    /// Community cards for end-of-hand / status text (empty if flop not dealt).
+    QString board_line_for_ui() const;
+    /// Two hole cards, e.g. `"Ah Kd"`.
+    QString hole_cards_display(int seat) const;
+    /// At least one all-in: [main, side1, …] with main = Σ min(S, contrib), S = smallest contribution
+    /// among all-in seats; further entries are side pots for amounts above S. Empty if no all-in or
+    /// pot ≠ recorded contributions.
     QVariantList side_pot_amounts_for_ui() const;
     void sync_ui();
     void flush_ui();

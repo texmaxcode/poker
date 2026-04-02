@@ -6,6 +6,7 @@ import Theme 1.0
 Page {
     id: solverPage
     padding: 0
+    font.family: Theme.fontFamilyUi
 
     property bool simRunning: false
     /// Full text from last run (equity block + detailText); shown in the log dialog.
@@ -69,13 +70,13 @@ Page {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 10
-            spacing: 8
+            anchors.margins: Theme.uiGroupedPanelPadding
+            spacing: Theme.uiGroupInnerSpacing
 
             Label {
                 text: qsTr("Simulation log")
                 font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
+                font.pointSize: Theme.trainerSectionPx
                 color: Theme.gold
             }
 
@@ -148,11 +149,15 @@ Page {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        leftPadding: Theme.uiPagePadding
+        rightPadding: Theme.uiPagePadding
+        topPadding: Theme.uiPagePadding
+        bottomPadding: Theme.uiPagePadding
 
         ColumnLayout {
             id: solverCol
-            width: Math.max(280, scroll.width - 24)
-            spacing: 10
+            width: Math.max(280, scroll.width - 2 * Theme.uiPagePadding)
+            spacing: Theme.uiPageColumnSpacing
 
             Connections {
                 target: pokerSolver
@@ -213,11 +218,10 @@ Page {
                 Label {
                     Layout.topMargin: 8
                     Layout.fillWidth: true
-                    maximumLineCount: 2
                     wrapMode: Text.WordWrap
-                    elide: Text.ElideRight
                     text: qsTr("Monte Carlo equity vs range or exact cards — pot odds & chip-EV (not full GTO).")
-                    font.pixelSize: Theme.uiBodyPx
+                    font.pixelSize: Theme.trainerBodyPx
+                    lineHeight: 1.25
                     color: Theme.textSecondary
 
                     HoverHandler {
@@ -235,21 +239,31 @@ Page {
                 GroupBox {
                     title: qsTr("Hand & board")
                     Layout.fillWidth: true
-                    padding: 8
-                    topPadding: 20
+                    padding: Theme.uiGroupedPanelPadding
+                    topPadding: Theme.uiGroupedPanelTopPadding
                     font.bold: true
                     font.pointSize: Theme.uiGroupTitlePt
 
-                    GridLayout {
-                        width: parent.width - 16
-                        columns: 2
-                        columnSpacing: 10
-                        rowSpacing: 6
+                    ColumnLayout {
+                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        spacing: 0
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: 2
+                            columnSpacing: 10
+                            rowSpacing: 6
 
                         Label {
                             text: qsTr("Hero card 1")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                             Layout.maximumWidth: 120
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         TextField {
                             id: h1
@@ -261,6 +275,7 @@ Page {
                         Label {
                             text: qsTr("Hero card 2")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         TextField {
                             id: h2
@@ -272,6 +287,7 @@ Page {
                         Label {
                             text: qsTr("Board (optional)")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         TextField {
                             id: brd
@@ -282,6 +298,7 @@ Page {
                         Label {
                             text: qsTr("Villain range")
                             Layout.alignment: Qt.AlignRight | Qt.AlignTop
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         TextField {
                             id: vrange
@@ -293,6 +310,7 @@ Page {
                         Label {
                             text: qsTr("Villain exact")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         RowLayout {
                             spacing: 8
@@ -312,26 +330,37 @@ Page {
                                 Layout.fillWidth: true
                             }
                         }
+                        }
                     }
                 }
 
                 GroupBox {
                     title: qsTr("Simulation & pot odds")
                     Layout.fillWidth: true
-                    padding: 8
-                    topPadding: 20
+                    padding: Theme.uiGroupedPanelPadding
+                    topPadding: Theme.uiGroupedPanelTopPadding
                     font.bold: true
                     font.pointSize: Theme.uiGroupTitlePt
 
-                    GridLayout {
-                        width: parent.width - 16
-                        columns: 2
-                        columnSpacing: 10
-                        rowSpacing: 6
+                    ColumnLayout {
+                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        spacing: 0
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: 2
+                            columnSpacing: 10
+                            rowSpacing: 6
 
                         Label {
                             text: qsTr("Iterations")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: iters
@@ -346,6 +375,7 @@ Page {
                         Label {
                             text: qsTr("Pot before call")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: potSpin
@@ -359,6 +389,7 @@ Page {
                         Label {
                             text: qsTr("To call")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: callSpin
@@ -369,12 +400,13 @@ Page {
                             Layout.maximumWidth: 200
                             implicitWidth: 200
                         }
+                        }
                     }
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    spacing: Theme.uiGroupInnerSpacing
 
                     Button {
                         id: runSimBtn
@@ -411,7 +443,7 @@ Page {
                         visible: solverPage.simRunning
                         text: qsTr("Working…")
                         color: Theme.focusGold
-                        font.pixelSize: Theme.uiSmallPx
+                        font.pixelSize: Theme.trainerCaptionPx
                     }
 
                     Item {
@@ -422,14 +454,19 @@ Page {
                 GroupBox {
                     title: qsTr("Results")
                     Layout.fillWidth: true
-                    padding: 8
-                    topPadding: 20
+                    padding: Theme.uiGroupedPanelPadding
+                    topPadding: Theme.uiGroupedPanelTopPadding
                     font.bold: true
                     font.pointSize: Theme.uiGroupTitlePt
 
                     ColumnLayout {
-                        width: parent.width - 8
-                        spacing: 8
+                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        spacing: Theme.uiGroupInnerSpacing
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                        }
 
                         Text {
                             id: summaryLabel
@@ -437,8 +474,9 @@ Page {
                             text: solverPage.summaryText
                             wrapMode: Text.Wrap
                             color: Theme.textPrimary
-                            font.pixelSize: Theme.uiMonoPx
-                            font.family: "monospace"
+                            font.family: Theme.fontFamilyUi
+                            font.pixelSize: Theme.trainerBodyPx
+                            lineHeight: 1.25
                             HoverHandler {
                                 id: summaryHover
                             }
@@ -478,14 +516,19 @@ Page {
                 GroupBox {
                     title: qsTr("Nash solver (CFR+) — toy games")
                     Layout.fillWidth: true
-                    padding: 8
-                    topPadding: 20
+                    padding: Theme.uiGroupedPanelPadding
+                    topPadding: Theme.uiGroupedPanelTopPadding
                     font.bold: true
                     font.pointSize: Theme.uiGroupTitlePt
 
                     ColumnLayout {
-                        width: parent.width - 8
-                        spacing: 8
+                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        spacing: Theme.uiGroupInnerSpacing
+
+                        Item {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                        }
 
                         Text {
                             Layout.fillWidth: true
@@ -494,7 +537,8 @@ Page {
                                   + qsTr("but on tiny games so it runs locally.")
                             wrapMode: Text.Wrap
                             color: Theme.textSecondary
-                            font.pixelSize: Theme.uiBodyPx
+                            font.pixelSize: Theme.trainerBodyPx
+                            lineHeight: 1.25
                         }
 
                         RowLayout {
@@ -550,7 +594,7 @@ Page {
                             readOnly: true
                             wrapMode: TextArea.Wrap
                             font.family: "monospace"
-                            font.pixelSize: Theme.uiMonoPx
+                            font.pixelSize: Theme.trainerBodyPx
                             color: Theme.textPrimary
                             text: solverPage.nashSummaryText + "\n\n" + solverPage.nashDetailText
                             background: Rectangle {

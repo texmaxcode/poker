@@ -7,6 +7,7 @@ import Theme 1.0
 Page {
     id: lobbyPage
     padding: 0
+    font.family: Theme.fontFamilyUi
 
     property StackLayout stackLayout: null
 
@@ -23,8 +24,8 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 16
+        anchors.margins: Theme.uiPagePadding
+        spacing: Theme.uiPageColumnSpacing
 
         Item {
             Layout.fillWidth: true
@@ -77,6 +78,7 @@ Page {
             Layout.alignment: Qt.AlignHCenter
             text: qsTr("Choose a screen")
             color: Theme.goldMuted
+            font.family: Theme.fontFamilyUi
             font.pointSize: Theme.uiLobbyTitlePt
             font.bold: true
             font.letterSpacing: 1.2
@@ -86,7 +88,7 @@ Page {
         RowLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
-            spacing: 12
+            spacing: 6
 
             LobbyNavTile {
                 title: qsTr("Poker table")
@@ -127,8 +129,8 @@ Page {
                 title: qsTr("Bankroll & stats")
                 sub: qsTr("Ranks & charts")
                 detailTip: qsTr(
-                    "Set the starting bankroll for everyone, see stack rankings and profit vs baseline, "
-                    + "and a line chart of each player’s stack after every completed hand.")
+                    "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "
+                    + "Each player’s buy-in is set on that player’s tab under Bots & ranges (Bankroll).")
                 iconSource: "qrc:/assets/icons/table.svg"
                 onClicked: lobbyPage.go(4)
             }
@@ -147,9 +149,11 @@ Page {
         property string iconSource: ""
         signal clicked()
 
-        Layout.preferredWidth: Math.min(188, (lobbyPage.width - 96) / 5)
-        Layout.minimumWidth: 128
-        Layout.preferredHeight: 118
+        Layout.preferredWidth: Math.min(
+            192,
+            Math.floor((lobbyPage.width - 2 * Theme.uiPagePadding - 4 * 6) / 5))
+        Layout.minimumWidth: 124
+        Layout.preferredHeight: Theme.uiLobbyNavTileMinHeight
 
         Rectangle {
             id: tileFace
@@ -187,13 +191,13 @@ Page {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 4
+                anchors.margins: Theme.uiLobbyNavTilePadding
+                spacing: 5
 
                 Image {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: 32
-                    Layout.preferredHeight: 32
+                    Layout.preferredWidth: Theme.uiLobbyNavIconPx
+                    Layout.preferredHeight: Theme.uiLobbyNavIconPx
                     fillMode: Image.PreserveAspectFit
                     source: tileRoot.iconSource
                     opacity: navMa.containsMouse ? 1 : 0.88
@@ -203,17 +207,25 @@ Page {
                     Layout.fillWidth: true
                     text: title
                     color: Qt.lighter(lobbyPage.gold, navMa.containsMouse ? 1.04 : 1.0)
-                    font.pointSize: Theme.uiLobbyTitlePt
+                    font.family: Theme.fontFamilyUi
+                    font.pointSize: Theme.uiLobbyNavTileTitlePt
                     font.bold: true
                     wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
                     horizontalAlignment: Text.AlignHCenter
+                    lineHeight: 1.15
                 }
                 Text {
                     Layout.fillWidth: true
                     text: sub
                     color: Theme.textSecondary
-                    font.pointSize: Theme.uiLobbySubPt
+                    font.family: Theme.fontFamilyUi
+                    font.pixelSize: Theme.uiLobbyNavSubPx
+                    lineHeight: 1.2
                     wrapMode: Text.WordWrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
                     horizontalAlignment: Text.AlignHCenter
                 }
             }
@@ -251,8 +263,7 @@ Page {
             onClicked: tileRoot.clicked()
         }
 
-        ToolTip.visible: navMa.containsMouse && tileRoot.detailTip.length > 0
-        ToolTip.delay: 500
-        ToolTip.text: tileRoot.detailTip
+        // Disable hover "bubble" popups; they were interfering with the lobby UX.
+        ToolTip.visible: false
     }
 }

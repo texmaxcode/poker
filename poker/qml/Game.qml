@@ -7,6 +7,7 @@ Page {
     id: game_screen
     objectName: "game_screen"
     padding: 0
+    font.family: Theme.fontFamilyUi
 
     BotNames {
         id: botNames
@@ -34,6 +35,8 @@ Page {
     property string board3: ""
     property string board4: ""
     property string statusText: qsTr("Starting…")
+    /// Filenames like `spades_ace.svg` for the winning hole cards (win banner mini-cards).
+    property var resultBannerCardAssets: []
     property string humanHandText: ""
     property bool showdown: false
     /// Bumps each new hand (`game::clear_for_new_hand`) so seats reset hole-card flip state.
@@ -116,9 +119,9 @@ Page {
 
         readonly property point feltCenter: Qt.point(width / 2, height / 2)
 
-        readonly property real seatHalfW: 102
-        readonly property real seatHalfH: 141
-        readonly property real seatGap: 12
+        readonly property real seatHalfW: 109
+        readonly property real seatHalfH: 156
+        readonly property real seatGap: 10
         readonly property real maxLayoutOvalW: Math.max(260, width - 4 * seatHalfW - 2 * seatGap - 28)
         readonly property real maxLayoutOvalH: Math.max(200, height - 4 * seatHalfH - 2 * seatGap - 40)
         readonly property real layoutOvalW: Math.min(Math.min(width * 0.99, height * 1.36), maxLayoutOvalW)
@@ -163,8 +166,8 @@ Page {
             delegate: Item {
                 id: seatWrap
                 required property int index
-                width: 204
-                height: 298
+                width: 218
+                height: 312
                 readonly property real angle: Math.PI / 2 - index * 2 * Math.PI / 6
                 readonly property real cornerBoost: (index === 1 || index === 2 || index === 4 || index === 5) ? 1.09 : 1.0
                 readonly property real scx: tableArea.feltCenter.x + tableArea.orbitRx * Math.cos(angle) * cornerBoost
@@ -209,7 +212,7 @@ Page {
         }
 
         readonly property Item humanSeat: seatRepeater.count > 0 ? seatRepeater.itemAt(0) : null
-        readonly property real hudPanelW: Math.min(400, Math.max(260, width * 0.36))
+        readonly property real hudPanelW: Math.min(400, Math.max(Theme.trainerEmbeddedHudMinWidth, width * 0.36))
 
         GameControls {
             id: game_controls
@@ -237,6 +240,7 @@ Page {
             }
             pageRoot: game_screen
             statusText: game_screen.statusText
+            resultBannerCardAssets: game_screen.resultBannerCardAssets
             humanHandText: game_screen.humanHandText
             decisionSecondsLeft: game_screen.decisionSecondsLeft
             humanMoreTimeAvailable: game_screen.humanMoreTimeAvailable

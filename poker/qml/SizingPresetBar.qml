@@ -153,6 +153,7 @@ Row {
                 anchors.centerIn: parent
                 text: modelData.label
                 color: Theme.textPrimary
+                font.family: Theme.fontFamilyUi
                 font.pointSize: (modelData.kind === "min" || modelData.kind === "pot" || modelData.kind === "all") ? Theme.uiMicroPx : Theme.uiSizingPresetPt
                 font.bold: true
             }

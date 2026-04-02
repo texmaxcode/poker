@@ -180,20 +180,8 @@ void game::sync_ui()
         m_root->setProperty("seatStreetActions", actionLabels);
     }
 
-    {
-        QVariantList wallets;
-        for (int i = 0; i < kMaxPlayers; ++i)
-        {
-            if (i < players_count())
-                wallets.append(seat_wallet_[static_cast<size_t>(i)]);
-            else
-                wallets.append(0);
-        }
-        m_root->setProperty("seatWallets", wallets);
-    }
-
     m_root->setProperty("humanCanBuyBackIn", canBuyBackIn(kHumanSeat));
-    m_root->setProperty("buyInChips", starting_stack_);
+    m_root->setProperty("buyInChips", seat_buy_in_[static_cast<size_t>(kHumanSeat)]);
 
     m_root->setProperty("board0",
                         (street >= Street::FLOP && flop.size() > 0) ? card_to_qml_asset_path(flop[0]) : QString());

@@ -72,4 +72,7 @@ public:
 /// Resource name for QML SVG assets: `"<suite>_<rank>.svg"` (e.g. `clubs_ace.svg`).
 QString card_to_qml_asset_path(const card &c);
 
+/// Short notation for UI text, e.g. `"Ah"`, `"Td"` (rank + suit letter).
+QString card_to_display_string(const card &c);
+
 #endif // TEXAS_HOLDEM_GYM_CARDS_H

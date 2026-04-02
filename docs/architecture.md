@@ -58,7 +58,7 @@ Assets (cards, logo) are embedded via **`application.qrc`**.
 
 ## Rules and engine fidelity
 
-Betting order, blinds (including **heads-up**), burns before board cards, showdown messaging, and **best hand** selection follow the intended Hold’em model; some **simplifications** apply (e.g. no side pots). See **[rules-and-limitations.md](rules-and-limitations.md)**.
+Betting order, blinds (including **heads-up**), burns before board cards, showdown messaging, **side pots** (HUD: shortest all-in defines the main pot; deeper stacks contest sides), and **best hand** selection follow the intended Hold’em model; some **simplifications** still apply. See **[rules-and-limitations.md](rules-and-limitations.md)**.
 
 ## Tests
 

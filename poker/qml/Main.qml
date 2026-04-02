@@ -1,11 +1,30 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import Theme 1.0
 
 ApplicationWindow {
     id: win
     visible: true
+
+    /// Trainers use wall-clock deadlines; QML Timers can stall after app/window suspend while `running` stays true.
+    function syncTrainerClocksOnResume() {
+        if (preflopTrainerPage.visible)
+            preflopTrainerPage.syncTrainerClocks()
+        if (flopTrainerPage.visible)
+            flopTrainerPage.syncTrainerClocks()
+    }
+
+    onActiveChanged: function () {
+        if (win.active)
+            syncTrainerClocksOnResume()
+    }
+
+    onVisibilityChanged: function () {
+        if (win.visibility !== Window.Hidden && win.visibility !== Window.Minimized)
+            syncTrainerClocksOnResume()
+    }
     width: 1400
     height: 900
     minimumWidth: 720
@@ -18,26 +37,14 @@ ApplicationWindow {
         anchors.fill: parent
     }
 
-    FontLoader {
-        id: oswaldRegular
-        source: "qrc:/assets/fonts/Oswald-Regular.ttf"
-    }
-    FontLoader {
-        id: oswaldBold
-        source: "qrc:/assets/fonts/Oswald-Bold.ttf"
-    }
-
-    readonly property string fontUi: oswaldRegular.status === FontLoader.Ready ? oswaldRegular.name : "sans-serif"
-    readonly property string fontUiBold: oswaldBold.status === FontLoader.Ready ? oswaldBold.name : fontUi
-
-    font.family: fontUi
+    font.family: Theme.fontFamilyUi
     font.pointSize: Theme.uiBasePt
 
     Component.onCompleted: showMaximized()
 
     header: ToolBar {
         visible: stack.currentIndex > 0
-        implicitHeight: 48
+        implicitHeight: 42
 
         background: Rectangle {
             color: Theme.headerBg
@@ -51,16 +58,16 @@ ApplicationWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            anchors.topMargin: 5
-            anchors.bottomMargin: 5
-            spacing: 8
+            anchors.leftMargin: 6
+            anchors.rightMargin: 6
+            anchors.topMargin: 4
+            anchors.bottomMargin: 4
+            spacing: 6
 
             ToolButton {
                 id: backBtn
                 text: qsTr("Lobby")
-                font.family: win.fontUiBold
+                font.family: Theme.fontFamilyUi
                 font.bold: true
                 font.pointSize: Theme.uiToolBarBackPt
                 icon.source: "qrc:/assets/icons/home.svg"
@@ -123,7 +130,7 @@ ApplicationWindow {
             Label {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
-                font.family: win.fontUiBold
+                font.family: Theme.fontFamilyUi
                 font.bold: true
                 font.pointSize: Theme.uiToolBarTitlePt
                 color: Theme.gold
@@ -186,10 +193,12 @@ ApplicationWindow {
         }
 
         PreflopTrainer {
+            id: preflopTrainerPage
             stackLayout: stack
         }
 
         FlopTrainer {
+            id: flopTrainerPage
             stackLayout: stack
         }
     }

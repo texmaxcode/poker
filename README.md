@@ -69,7 +69,7 @@ Table stakes, per-seat bot strategy and range text (exported form), **sit out**,
 |----------|----------|
 | [docs/building.md](docs/building.md) | Full dependency list, configure variables, OS notes, Qt commercial / license service env, tests, card assets script |
 | [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, tests |
-| [docs/rules-and-limitations.md](docs/rules-and-limitations.md) | Alignment with standard Hold’em, heads-up blinds, intentional simplifications (e.g. no side pots) |
+| [docs/rules-and-limitations.md](docs/rules-and-limitations.md) | Alignment with standard Hold’em, heads-up blinds, side pots, intentional simplifications |
 
 ## Tests
 

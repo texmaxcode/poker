@@ -1,4 +1,6 @@
 #include <QCoreApplication>
+#include <QFont>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -16,6 +18,23 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("TexasHoldemGym"));
     QCoreApplication::setApplicationName(QStringLiteral("Texas Hold'em Gym"));
     QGuiApplication app(argc, argv);
+
+    // Register bundled Oswald so QML Controls and raw Text inherit the brand typeface (see Theme.fontFamilyUi).
+    QString appFontFamily = QStringLiteral("Oswald");
+    {
+        const int idReg = QFontDatabase::addApplicationFont(QStringLiteral(":/assets/fonts/Oswald-Regular.ttf"));
+        QFontDatabase::addApplicationFont(QStringLiteral(":/assets/fonts/Oswald-Bold.ttf"));
+        if (idReg != -1)
+        {
+            const QStringList fams = QFontDatabase::applicationFontFamilies(idReg);
+            if (!fams.isEmpty())
+                appFontFamily = fams.first();
+        }
+        QFont f = app.font();
+        f.setFamily(appFontFamily);
+        f.setPointSizeF(13.0);
+        app.setFont(f);
+    }
 
     game poker_game;
     poker_game.loadPersistedSettings();
@@ -37,6 +56,7 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/"));
+    engine.rootContext()->setContextProperty(QStringLiteral("appFontFamily"), appFontFamily);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerGame"), &poker_game);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerSolver"), &poker_solver);
     engine.rootContext()->setContextProperty(QStringLiteral("toyNashSolver"), &toy_nash_solver);

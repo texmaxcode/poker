@@ -18,9 +18,9 @@ Below is what the **engine** guarantees and what it **does not** model.
 
 ## Intentional simplifications
 
-### No side pots
+### Side pots
 
-In full NLHE, when players are all-in for different amounts, **side pots** are created. This engine **does not** implement side pots: if a player cannot match the full bet, they are typically **folded** out of the hand rather than all-in for a partial pot. Treat this as a **training / demo** limitation, not casino-accurate pot accounting.
+When at least one player is **all-in** for less than others, the **main pot** is the amount everyone matches up to that **shortest all-in**; **side pots** are the extra chips only the deeper stacks contest. The table HUD uses that breakdown. **Payouts** still walk every distinct contribution tier (including dead money from folded seats) so all chips are awarded correctly.
 
 ### Antes
 

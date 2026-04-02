@@ -10,6 +10,8 @@ Flipable {
     property string card: "spades_ace.svg"
     /// Community cards are always face-up; holes use flipped/show_cards from Player.
     property bool tableCard: false
+    /// Skip flip animation (training / instant reveal).
+    property bool instantFace: false
     /// Bumps each new hand (`Game.handSeq`) so rotation snaps to match concealed/revealed state.
     property int dealEpoch: 0
 
@@ -52,7 +54,7 @@ Flipable {
             NumberAnimation {
                 target: rotation
                 property: "angle"
-                duration: 620
+                duration: flipable.instantFace ? 0 : 620
                 easing.type: Easing.InOutCubic
             }
         },
@@ -69,6 +71,11 @@ Flipable {
     onDealEpochChanged: {
         if (tableCard)
             return
+        /// Training: skip the “deal face-down” snap — stay revealed (see `instantFace` on `Player`).
+        if (instantFace && flipped && card.length > 0) {
+            rotation.angle = 180
+            return
+        }
         rotation.angle = 0
     }
 

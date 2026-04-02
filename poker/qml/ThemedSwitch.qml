@@ -6,6 +6,7 @@ import Theme 1.0
 Switch {
     id: root
 
+    font.family: Theme.fontFamilyUi
     palette.window: Theme.panelElevated
     palette.windowText: Theme.textPrimary
     palette.base: Theme.inputBg

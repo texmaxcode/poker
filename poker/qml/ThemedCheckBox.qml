@@ -6,6 +6,7 @@ import Theme 1.0
 CheckBox {
     id: root
 
+    font.family: Theme.fontFamilyUi
     palette.window: Theme.panelElevated
     palette.windowText: Theme.textPrimary
     palette.base: Theme.inputBg

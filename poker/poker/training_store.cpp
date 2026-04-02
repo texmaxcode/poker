@@ -14,6 +14,10 @@ constexpr int kDefaultTrainerAdvanceMs = 5000;
 constexpr int kMinTrainerAdvanceMs = 500;
 constexpr int kMaxTrainerAdvanceMs = 120000;
 
+constexpr int kDefaultTrainerDecisionSec = 20;
+constexpr int kMinTrainerDecisionSec = 5;
+constexpr int kMaxTrainerDecisionSec = 120;
+
 QString strOf(const QVariantMap &m, const QString &k)
 {
     const auto v = m.value(k);
@@ -114,6 +118,40 @@ void TrainingStore::setTrainerAutoAdvanceMs(int ms)
     emit trainerAutoAdvanceMsChanged();
 }
 
+int TrainingStore::trainerDecisionSeconds() const
+{
+    QSettings s;
+    s.beginGroup(QString::fromLatin1(kV1));
+    s.beginGroup(QString::fromLatin1(kTraining));
+    const int v = s.value(QStringLiteral("trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt();
+    s.endGroup();
+    s.endGroup();
+    return qBound(kMinTrainerDecisionSec, v, kMaxTrainerDecisionSec);
+}
+
+void TrainingStore::setTrainerDecisionSeconds(int sec)
+{
+    const int w = qBound(kMinTrainerDecisionSec, sec, kMaxTrainerDecisionSec);
+    QSettings s;
+    s.beginGroup(QString::fromLatin1(kV1));
+    s.beginGroup(QString::fromLatin1(kTraining));
+    const int cur = qBound(
+        kMinTrainerDecisionSec,
+        s.value(QStringLiteral("trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt(),
+        kMaxTrainerDecisionSec);
+    if (w == cur)
+    {
+        s.endGroup();
+        s.endGroup();
+        return;
+    }
+    s.setValue(QStringLiteral("trainerDecisionSeconds"), w);
+    s.endGroup();
+    s.endGroup();
+    s.sync();
+    emit trainerDecisionSecondsChanged();
+}
+
 QVariantMap TrainingStore::loadProgress() const
 {
     QSettings s;
@@ -177,8 +215,13 @@ void TrainingStore::resetProgress()
         kMinTrainerAdvanceMs,
         s.value(QStringLiteral("trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs).toInt(),
         kMaxTrainerAdvanceMs);
+    const int dec = qBound(
+        kMinTrainerDecisionSec,
+        s.value(QStringLiteral("trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt(),
+        kMaxTrainerDecisionSec);
     s.remove(QString());
     s.setValue(QStringLiteral("trainerAutoAdvanceMs"), adv);
+    s.setValue(QStringLiteral("trainerDecisionSeconds"), dec);
     s.endGroup();
     s.endGroup();
     s.sync();

@@ -21,9 +21,12 @@ Item {
     property string board3: ""
     property string board4: ""
 
-    /// From engine: main pot = up to shortest all-in; following entries = side pots (deeper stacks).
+    /// From engine: main = matched to shortest all-in; following entries = side pots (deeper stacks).
     /// Shown only when length > 1 (requires an all-in and at least one side tier).
     property var sidePotAmounts: []
+
+    property int smallBlind: 1
+    property int bigBlind: 3
 
     readonly property bool showSidePotBreakdown: sidePotAmounts !== undefined && sidePotAmounts !== null
             && sidePotAmounts.length > 1
@@ -71,15 +74,16 @@ Item {
 
     Column {
         id: col
-        spacing: 10
+        /// Extra gap so the pot sits clearly above the board (was 8; side-pot reserve keeps vertical position stable).
+        spacing: 18
         anchors.centerIn: parent
 
-        /// Fixed-size pot (total in the middle; raises add chips here in the engine) + call hint when you act.
+        /// Fixed height: side-pot line always reserves space so the board does not jump when all-ins create tiers.
         Rectangle {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.min(340, Math.max(260, table_container.width * 0.38))
-            height: table_container.showSidePotBreakdown ? 76 : 56
+            height: 82
             radius: 14
             color: Theme.hudBg1
             border.width: 2
@@ -111,6 +115,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "$" + Math.round(table_container.potShown)
                         color: gold
+                        font.family: Theme.fontFamilyUi
                         font.bold: true
                         font.pointSize: Theme.uiPotMainPt
                         horizontalAlignment: Text.AlignHCenter
@@ -129,6 +134,7 @@ Item {
                         visible: table_container.showToCallHint
                         text: qsTr("·")
                         color: Theme.textMuted
+                        font.family: Theme.fontFamilyUi
                         font.bold: true
                         font.pointSize: Theme.uiPotSepPt
                     }
@@ -138,22 +144,31 @@ Item {
                         visible: table_container.showToCallHint
                         text: qsTr("Call $%1").arg(table_container.facingNeedChips)
                         color: Theme.focusGold
+                        font.family: Theme.fontFamilyUi
                         font.bold: true
                         font.pointSize: Theme.uiPotCallPt
                     }
                 }
 
-                Text {
-                    visible: table_container.showSidePotBreakdown
+                /// Reserved band so layout height does not change when side pots appear (text only when `showSidePotBreakdown`).
+                Item {
                     width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    maximumLineCount: 2
-                    elide: Text.ElideRight
-                    text: table_container.sidePotBreakdownText
-                    color: Theme.textSecondary
-                    font.pointSize: Theme.uiPotSidePt
-                    font.bold: true
+                    height: 30
+
+                    Text {
+                        anchors.fill: parent
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        visible: table_container.showSidePotBreakdown
+                        text: table_container.showSidePotBreakdown ? table_container.sidePotBreakdownText : ""
+                        color: Theme.textSecondary
+                        font.family: Theme.fontFamilyUi
+                        font.pointSize: Theme.uiPotSidePt
+                        font.bold: true
+                    }
                 }
             }
 

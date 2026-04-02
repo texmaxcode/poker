@@ -34,6 +34,7 @@ Rectangle {
         z: 1
         anchors.centerIn: parent
         color: root.textColor
+        font.family: Theme.fontFamilyUi
         font.pointSize: root.fontSize
         font.bold: root.boldFont
     }

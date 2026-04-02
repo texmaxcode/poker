@@ -6,6 +6,7 @@ import Theme 1.0
 Page {
     id: setup
     padding: 0
+    font.family: Theme.fontFamilyUi
 
     BotNames {
         id: botNames
@@ -13,6 +14,83 @@ Page {
 
     background: BrandedBackground {
         anchors.fill: parent
+    }
+
+    property string strategyPopupTitle: ""
+    property string strategyPopupBody: ""
+
+    function openStrategyLogPopup(title, body) {
+        strategyPopupTitle = title
+        strategyPopupBody = body
+        strategyLogPopup.open()
+    }
+
+    Popup {
+        id: strategyLogPopup
+        parent: Overlay.overlay
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        width: Math.min(720, Overlay.overlay ? Overlay.overlay.width - 32 : 640)
+        height: Math.min(520, Overlay.overlay ? Overlay.overlay.height - 48 : 480)
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        padding: 0
+
+        background: Rectangle {
+            color: Theme.panel
+            border.color: Theme.headerRule
+            border.width: 1
+            radius: 10
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: Theme.uiGroupedPanelPadding
+            spacing: Theme.uiGroupInnerSpacing
+
+            Label {
+                text: setup.strategyPopupTitle
+                font.bold: true
+                font.pointSize: Theme.trainerSectionPx
+                color: Theme.gold
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            ScrollView {
+                id: strategyLogScroll
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.minimumHeight: 200
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                TextArea {
+                    width: strategyLogScroll.availableWidth
+                    readOnly: true
+                    wrapMode: TextArea.Wrap
+                    font.family: "monospace"
+                    font.pixelSize: Theme.uiMonoPx
+                    color: Theme.textPrimary
+                    text: setup.strategyPopupBody
+                    padding: 10
+                    selectByMouse: true
+                    background: Rectangle {
+                        color: Theme.bgGradientMid
+                        border.color: Theme.headerRule
+                        border.width: 1
+                        radius: 8
+                    }
+                }
+            }
+
+            Button {
+                text: qsTr("Close")
+                Layout.alignment: Qt.AlignRight
+                onClicked: strategyLogPopup.close()
+            }
+        }
     }
 
     readonly property int selectedSeat: seatTabBar.currentIndex
@@ -89,13 +167,27 @@ Page {
         reloadSeatEditor()
     }
 
+    /// Matches engine `maxBuyInChips()` (100× BB); use before stakes are applied so the cap tracks the BB spin.
+    readonly property int buyInCapChips: Math.max(1, bbSpin.value * 100)
+
     Component.onCompleted: {
         sbSpin.value = pokerGame.configuredSmallBlind()
         bbSpin.value = pokerGame.configuredBigBlind()
         streetSpin.value = pokerGame.configuredStreetBet()
-        stackSpin.value = pokerGame.configuredStartStack()
         slowBotsCheck.checked = pokerGame.botSlowActions()
         Qt.callLater(reloadSeatEditor)
+    }
+
+    onVisibleChanged: {
+        if (visible)
+            seatBankSpin.refreshFromGame()
+    }
+
+    Connections {
+        target: pokerGame
+        function onSessionStatsChanged() {
+            seatBankSpin.refreshFromGame()
+        }
     }
 
     ScrollView {
@@ -103,51 +195,57 @@ Page {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        leftPadding: 14
-        rightPadding: 14
-        topPadding: 12
-        bottomPadding: 12
+        leftPadding: Theme.uiPagePadding
+        rightPadding: Theme.uiPagePadding
+        topPadding: Theme.uiPagePadding
+        bottomPadding: Theme.uiPagePadding
 
         ColumnLayout {
             id: setupColumn
-            width: Math.max(300, scrollView.width > 0 ? scrollView.width - 28 : setup.width - 28)
-            spacing: 12
+            width: Math.max(300, scrollView.width > 0 ? scrollView.width - 2 * Theme.uiPagePadding : setup.width - 2 * Theme.uiPagePadding)
+            spacing: Theme.uiPageColumnSpacing
 
             Label {
                 Layout.fillWidth: true
-                maximumLineCount: 4
                 wrapMode: Text.WordWrap
                 text: qsTr(
                     "Turn bots on or off by name, pick a tab to edit that player’s settings, then play from the table. "
                     + "On the “You” tab, the 13×13 range grid is hidden until you enable “Full range editor” below; "
                     + "until then the archetype preset is applied without cell editing. Bot tabs always show the full grid.")
-                font.pixelSize: Theme.uiBodyPx
+                font.pixelSize: Theme.trainerBodyPx
+                lineHeight: 1.25
                 color: Theme.textSecondary
             }
 
             GroupBox {
                 title: qsTr("Bots at table")
                 Layout.fillWidth: true
-                padding: 8
-                topPadding: 22
+                padding: Theme.uiGroupedPanelPadding
+                topPadding: Theme.uiGroupedPanelTopPadding
                 font.bold: true
                 font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
-                    width: parent.width - 8
-                    spacing: 8
+                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    spacing: Theme.uiGroupInnerSpacing
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                    }
 
                     Label {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        font.pixelSize: Theme.uiSmallPx
-                        color: Theme.textMuted
+                        font.pixelSize: Theme.trainerBodyPx
+                        lineHeight: 1.25
+                        color: Theme.textSecondary
                         text: qsTr("When a bot is off, they sit out (not dealt in) until you turn them back on.")
                     }
 
                     Flow {
                         Layout.fillWidth: true
-                        spacing: 12
+                        spacing: Theme.uiGroupInnerSpacing
 
                         Repeater {
                             model: 5
@@ -158,7 +256,7 @@ Page {
 
                                 Label {
                                     text: botNames.displayName(index + 1)
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                     color: Theme.hudActionLabel
                                 }
                                 ThemedSwitch {
@@ -177,10 +275,15 @@ Page {
             TabBar {
                 id: seatTabBar
                 Layout.fillWidth: true
+                font.pixelSize: Theme.trainerCaptionPx
 
                 TabButton {
                     text: qsTr("You")
                     font.bold: true
+                    topPadding: 10
+                    bottomPadding: 10
+                    leftPadding: 14
+                    rightPadding: 14
                 }
                 Repeater {
                     model: 5
@@ -188,6 +291,10 @@ Page {
                         required property int index
                         text: botNames.displayName(index + 1)
                         font.bold: true
+                        topPadding: 10
+                        bottomPadding: 10
+                        leftPadding: 14
+                        rightPadding: 14
                     }
                 }
             }
@@ -202,59 +309,90 @@ Page {
             GroupBox {
                 title: qsTr("Strategy presets (reference only)")
                 Layout.fillWidth: true
-                padding: 8
-                topPadding: 22
+                padding: Theme.uiGroupedPanelPadding
+                topPadding: Theme.uiGroupedPanelTopPadding
                 font.bold: true
                 font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
-                    width: parent.width - 8
-                    spacing: 8
+                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    spacing: Theme.uiGroupInnerSpacing
 
-                    Label {
+                    Item {
                         Layout.fillWidth: true
-                        maximumLineCount: 4
-                        wrapMode: Text.WordWrap
-                        elide: Text.ElideRight
-                        text: qsTr(
-                            "Browse archetypes here without changing any player. The chart is read-only. "
-                            + "To actually assign Rock / LAG / etc. to a seat, use Archetype on that player’s tab.")
-                        font.pixelSize: Theme.uiSmallPx
-                        color: Theme.textMuted
+                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                    }
 
-                        HoverHandler {
-                            id: presetBlurbHover
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        Label {
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            text: qsTr(
+                                "Browse archetypes here without changing any player. The chart is read-only. "
+                                + "To actually assign Rock / LAG / etc. to a seat, use Archetype on that player’s tab.")
+                            font.pixelSize: Theme.trainerBodyPx
+                            lineHeight: 1.25
+                            color: Theme.textSecondary
                         }
-                        ToolTip.visible: presetBlurbHover.hovered
-                        ToolTip.delay: 400
-                        ToolTip.text: qsTr(
-                            "This block is a library preview: default 13×13 weights and strategy notes. "
-                            + "It does not edit saved ranges. On each seat tab, the Archetype control loads that preset into that player; "
-                            + "you can then customize cells or text (for yourself, enable “Full range editor” first).")
+
+                        ToolButton {
+                            text: qsTr("?")
+                            font.bold: true
+                            font.pixelSize: Theme.trainerSectionPx
+                            flat: true
+                            padding: 8
+                            focusPolicy: Qt.NoFocus
+                            Accessible.name: qsTr("Full description")
+                            Accessible.description: qsTr("Opens the full help text in a scrollable window")
+
+                            onClicked: setup.openStrategyLogPopup(
+                                    qsTr("Strategy presets (reference)"),
+                                    qsTr(
+                                        "This block is a library preview: default 13×13 weights and strategy notes. "
+                                        + "It does not edit saved ranges. On each seat tab, the Archetype control loads that preset into that player; "
+                                        + "you can then customize cells or text (for yourself, enable “Full range editor” first)."))
+                        }
                     }
 
-                    ComboBox {
-                        id: previewStrat
-                        model: strategyNames
+                    RowLayout {
                         Layout.fillWidth: true
+                        spacing: 6
+
+                        ComboBox {
+                            id: previewStrat
+                            model: strategyNames
+                            Layout.fillWidth: true
+                        }
+
+                        ToolButton {
+                            text: qsTr("?")
+                            font.bold: true
+                            font.pixelSize: Theme.trainerSectionPx
+                            flat: true
+                            padding: 8
+                            focusPolicy: Qt.NoFocus
+                            Accessible.name: qsTr("Full strategy log")
+                            Accessible.description: qsTr("Opens the full strategy description for the selected preset")
+
+                            onClicked: setup.openStrategyLogPopup(
+                                    qsTr("%1 — strategy").arg(setup.strategyNames[previewStrat.currentIndex]),
+                                    pokerGame.getStrategySummary(previewStrat.currentIndex))
+                        }
                     }
 
                     Label {
                         Layout.fillWidth: true
-                        Layout.maximumHeight: 56
+                        Layout.maximumHeight: 120
                         wrapMode: Text.WordWrap
                         elide: Text.ElideRight
-                        maximumLineCount: 3
+                        maximumLineCount: 8
                         color: Theme.textSecondary
-                        font.pixelSize: Theme.uiSmallPx
+                        font.pixelSize: Theme.trainerBodyPx
+                        lineHeight: 1.25
                         text: pokerGame.getStrategySummary(previewStrat.currentIndex)
-
-                        HoverHandler {
-                            id: refSummaryHover
-                        }
-                        ToolTip.visible: refSummaryHover.hovered
-                        ToolTip.delay: 450
-                        ToolTip.text: pokerGame.getStrategySummary(previewStrat.currentIndex)
                     }
 
                     RangeGrid {
@@ -269,23 +407,29 @@ Page {
             GroupBox {
                 title: qsTr("Table stakes & pacing")
                 Layout.fillWidth: true
-                padding: 8
-                topPadding: 20
+                padding: Theme.uiGroupedPanelPadding
+                topPadding: Theme.uiGroupedPanelTopPadding
                 font.bold: true
                 font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
-                    width: parent.width - 8
-                    spacing: 10
+                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    spacing: Theme.uiGroupInnerSpacing
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                    }
 
                     GridLayout {
                         width: parent.width
                         columns: 4
-                        rowSpacing: 6
-                        columnSpacing: 10
+                        rowSpacing: 8
+                        columnSpacing: 12
 
                         Label {
                             text: qsTr("SB")
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: sbSpin
@@ -296,6 +440,7 @@ Page {
                         }
                         Label {
                             text: qsTr("BB")
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: bbSpin
@@ -306,6 +451,7 @@ Page {
                         }
                         Label {
                             text: qsTr("Min raise")
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: streetSpin
@@ -314,21 +460,18 @@ Page {
                             value: 9
                             editable: true
                         }
-                        Label {
-                            text: qsTr("Stack")
+                        Item {
+                            Layout.fillWidth: true
                         }
-                        SpinBox {
-                            id: stackSpin
-                            from: 20
-                            to: 10000
-                            value: 100
-                            editable: true
+                        Item {
+                            Layout.fillWidth: true
                         }
                         Button {
                             text: qsTr("Apply stakes")
                             Layout.columnSpan: 4
                             onClicked: {
-                                pokerGame.configure(sbSpin.value, bbSpin.value, streetSpin.value, stackSpin.value)
+                                pokerGame.configure(sbSpin.value, bbSpin.value, streetSpin.value,
+                                        pokerGame.configuredStartStack())
                                 pokerGame.savePersistedSettings()
                                 reloadAllGrids()
                             }
@@ -349,14 +492,80 @@ Page {
             GroupBox {
                 title: botNames.displayName(selectedSeat)
                 Layout.fillWidth: true
-                padding: 8
-                topPadding: 22
+                padding: Theme.uiGroupedPanelPadding
+                topPadding: Theme.uiGroupedPanelTopPadding
                 font.bold: true
                 font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
-                    width: parent.width - 4
-                    spacing: 8
+                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    spacing: Theme.uiGroupInnerSpacing
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Label {
+                            text: qsTr("Bankroll (buy-in)")
+                            font.bold: true
+                            font.pixelSize: Theme.trainerSectionPx
+                        }
+                        SpinBox {
+                            id: seatBankSpin
+                            from: 1
+                            to: setup.buyInCapChips
+                            stepSize: 1
+                            editable: true
+                            Layout.fillWidth: true
+
+                            function refreshFromGame() {
+                                value = Math.min(pokerGame.seatBuyIn(setup.selectedSeat), setup.buyInCapChips)
+                            }
+
+                            Component.onCompleted: refreshFromGame()
+
+                            Connections {
+                                target: seatTabBar
+                                function onCurrentIndexChanged() {
+                                    seatBankSpin.refreshFromGame()
+                                }
+                            }
+
+                            Connections {
+                                target: bbSpin
+                                function onValueChanged() {
+                                    if (seatBankSpin.value > setup.buyInCapChips)
+                                        seatBankSpin.value = setup.buyInCapChips
+                                }
+                            }
+
+                            onValueModified: {
+                                pokerGame.setSeatBuyIn(setup.selectedSeat, value)
+                                if (!pokerGame.gameInProgress()) {
+                                    pokerGame.applySeatBuyInsToStacks()
+                                    pokerGame.savePersistedSettings()
+                                } else {
+                                    pokerGame.savePersistedSettings()
+                                }
+                            }
+                        }
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        text: qsTr(
+                            "Starting stack and rebuy unit for this seat (saved per player). "
+                            + "You cannot buy in for more than 100 big blinds (%1 chips at this BB); anything above that stays off the table as the rest of your bankroll. "
+                            + "Table stacks update when no hand is in progress; if a hand is running, the new amount is stored for the next apply.")
+                                .arg(setup.buyInCapChips)
+                        font.pixelSize: Theme.trainerCaptionPx
+                        lineHeight: 1.25
+                        color: Theme.textMuted
+                    }
 
                     Label {
                         visible: selectedSeat === 0
@@ -365,65 +574,86 @@ Page {
                         text: qsTr(
                             "Archetype below loads that strategy’s default chart into the engine. "
                             + "To edit cells, paste range text, or see the 13×13 grid, check “Full range editor” at the bottom of this section.")
-                        font.pixelSize: Theme.uiSmallPx
-                        color: Theme.textMuted
+                        font.pixelSize: Theme.trainerBodyPx
+                        lineHeight: 1.25
+                        color: Theme.textSecondary
                     }
 
                     Label {
                         text: qsTr("Archetype")
                         font.bold: true
-                        font.pixelSize: Theme.uiSmallPx
+                        font.pixelSize: Theme.trainerSectionPx
                     }
-                    ComboBox {
-                        id: stratCombo
-                        model: strategyNames
-                        currentIndex: 0
+                    RowLayout {
                         Layout.fillWidth: true
-                        onActivated: function (i) {
-                            pokerGame.setSeatStrategy(setup.selectedSeat, i)
-                            pokerGame.savePersistedSettings()
-                            setup.refreshRangeGrids()
-                            textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
-                            setup.loadParamFields()
+                        spacing: 6
+
+                        ComboBox {
+                            id: stratCombo
+                            model: strategyNames
+                            currentIndex: 0
+                            Layout.fillWidth: true
+                            onActivated: function (i) {
+                                pokerGame.setSeatStrategy(setup.selectedSeat, i)
+                                pokerGame.savePersistedSettings()
+                                setup.refreshRangeGrids()
+                                textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
+                                setup.loadParamFields()
+                            }
+                        }
+
+                        ToolButton {
+                            text: qsTr("?")
+                            font.bold: true
+                            font.pixelSize: Theme.trainerSectionPx
+                            flat: true
+                            padding: 8
+                            focusPolicy: Qt.NoFocus
+                            Accessible.name: qsTr("Full strategy log")
+                            Accessible.description: qsTr("Opens the full strategy description for the selected archetype")
+
+                            onClicked: setup.openStrategyLogPopup(
+                                    qsTr("%1 — strategy").arg(setup.strategyNames[stratCombo.currentIndex]),
+                                    pokerGame.getStrategySummary(stratCombo.currentIndex))
                         }
                     }
 
                     Label {
                         Layout.fillWidth: true
-                        Layout.maximumHeight: 52
+                        Layout.maximumHeight: 120
                         wrapMode: Text.WordWrap
                         elide: Text.ElideRight
-                        maximumLineCount: 3
+                        maximumLineCount: 8
                         color: Theme.textSecondary
-                        font.pixelSize: Theme.uiMicroPx
+                        font.pixelSize: Theme.trainerBodyPx
+                        lineHeight: 1.25
                         text: pokerGame.getStrategySummary(stratCombo.currentIndex)
-
-                        HoverHandler {
-                            id: seatStratHover
-                        }
-                        ToolTip.visible: seatStratHover.hovered
-                        ToolTip.delay: 450
-                        ToolTip.text: pokerGame.getStrategySummary(stratCombo.currentIndex)
                     }
 
                     GroupBox {
                         title: qsTr("Engine parameters (bots)")
                         visible: selectedSeat >= 1
                         Layout.fillWidth: true
-                        padding: 8
-                        topPadding: 20
+                        padding: Theme.uiGroupedPanelPadding
+                        topPadding: Theme.uiGroupedPanelTopPadding
                         font.bold: true
-                        font.pointSize: Theme.uiSmallPx
+                        font.pointSize: Theme.uiGroupTitlePt
 
                         ColumnLayout {
-                            width: parent.width - 8
-                            spacing: 6
+                            width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                            spacing: Theme.uiGroupInnerSpacing
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                            }
 
                             Label {
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
-                                font.pixelSize: Theme.uiMicroPx
-                                color: Theme.textMuted
+                                font.pixelSize: Theme.trainerBodyPx
+                                lineHeight: 1.25
+                                color: Theme.textSecondary
                                 text: qsTr(
                                     "Preflop/postflop exponents shape how chart weight and hand strength map to "
                                     + "continue frequencies. Bonuses add to base aggression; tight multipliers "
@@ -438,96 +668,96 @@ Page {
 
                                 Label {
                                     text: qsTr("Preflop exponent")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_pf_pre
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Postflop exponent")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_pf_post
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Facing raise bonus")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_fr_bonus
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Facing raise tight ×")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_fr_tight
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Open raise bonus")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_ob_bonus
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("Open raise tight ×")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_ob_tight
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("BB check-raise bonus")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_bb_bonus
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                                 Label {
                                     text: qsTr("BB check-raise tight ×")
-                                    font.pixelSize: Theme.uiMicroPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                 }
                                 TextField {
                                     id: strat_bb_tight
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerBodyPx
                                     Layout.fillWidth: true
                                     Layout.maximumWidth: 120
                                 }
                             }
 
                             RowLayout {
-                                spacing: 8
+                                spacing: Theme.uiGroupInnerSpacing
                                 Button {
                                     text: qsTr("Apply parameters")
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                     onClicked: setup.applyParamFields()
                                 }
                                 Button {
                                     text: qsTr("Reset to archetype")
-                                    font.pixelSize: Theme.uiSmallPx
+                                    font.pixelSize: Theme.trainerCaptionPx
                                     flat: true
                                     onClicked: {
                                         pokerGame.setSeatStrategy(setup.selectedSeat, stratCombo.currentIndex)
@@ -555,19 +785,17 @@ Page {
                         id: rangeLayerTab
                         visible: showFullRangeEditor
                         Layout.fillWidth: true
+                        font.pixelSize: Theme.trainerCaptionPx
                         TabButton {
                             text: qsTr("Call")
-                            font.pixelSize: Theme.uiSmallPx
                             font.bold: true
                         }
                         TabButton {
                             text: qsTr("Raise")
-                            font.pixelSize: Theme.uiSmallPx
                             font.bold: true
                         }
                         TabButton {
                             text: qsTr("Open / lead")
-                            font.pixelSize: Theme.uiSmallPx
                             font.bold: true
                         }
                     }
@@ -575,8 +803,9 @@ Page {
                     Label {
                         visible: showFullRangeEditor
                         wrapMode: Text.WordWrap
-                        font.pixelSize: Theme.uiMicroPx
-                        color: Theme.textMuted
+                        font.pixelSize: Theme.trainerBodyPx
+                        lineHeight: 1.25
+                        color: Theme.textSecondary
                         text: qsTr(
                             "Stacked colors: gold = call, fire = raise, burgundy = open / lead. "
                             + "Pick a tab to edit that layer (click cells to cycle weights).")
@@ -593,16 +822,17 @@ Page {
                     Label {
                         visible: showFullRangeEditor
                         text: qsTr("Range text")
-                        font.pixelSize: Theme.uiSmallPx
+                        font.pixelSize: Theme.trainerSectionPx
                         font.bold: true
                     }
                     TextArea {
                         id: textArea
                         visible: showFullRangeEditor
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 52
+                        Layout.preferredHeight: 88
                         wrapMode: TextArea.Wrap
-                        font.pixelSize: Theme.uiSmallPx
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.trainerBodyPx
                         placeholderText: "AA,AKs,AKo,TT+"
                     }
                     RowLayout {

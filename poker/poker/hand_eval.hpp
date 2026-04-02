@@ -11,6 +11,10 @@
 /// Tuple: [category][...kickers]. Category 8 = straight flush ... 0 = high card.
 std::array<int, 8> best_hand_score(const std::vector<card> &seven_cards);
 
+/// Cards that realize the best Hold’em score from 2–7 known cards (holes + board). If fewer than five
+/// cards are available (e.g. preflop), returns all of them. Order is sorted high rank first for display.
+std::vector<card> best_five_cards_for_display(const std::vector<card> &cards);
+
 /// >0 if hand_a wins, <0 if hand_b wins, 0 = chop.
 int compare_holdem_hands(const std::vector<card> &seven_a, const std::vector<card> &seven_b);
 

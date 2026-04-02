@@ -113,6 +113,7 @@ Item {
                     }
                     Label {
                         text: modelData.label
+                        font.family: Theme.fontFamilyUi
                         font.pixelSize: Theme.uiRangeGridLegendPx
                         color: Theme.textMuted
                         font.bold: root.editLayer === index
@@ -124,15 +125,16 @@ Item {
         RowLayout {
             spacing: 2
             Item {
-                Layout.preferredWidth: 30
-                Layout.preferredHeight: 22
+                Layout.preferredWidth: Theme.uiRangeGridCornerW
+                Layout.preferredHeight: Theme.uiRangeGridCornerH
             }
             Repeater {
                 model: 13
                 Label {
                     text: rankLabels[index]
                     horizontalAlignment: Text.AlignHCenter
-                    Layout.preferredWidth: 34
+                    Layout.preferredWidth: Theme.uiRangeGridCellW
+                    font.family: Theme.fontFamilyUi
                     font.bold: true
                     font.pixelSize: Theme.uiRangeGridAxisPx
                 }
@@ -147,15 +149,16 @@ Item {
                 spacing: 2
                 Label {
                     text: rankLabels[rowItem.row]
-                    Layout.preferredWidth: 26
+                    Layout.preferredWidth: Theme.uiRangeGridRowHeaderW
+                    font.family: Theme.fontFamilyUi
                     font.bold: true
                     font.pixelSize: Theme.uiRangeGridAxisPx
                 }
                 Repeater {
                     model: 13
                     Item {
-                        Layout.preferredWidth: 34
-                        Layout.preferredHeight: 28
+                        Layout.preferredWidth: Theme.uiRangeGridCellW
+                        Layout.preferredHeight: Theme.uiRangeGridCellH
                         property int col: index
                         property int idx: rowItem.row * 13 + col
 

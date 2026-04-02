@@ -31,6 +31,8 @@ Item {
     property string streetActionText: ""
     /// From `Game.handSeq`: new value each hand so hole cards snap face-down and stagger resets.
     property int handEpoch: 0
+    /// Training: show hole cards face-up without flip delay.
+    property bool instantHoleCards: false
 
     readonly property color gold: Theme.gold
     readonly property color borderAct: Theme.seatBorderAct
@@ -39,7 +41,9 @@ Item {
 
     readonly property color streetActionColor: {
         var t = root.streetActionText.toLowerCase()
-        if (t.indexOf("all-in") >= 0 || t.indexOf("all in") >= 0)
+        // Match All-in / ALL IN / Allin (engine uses "All-in $N"); must come before "raise".
+        var letters = t.replace(/[^a-z]/g, "")
+        if (t.indexOf("all-in") >= 0 || t.indexOf("all in") >= 0 || letters.indexOf("allin") >= 0)
             return Theme.streetActionAllIn
         if (t.indexOf("raise") >= 0)
             return Theme.streetActionRaise
@@ -53,8 +57,10 @@ Item {
     }
 
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
-    implicitHeight: 298
-    implicitWidth: 204
+    /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
+    readonly property int seatInnerPad: 11
+    implicitHeight: 330
+    implicitWidth: Theme.holePairTotalWidth + 2 * seatInnerPad
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
     readonly property int contentWidth: Theme.holePairTotalWidth
@@ -124,14 +130,14 @@ Item {
         color: Theme.seatPanel
         border.color: root.isActing ? root.borderAct : (root.isDealer ? root.borderDealer : root.borderIdle)
         border.width: root.isActing ? 3 : (root.isDealer ? 2 : 1)
-        clip: false
+        clip: true
         Behavior on border.color {
             ColorAnimation { duration: 200 }
         }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 4
+            anchors.margins: root.seatInnerPad
             spacing: 2
 
             /// Same height for cards / folded / inactive so the seat does not shift between states.
@@ -160,6 +166,7 @@ Item {
                             card: root.first_card
                             flipped: root.show_cards && root.first_card.length > 0
                             dealEpoch: root.handEpoch
+                            instantFace: root.instantHoleCards
                         }
 
                         Card {
@@ -168,6 +175,7 @@ Item {
                             card: root.second_card
                             flipped: root.show_cards && root.second_card.length > 0
                             dealEpoch: root.handEpoch
+                            instantFace: root.instantHoleCards
                         }
                     }
                 }
@@ -180,6 +188,7 @@ Item {
                         anchors.margins: 4
                         text: root.humanWatching ? qsTr("WATCHING") : qsTr("FOLDED")
                         color: root.humanWatching ? Theme.accentBlue : Theme.textMuted
+                        font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiSeatFoldPt
                         font.bold: true
                         font.letterSpacing: 1
@@ -199,6 +208,7 @@ Item {
                         anchors.margins: 4
                         text: qsTr("INACTIVE")
                         color: Theme.textMuted
+                        font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiSeatFoldPt
                         font.bold: true
                         font.letterSpacing: 1
@@ -229,12 +239,13 @@ Item {
 
                     Text {
                         anchors.fill: parent
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
                         verticalAlignment: Text.AlignVCenter
                         horizontalAlignment: Text.AlignHCenter
                         text: root.streetActionText
                         color: root.streetActionColor
+                        font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiSeatStreetPt
                         font.bold: true
                         elide: Text.ElideRight
@@ -245,8 +256,8 @@ Item {
 
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredHeight: 38
-                Layout.maximumHeight: 38
+                Layout.preferredHeight: 40
+                Layout.maximumHeight: 40
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
                 Layout.minimumWidth: root.contentWidth
@@ -254,16 +265,17 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 38
+                    Layout.preferredHeight: 40
                     radius: 6
                     color: Theme.panelElevated
                     clip: true
 
                     Text {
                         anchors.fill: parent
-                        anchors.margins: 3
+                        anchors.margins: 6
                         text: root.name
                         color: Theme.textPrimary
+                        font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiSeatNamePt
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
@@ -275,7 +287,7 @@ Item {
 
                 Rectangle {
                     Layout.preferredWidth: 40
-                    Layout.preferredHeight: 38
+                    Layout.preferredHeight: 40
                     Layout.alignment: Qt.AlignVCenter
                     radius: 6
                     color: root.isDealer ? Theme.hudBg0 : Theme.panelElevated
@@ -288,6 +300,7 @@ Item {
                         width: parent.width - 4
                         text: root.position
                         color: root.isDealer ? Theme.textPrimary : Theme.textSecondary
+                        font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiSeatPosPt
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
@@ -367,10 +380,12 @@ Item {
                         anchors.centerIn: parent
                         text: "$" + root.stackDisplay
                         color: Theme.textPrimary
+                        font.family: Theme.fontFamilyUi
                         font.pointSize: Theme.uiStackPt
                         font.bold: true
                     }
                 }
+
             }
         }
     }

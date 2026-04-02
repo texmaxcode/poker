@@ -57,6 +57,76 @@ QString suite_to_qml_asset_token(Suite s)
 
 } // namespace
 
+QString card_to_display_string(const card &c)
+{
+    QString r;
+    switch (c.rank)
+    {
+    case Rank::TWO:
+        r = QStringLiteral("2");
+        break;
+    case Rank::THREE:
+        r = QStringLiteral("3");
+        break;
+    case Rank::FOUR:
+        r = QStringLiteral("4");
+        break;
+    case Rank::FIVE:
+        r = QStringLiteral("5");
+        break;
+    case Rank::SIX:
+        r = QStringLiteral("6");
+        break;
+    case Rank::SEVEN:
+        r = QStringLiteral("7");
+        break;
+    case Rank::EIGHT:
+        r = QStringLiteral("8");
+        break;
+    case Rank::NINE:
+        r = QStringLiteral("9");
+        break;
+    case Rank::TEN:
+        r = QStringLiteral("T");
+        break;
+    case Rank::JACK:
+        r = QStringLiteral("J");
+        break;
+    case Rank::QUEEN:
+        r = QStringLiteral("Q");
+        break;
+    case Rank::KING:
+        r = QStringLiteral("K");
+        break;
+    case Rank::ACE:
+        r = QStringLiteral("A");
+        break;
+    default:
+        r = QStringLiteral("?");
+        break;
+    }
+    QString s;
+    switch (c.suite)
+    {
+    case Suite::CLUBS:
+        s = QStringLiteral("c");
+        break;
+    case Suite::SPADES:
+        s = QStringLiteral("s");
+        break;
+    case Suite::HEARTS:
+        s = QStringLiteral("h");
+        break;
+    case Suite::DIAMONDS:
+        s = QStringLiteral("d");
+        break;
+    default:
+        s = QStringLiteral("?");
+        break;
+    }
+    return r + s;
+}
+
 QString card_to_qml_asset_path(const card &c)
 {
     static const std::array<QString, 52> k_path_table = [] {

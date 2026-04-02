@@ -256,7 +256,57 @@ std::array<int, 8> best_hand_score_variable(const std::vector<card> &cards)
     return best;
 }
 
+static bool card_display_order(const card &a, const card &b)
+{
+    if (a.rank != b.rank)
+        return static_cast<int>(a.rank) > static_cast<int>(b.rank);
+    return static_cast<int>(a.suite) > static_cast<int>(b.suite);
+}
+
+std::vector<card> best_five_cards_for_display_impl(const std::vector<card> &cards)
+{
+    const size_t n = cards.size();
+    if (n == 0)
+        return {};
+    if (n < 5)
+        return cards;
+
+    std::array<int, 8> best{};
+    std::array<card, 5> best_five{};
+    bool have = false;
+    const int limit = 1 << static_cast<int>(n);
+    for (int mask = 0; mask < limit; ++mask)
+    {
+        if (!mask_k_of_n(mask, 5, static_cast<int>(n)))
+            continue;
+        std::array<card, 5> five{};
+        int p = 0;
+        for (int i = 0; i < static_cast<int>(n); ++i)
+        {
+            if (mask & (1 << i))
+                five[p++] = cards[static_cast<size_t>(i)];
+        }
+        const auto sc = evaluate_5(five);
+        if (!have || std::lexicographical_compare(best.begin(), best.end(), sc.begin(), sc.end()))
+        {
+            best = sc;
+            best_five = five;
+            have = true;
+        }
+    }
+    if (!have)
+        return {};
+    std::vector<card> out(best_five.begin(), best_five.end());
+    std::sort(out.begin(), out.end(), card_display_order);
+    return out;
+}
+
 } // namespace detail
+
+std::vector<card> best_five_cards_for_display(const std::vector<card> &cards)
+{
+    return detail::best_five_cards_for_display_impl(cards);
+}
 
 std::array<int, 8> best_hand_score(const std::vector<card> &seven_cards)
 {
@@ -322,7 +372,7 @@ std::string describe_holdem_hand(const std::vector<card> &cards)
             return std::string("Pocket ") + rank_name(static_cast<int>(a.rank)) + "s";
         const int hi = std::max(static_cast<int>(a.rank), static_cast<int>(b.rank));
         const int lo = std::min(static_cast<int>(a.rank), static_cast<int>(b.rank));
-        return std::string("Hole cards: ") + rank_name(hi) + " " + rank_name(lo);
+        return std::string(rank_name(hi)) + " " + rank_name(lo);
     }
     if (n < 5)
         return {};

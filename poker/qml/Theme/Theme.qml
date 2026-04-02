@@ -27,6 +27,9 @@ QtObject {
     readonly property color textSecondary: "#a89890"
     readonly property color textMuted: "#7a7068"
 
+    /// Bundled Oswald (registered in `main.cpp`); also exposed as root-context `appFontFamily`.
+    readonly property string fontFamilyUi: appFontFamily
+
     readonly property color headerBg: "#141016"
     readonly property color headerRule: "#5c4020"
 
@@ -90,38 +93,80 @@ QtObject {
     readonly property int boardCardHeight: 160
 
     /// Training / drill screens: keep readable line length and controls off ultra-wide edges.
-    readonly property int trainerContentMaxWidth: 800
+    readonly property int trainerContentMaxWidth: 920
+    /// Drill cards (preflop / flop trainers) — larger than table `boardCard*` for study screens only.
+    readonly property int trainerDrillCardWidth: 150
+    readonly property int trainerDrillCardHeight: 222
+    /// Flop trainer: community cards match table scale so pot + board + seat fit without overlap.
+    readonly property int trainerFlopBoardCardWidth: 100
+    readonly property int trainerFlopBoardCardHeight: 148
+    /// Gap between drill cards and between `HudButton` rows — matches `GameControls` action spacing (12).
+    readonly property int trainerDrillHudSpacing: 12
+    /// Inset from drill area right edge for embedded HUD — space between centered seat and controls.
+    readonly property int trainerHudSeatMargin: 22
 
-    /// Typography for training copy (large for readability).
-    readonly property int trainerTitlePt: 24
-    readonly property int trainerPageHeadlinePt: 20
-    readonly property int trainerSectionPx: 18
-    readonly property int trainerBodyPx: 16
-    readonly property int trainerBodyMutedPx: 15
-    readonly property int trainerCaptionPx: 14
-    readonly property int trainerStatusPx: 18
-    readonly property int trainerMetricLabelPx: 14
-    readonly property int trainerMetricValuePx: 22
-    readonly property int trainerToolButtonPx: 15
-    readonly property int trainerGroupTitlePt: 14
+    /// Typography for training copy (large for readability). Body = primary reading style (match TrainerHome intro).
+    readonly property int trainerTitlePt: 26
+    readonly property int trainerPageHeadlinePt: 22
+    readonly property int trainerSectionPx: 20
+    readonly property int trainerBodyPx: 17
+    /// Kept for compatibility; same as `trainerBodyPx` so all trainer paragraphs match.
+    readonly property int trainerBodyMutedPx: 17
+    readonly property int trainerCaptionPx: 17
+    readonly property int trainerStatusPx: 23
+    /// Feedback / grade line after an answer (same px as status for consistency).
+    readonly property int trainerResultPx: 23
+    /// Fixed slot at top of preflop/flop drill cards — avoids layout jump when feedback length changes.
+    readonly property int trainerExerciseStatusSlotHeight: 128
+    readonly property int trainerMetricLabelPx: 15
+    readonly property int trainerMetricValuePx: 24
+    readonly property int trainerToolButtonPx: 17
+    readonly property int trainerButtonLabelPx: 19
+    readonly property int trainerGroupTitlePt: 15
 
-    readonly property int trainerColumnSpacing: 12
-    readonly property int trainerPanelPadding: 12
+    readonly property int trainerColumnSpacing: 14
+    readonly property int trainerPanelPadding: 14
     readonly property int trainerPanelRadius: 10
-    readonly property int trainerButtonPadding: 10
-    readonly property int trainerSpinBoxWidth: 100
+    /// Drill panel: min / max / fallback height — table-aligned layout (pot/board top, seat bottom).
+    readonly property int trainerDrillPanelMinH: 600
+    readonly property int trainerDrillPanelMaxH: 760
+    readonly property int trainerDrillPanelFallbackH: 660
+    readonly property real trainerDrillPanelViewportFrac: 0.58
+    /// Embedded `GameControls` must fit FOLD/CALL/RAISE (or CHECK / bet / bet) in one row (~300px + margins).
+    readonly property int trainerEmbeddedHudMinWidth: 340
+    /// Win-line banner: mini cards beside one-line result text (`GameControls` embedded HUD).
+    readonly property int resultBannerCardW: 40
+    readonly property int resultBannerCardH: 58
+    readonly property int trainerButtonPadding: 14
+    readonly property int trainerSpinBoxWidth: 140
+
+    /// Lobby / setup / stats / solver / training scroll pages (not the in-game table/HUD).
+    readonly property int uiPagePadding: 15
+    readonly property int uiPageColumnSpacing: 11
+    /// GroupBox and grouped panels outside the poker table (matches training panel padding).
+    readonly property int uiGroupedPanelPadding: 14
+    readonly property int uiGroupedPanelTopPadding: 30
+    /// Vertical spacing inside GroupBox ColumnLayouts (setup, stats, solver).
+    readonly property int uiGroupInnerSpacing: 11
+    /// Extra gap between the GroupBox title bar and the first line of body content.
+    readonly property int uiGroupBoxTitleBodyGap: 10
 
     /// Application-wide UI (lobby, stats, setup, solver, table, HUD).
     readonly property int uiBasePt: 13
     readonly property int uiToolBarTitlePt: 13
     readonly property int uiToolBarBackPt: 11
-    readonly property int uiGroupTitlePt: 13
+    readonly property int uiGroupTitlePt: 14
     readonly property int uiBodyPx: 14
     readonly property int uiSmallPx: 12
     readonly property int uiMicroPx: 11
     readonly property int uiMonoPx: 13
-    readonly property int uiLobbyTitlePt: 15
-    readonly property int uiLobbySubPt: 12
+    readonly property int uiLobbyTitlePt: 19
+    /// Nav tiles: title line (two lines max).
+    readonly property int uiLobbyNavTileTitlePt: 15
+    readonly property int uiLobbyNavSubPx: 15
+    readonly property int uiLobbyNavTilePadding: 11
+    readonly property int uiLobbyNavTileMinHeight: 124
+    readonly property int uiLobbyNavIconPx: 28
     readonly property int uiPotMainPt: 22
     readonly property int uiPotSepPt: 18
     readonly property int uiPotCallPt: 18
@@ -135,8 +180,14 @@ QtObject {
     readonly property int uiGameHudPx: 14
     readonly property int uiChartLegendPx: 12
     readonly property int uiChartCanvasPx: 12
-    readonly property int uiRangeGridAxisPx: 13
-    readonly property int uiRangeGridLegendPx: 12
+    readonly property int uiRangeGridAxisPx: 14
+    readonly property int uiRangeGridLegendPx: 13
+    /// 13×13 cell size (axis labels use row/col header widths below).
+    readonly property int uiRangeGridCellW: 40
+    readonly property int uiRangeGridCellH: 32
+    readonly property int uiRangeGridRowHeaderW: 28
+    readonly property int uiRangeGridCornerW: 22
+    readonly property int uiRangeGridCornerH: 24
     readonly property int uiSizingPresetPt: 11
 
     /// 13×13 range editor: heatmap and composite layers (gold / fire / burgundy — matches logo banner & type).
