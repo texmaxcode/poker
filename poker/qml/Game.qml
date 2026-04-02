@@ -36,6 +36,8 @@ Page {
     property string statusText: qsTr("Starting…")
     property string humanHandText: ""
     property bool showdown: false
+    /// Bumps each new hand (`game::clear_for_new_hand`) so seats reset hole-card flip state.
+    property int handSeq: 0
     property int actingSeat: -1
     property int decisionSecondsLeft: 0
     property bool humanMoreTimeAvailable: false
@@ -89,32 +91,8 @@ Page {
         return "—"
     }
 
-    background: Item {
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: Theme.bgGradientTop
-                }
-                GradientStop {
-                    position: 0.5
-                    color: Theme.bgGradientMid
-                }
-                GradientStop {
-                    position: 1
-                    color: Theme.bgGradientBottom
-                }
-            }
-        }
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectCrop
-            opacity: 0.42
-            source: "qrc:/assets/images/bg_vignette.svg"
-            smooth: true
-            mipmap: true
-        }
+    background: BrandedBackground {
+        anchors.fill: parent
     }
 
     /// Floating HUD beside seat 0: sit-out toggle is always available; action rows hide when sitting out.
@@ -164,8 +142,6 @@ Page {
             pot_amount: game_screen.pot
             actingSeat: game_screen.actingSeat
             decisionSecondsLeft: game_screen.decisionSecondsLeft
-            humanCanCheck: game_screen.humanCanCheck
-            humanBbPreflopOption: game_screen.humanBbPreflopOption
             facingNeedChips: game_screen.facingNeedChips
             humanSittingOut: game_screen.humanSittingOut
             seatStreetActions: game_screen.seatStreetActions
@@ -227,6 +203,7 @@ Page {
                     foldedDim: (game_screen.seatInHand[index] === false)
                     humanWatching: index === 0 && game_screen.humanSittingOut
                     reserveChips: game_screen.seatWallets[index] !== undefined ? game_screen.seatWallets[index] : 0
+                    handEpoch: game_screen.handSeq
                 }
             }
         }

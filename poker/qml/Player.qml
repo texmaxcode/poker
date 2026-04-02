@@ -36,6 +36,8 @@ Item {
     property int tablePotChips: 0
     /// Off-table reserve (for busted seats; can buy back in).
     property int reserveChips: 0
+    /// From `Game.handSeq`: new value each hand so hole cards snap face-down and stagger resets.
+    property int handEpoch: 0
 
     readonly property color gold: Theme.gold
     readonly property color borderAct: Theme.seatBorderAct
@@ -45,11 +47,15 @@ Item {
     readonly property color streetActionColor: {
         var t = root.streetActionText.toLowerCase()
         if (t.indexOf("all-in") >= 0 || t.indexOf("all in") >= 0)
-            return Theme.ember
+            return Theme.streetActionAllIn
         if (t.indexOf("raise") >= 0)
-            return Theme.successGreen
+            return Theme.streetActionRaise
         if (t.indexOf("call") >= 0)
-            return Theme.focusGold
+            return Theme.streetActionCall
+        if (t.indexOf("check") >= 0)
+            return Theme.streetActionCheck
+        if (t.indexOf("fold") >= 0)
+            return Theme.streetActionFold
         return Theme.gold
     }
 
@@ -74,6 +80,21 @@ Item {
         }
     }
 
+    /// Bots block the UI thread briefly; drive a local depleting bar so seats show urgency.
+    property real botTurnFrac: 1.0
+    Timer {
+        id: botActTimer
+        interval: 45
+        repeat: true
+        running: root.isActing && !root.isHumanSeat
+        onTriggered: root.botTurnFrac = Math.max(0, root.botTurnFrac - 0.152)
+    }
+
+    onIsActingChanged: {
+        if (root.isActing && !root.isHumanSeat)
+            root.botTurnFrac = 1.0
+    }
+
     Timer {
         id: holeStagger
         interval: 300
@@ -89,6 +110,11 @@ Item {
             holeStagger.stop()
             root.secondHoleRevealed = false
         }
+    }
+
+    onHandEpochChanged: {
+        holeStagger.stop()
+        root.secondHoleRevealed = false
     }
 
     Rectangle {
@@ -154,6 +180,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         card: root.first_card
                         flipped: root.show_cards
+                        dealEpoch: root.handEpoch
                     }
 
                     Card {
@@ -164,6 +191,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         card: root.second_card
                         flipped: root.show_cards && root.secondHoleRevealed
+                        dealEpoch: root.handEpoch
                     }
                 }
 
@@ -214,7 +242,7 @@ Item {
                     radius: 4
                     color: Theme.hudBg1
                     border.width: 1
-                    border.color: root.gold
+                    border.color: Qt.alpha(root.streetActionColor, 0.92)
                     clip: true
 
                     Text {
@@ -224,7 +252,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         horizontalAlignment: Text.AlignHCenter
                         text: root.streetActionText
-                        color: root.gold
+                        color: root.streetActionColor
                         font.pointSize: 9
                         font.bold: true
                         elide: Text.ElideRight
@@ -303,9 +331,14 @@ Item {
                     padding: 2
                     from: 0
                     to: 1
-                    value: root.isActing
-                           ? Math.max(0, Math.min(1, root.decisionSecondsLeft / root.decisionTimeTotal))
-                           : 0
+                    value: {
+                        if (!root.isActing)
+                            return 0
+                        if (root.isHumanSeat)
+                            return Math.max(0, Math.min(1,
+                                    root.decisionSecondsLeft / root.decisionTimeTotal))
+                        return root.botTurnFrac
+                    }
 
                     background: Rectangle {
                         implicitHeight: 6

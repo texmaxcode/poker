@@ -53,6 +53,8 @@ class game : public QObject
     card_deck deck;
     int starting_stack_ = 100;
     bool ui_showdown_ = false;
+    /// Incremented each `clear_for_new_hand()` so QML can reset hole-card visuals between hands.
+    int hand_seq_ = 0;
 
     std::array<SeatBot, kMaxPlayers> seat_cfg_{};
     std::array<bool, kMaxPlayers> in_hand_{};
@@ -242,6 +244,8 @@ private:
     void record_bankroll_snapshot();
     void init_bankroll_after_configure();
     void bot_action_pause();
+    /// Postflop: no open bet — record a check and pause (mirrors human `Check` label).
+    void bot_record_postflop_check(int seat);
     void clear_for_new_hand();
     void clear_street_action_labels();
     void set_seat_street_action(int seat, const QString &label);

@@ -57,6 +57,12 @@ QtObject {
     readonly property color dangerText: "#f5d0d0"
     readonly property color successGreen: "#1a6b45"
     readonly property color focusGold: "#c9a227"
+    /// Seat street-action strip (Call / Raise / Check / All-in / Fold).
+    readonly property color streetActionCall: "#e8d040"
+    readonly property color streetActionRaise: "#4ade80"
+    readonly property color streetActionAllIn: "#ef4444"
+    readonly property color streetActionCheck: "#7eb8e8"
+    readonly property color streetActionFold: "#a89890"
 
     readonly property color seatPanel: "#15151c"
     readonly property color seatStackTint: "#2a1f18"

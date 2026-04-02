@@ -18,6 +18,7 @@ void game::sync_ui()
     }
 
     m_root->setProperty("showdown", ui_showdown_);
+    m_root->setProperty("handSeq", hand_seq_);
     m_root->setProperty("pot", pot);
     m_root->setProperty("buttonSeat", button);
     m_root->setProperty("sbSeat", sb_seat_);

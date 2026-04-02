@@ -13,33 +13,9 @@ ApplicationWindow {
     title: qsTr("Texas Hold'em Gym")
     color: Theme.bgWindow
 
-    Rectangle {
+    BrandedBackground {
         z: -1
         anchors.fill: parent
-        gradient: Gradient {
-            GradientStop {
-                position: 0
-                color: Theme.bgGradientTop
-            }
-            GradientStop {
-                position: 0.52
-                color: Theme.bgGradientMid
-            }
-            GradientStop {
-                position: 1
-                color: Theme.bgGradientBottom
-            }
-        }
-    }
-
-    Image {
-        z: -1
-        anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        opacity: 0.55
-        source: "qrc:/assets/images/bg_vignette.svg"
-        smooth: true
-        mipmap: true
     }
 
     FontLoader {
@@ -61,7 +37,7 @@ ApplicationWindow {
 
     header: ToolBar {
         visible: stack.currentIndex > 0
-        implicitHeight: 32
+        implicitHeight: 28
 
         background: Rectangle {
             color: Theme.headerBg
@@ -86,12 +62,12 @@ ApplicationWindow {
                 text: qsTr("Lobby")
                 font.family: win.fontUiBold
                 font.bold: true
-                font.pointSize: 8
+                font.pointSize: 7
                 icon.source: "qrc:/assets/icons/home.svg"
-                icon.width: 16
-                icon.height: 16
+                icon.width: 14
+                icon.height: 14
                 display: AbstractButton.TextBesideIcon
-                padding: 4
+                padding: 2
                 flat: false
                 background: Rectangle {
                     anchors.fill: parent
@@ -120,10 +96,10 @@ ApplicationWindow {
                     }
                 }
                 contentItem: RowLayout {
-                    spacing: 4
+                    spacing: 3
                     Image {
-                        width: 16
-                        height: 16
+                        width: 14
+                        height: 14
                         source: backBtn.icon.source
                         opacity: backBtn.enabled ? 1 : 0.45
                     }

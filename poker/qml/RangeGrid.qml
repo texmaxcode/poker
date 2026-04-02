@@ -107,7 +107,7 @@ Item {
                     }
                     Label {
                         text: modelData.label
-                        font.pixelSize: 9
+                        font.pixelSize: 10
                         color: Theme.textMuted
                         font.bold: root.editLayer === index
                     }
@@ -118,17 +118,17 @@ Item {
         RowLayout {
             spacing: 2
             Item {
-                Layout.preferredWidth: 22
-                Layout.preferredHeight: 18
+                Layout.preferredWidth: 30
+                Layout.preferredHeight: 22
             }
             Repeater {
                 model: 13
                 Label {
                     text: rankLabels[index]
                     horizontalAlignment: Text.AlignHCenter
-                    Layout.preferredWidth: 24
+                    Layout.preferredWidth: 34
                     font.bold: true
-                    font.pixelSize: 10
+                    font.pixelSize: 12
                 }
             }
         }
@@ -141,15 +141,15 @@ Item {
                 spacing: 2
                 Label {
                     text: rankLabels[rowItem.row]
-                    Layout.preferredWidth: 20
+                    Layout.preferredWidth: 26
                     font.bold: true
-                    font.pixelSize: 10
+                    font.pixelSize: 12
                 }
                 Repeater {
                     model: 13
                     Item {
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 20
+                        Layout.preferredWidth: 34
+                        Layout.preferredHeight: 28
                         property int col: index
                         property int idx: rowItem.row * 13 + col
 

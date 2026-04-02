@@ -759,8 +759,18 @@ void game::try_auto_rebuys_for_busted_bots()
 
 void game::bot_action_pause()
 {
-    const int ms = bot_slow_actions_ ? 1200 : 320;
+    const int ms = bot_slow_actions_ ? 2600 : 550;
     QThread::msleep(ms);
+}
+
+void game::bot_record_postflop_check(int seat)
+{
+    acting_seat_ = seat;
+    flush_ui();
+    bot_action_pause();
+    set_seat_street_action(seat, QStringLiteral("Check"));
+    acting_seat_ = -1;
+    sync_ui();
 }
 
 bool game::handle_forced_response(int seat, Street st, int current_max)
@@ -966,9 +976,15 @@ bool game::handle_postflop_check_or_bet(Street st)
         const double hs = hand_strength_01_cards(cards);
         const size_t sei = static_cast<size_t>(seat);
         if (seat_cfg_[sei].strategy == BotStrategy::AlwaysCall)
+        {
+            bot_record_postflop_check(seat);
             continue;
+        }
         if (!bot_wants_open_bet_postflop_p(seat_cfg_[sei].params, hs, rng_))
+        {
+            bot_record_postflop_check(seat);
             continue;
+        }
         {
             const card &h1 = table[sei].first_card;
             const card &h2 = table[sei].second_card;
@@ -977,10 +993,16 @@ bool game::handle_postflop_check_or_bet(Street st)
             const double wb = seat_cfg_[sei].range_bet.weight(h1, h2);
             const double play = std::max({wc, wr, wb});
             if (!rng_passes_layer_gate(wb, play, rng_))
+            {
+                bot_record_postflop_check(seat);
                 continue;
+            }
         }
         if (table[static_cast<size_t>(seat)].stack < street_bet_)
+        {
+            bot_record_postflop_check(seat);
             continue;
+        }
         acting_seat_ = seat;
         flush_ui();
         bot_action_pause();
@@ -1428,6 +1450,7 @@ void game::clear_for_new_hand()
     human_decision_deadline_.stop();
     river_last_aggressor_ = -1;
     river_had_bet_or_raise_ = false;
+    ++hand_seq_;
     emit pot_changed();
 }
 

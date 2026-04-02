@@ -376,22 +376,6 @@ Item {
                         }
                     }
 
-                    readonly property int raiseSliderEffective: Math.round(raiseSlider.value)
-
-                    Text {
-                        text: qsTr("Tap a size to raise · or drag slider, release to raise")
-                        color: Theme.textSecondary
-                        font.pointSize: 10
-                        wrapMode: Text.WordWrap
-                        width: parent.width
-                    }
-
-                    Text {
-                        text: qsTr("Raise +%1 chips").arg(raiseSizerCol.raiseSliderEffective)
-                        color: Theme.textSecondary
-                        font.pointSize: 11
-                    }
-
                     SizingPresetBar {
                         id: raisePresetRow
                         width: parent.width
@@ -608,22 +592,6 @@ Item {
                             if (game_controls.checkOrRaiseSized)
                                 openRaiseSlider.syncOpenRaiseSlider()
                         }
-                    }
-
-                    readonly property int openRaiseSliderEffective: Math.round(openRaiseSlider.value)
-
-                    Text {
-                        text: qsTr("Tap a size to raise · or drag slider, release to raise")
-                        color: Theme.textSecondary
-                        font.pointSize: 10
-                        wrapMode: Text.WordWrap
-                        width: parent.width
-                    }
-
-                    Text {
-                        text: qsTr("Raise %1 chips").arg(openRaiseSizerCol.openRaiseSliderEffective)
-                        color: Theme.textSecondary
-                        font.pointSize: 11
                     }
 
                     SizingPresetBar {

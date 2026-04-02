@@ -9,6 +9,8 @@ Flipable {
     property string card: "spades_ace.svg"
     /// Community cards are always face-up; holes use flipped/show_cards from Player.
     property bool tableCard: false
+    /// Bumps each new hand (`Game.handSeq`) so rotation snaps to match concealed/revealed state.
+    property int dealEpoch: 0
     /// If false (default), hole cards follow the parent binding only — click-to-flip breaks that binding
     /// and was letting opponents’ pockets appear face-up.
     property bool interactivePeek: false
@@ -45,13 +47,30 @@ Flipable {
         when: tableCard || flipable.flipped
     }
 
-    transitions: Transition {
-        NumberAnimation {
-            target: rotation
-            property: "angle"
-            duration: 620
-            easing.type: Easing.InOutCubic
+    transitions: [
+        Transition {
+            to: "back"
+            NumberAnimation {
+                target: rotation
+                property: "angle"
+                duration: 620
+                easing.type: Easing.InOutCubic
+            }
+        },
+        Transition {
+            from: "back"
+            NumberAnimation {
+                target: rotation
+                property: "angle"
+                duration: 0
+            }
         }
+    ]
+
+    onDealEpochChanged: {
+        if (tableCard)
+            return
+        rotation.angle = (tableCard || flipable.flipped) ? 180 : 0
     }
 
     MouseArea {

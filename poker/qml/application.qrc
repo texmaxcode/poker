@@ -18,6 +18,7 @@
         <file>TableBoardCard.qml</file>
         <file>GameControls.qml</file>
         <file>SizingPresetBar.qml</file>
+        <file>BrandedBackground.qml</file>
 
         <!-- Typography (SIL Open Font License — Oswald, Google Fonts) -->
         <file>assets/fonts/Oswald-Regular.ttf</file>

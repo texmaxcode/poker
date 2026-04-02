@@ -10,8 +10,6 @@ Item {
     property int pot_amount: 0
     property int actingSeat: -1
     property int decisionSecondsLeft: 0
-    property bool humanCanCheck: false
-    property bool humanBbPreflopOption: false
     property int facingNeedChips: 0
     property bool humanSittingOut: false
     property var seatStreetActions: ["", "", "", "", "", ""]
@@ -19,6 +17,7 @@ Item {
     property int playerCount: 6
 
     readonly property bool humanDeciding: actingSeat === 0 && decisionSecondsLeft > 0 && !humanSittingOut
+    readonly property bool showToCallHint: humanDeciding && facingNeedChips > 0
 
     property string board0: ""
     property string board1: ""
@@ -72,7 +71,7 @@ Item {
         Rectangle {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 212
+            width: Math.min(340, Math.max(260, table_container.width * 0.38))
             height: 56
             radius: 14
             color: Theme.hudBg1
@@ -93,69 +92,42 @@ Item {
 
             Row {
                 anchors.centerIn: parent
-                spacing: 10
+                spacing: 8
 
-                Item {
-                    width: table_container.humanDeciding ? 118 : potBlindsHud.width - 24
-                    height: 40
+                Text {
+                    id: potValueText
                     anchors.verticalCenter: parent.verticalCenter
+                    text: "$" + Math.round(table_container.potShown)
+                    color: gold
+                    font.bold: true
+                    font.pointSize: 20
+                    horizontalAlignment: Text.AlignHCenter
 
-                    Behavior on width {
-                        NumberAnimation { duration: 180; easing.type: Easing.InOutQuad }
-                    }
-
-                    Text {
-                        id: potValueText
-                        anchors.centerIn: parent
-                        text: "$" + Math.round(table_container.potShown)
-                        color: gold
-                        font.bold: true
-                        font.pointSize: 20
-                        horizontalAlignment: Text.AlignHCenter
-
-                        transform: Scale {
-                            id: potValueScale
-                            origin.x: potValueText.width * 0.5
-                            origin.y: potValueText.height * 0.5
-                            xScale: 1
-                            yScale: 1
-                        }
+                    transform: Scale {
+                        id: potValueScale
+                        origin.x: potValueText.width * 0.5
+                        origin.y: potValueText.height * 0.5
+                        xScale: 1
+                        yScale: 1
                     }
                 }
 
-                Rectangle {
-                    width: 1
-                    height: 36
+                Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    color: Theme.hudDivider
-                    visible: table_container.humanDeciding
+                    visible: table_container.showToCallHint
+                    text: qsTr("·")
+                    color: Theme.textMuted
+                    font.bold: true
+                    font.pointSize: 18
                 }
 
-                Item {
-                    width: table_container.humanDeciding ? 72 : 0
-                    height: 40
+                Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: table_container.humanDeciding
-                    clip: true
-
-                    Text {
-                        anchors.centerIn: parent
-                        width: 72
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        text: {
-                            if (table_container.humanBbPreflopOption)
-                                return qsTr("Check / raise")
-                            if (table_container.humanCanCheck)
-                                return qsTr("Check / raise")
-                            if (table_container.facingNeedChips > 0)
-                                return qsTr("Call $%1").arg(table_container.facingNeedChips)
-                            return qsTr("—")
-                        }
-                        color: Theme.textPrimary
-                        font.pointSize: 11
-                        font.bold: true
-                    }
+                    visible: table_container.showToCallHint
+                    text: qsTr("To call $%1").arg(table_container.facingNeedChips)
+                    color: Theme.focusGold
+                    font.bold: true
+                    font.pointSize: 14
                 }
             }
 

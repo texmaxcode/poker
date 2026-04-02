@@ -85,6 +85,7 @@ Item {
         }
 
         Rectangle {
+            id: feltFace
             anchors.fill: parent
             anchors.margins: 34
             radius: Math.max(4, parent.cr - 34)
@@ -104,6 +105,35 @@ Item {
             }
             border.width: 1
             border.color: Theme.feltBorder
+            clip: true
+
+            Canvas {
+                id: feltGrain
+                anchors.fill: parent
+                opacity: 0.14
+                onPaint: {
+                    if (width < 4 || height < 4)
+                        return
+                    var ctx = getContext("2d")
+                    ctx.clearRect(0, 0, width, height)
+                    const n = Math.min(8000, Math.floor(width * height * 0.015))
+                    for (var i = 0; i < n; ++i) {
+                        const x = Math.random() * width
+                        const y = Math.random() * height
+                        ctx.fillStyle = Qt.rgba(0.05, 0.12, 0.1, 0.12 + Math.random() * 0.18)
+                        ctx.fillRect(x, y, 1, 1)
+                    }
+                    for (var j = 0; j < Math.floor(n * 0.2); ++j) {
+                        const x2 = Math.random() * width
+                        const y2 = Math.random() * height
+                        ctx.fillStyle = Qt.rgba(0.9, 0.95, 0.85, 0.04 + Math.random() * 0.06)
+                        ctx.fillRect(x2, y2, 2, 1)
+                    }
+                }
+                onWidthChanged: Qt.callLater(requestPaint)
+                onHeightChanged: Qt.callLater(requestPaint)
+                Component.onCompleted: Qt.callLater(requestPaint)
+            }
         }
 
         Rectangle {

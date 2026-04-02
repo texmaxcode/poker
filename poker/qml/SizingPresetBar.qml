@@ -2,14 +2,14 @@ import QtQuick
 import QtQuick.Controls
 import Theme 1.0
 
-/// Shared Min / (½ pot) / Pot / All chips for raise (facing) vs open-raise sliders.
+/// Shared Min / ⅓ / ½ / ⅔ / Pot / All chips for raise (facing) vs open-raise sliders.
 Row {
     id: root
-    spacing: 6
+    spacing: 5
 
     required property var hud
     required property Slider slider
-    /// `"raise"` = facing a raise; `"open"` = first raise on a street (no half-pot pill).
+    /// `"raise"` = facing a raise; `"open"` = first raise on a street.
     property string flavor: "raise"
     /// Called after a preset updates the slider (e.g. submit bet/raise in the parent HUD).
     property var afterPreset: null
@@ -30,16 +30,25 @@ Row {
         slider.value = clampToSlider(v)
     }
 
+    function applyPotFrac(num, den) {
+        if (root.flavor === "raise")
+            applyRaiseTotal(hud.facingNeedChips + Math.floor(hud.facingPotAmount * num / den))
+        else
+            applyOpenRaise(Math.floor(hud.facingPotAmount * num / den))
+        if (root.afterPreset)
+            root.afterPreset()
+    }
+
     Rectangle {
         color: Theme.hudActionPanel
         radius: 6
-        width: 44
+        width: 40
         height: 28
         Text {
             anchors.centerIn: parent
             text: qsTr("Min")
             color: Theme.textPrimary
-            font.pointSize: 10
+            font.pointSize: 9
             font.bold: true
         }
         MouseArea {
@@ -60,10 +69,31 @@ Row {
     }
 
     Rectangle {
-        visible: root.flavor === "raise"
         color: Theme.hudActionPanel
         radius: 6
-        width: visible ? 44 : 0
+        width: 34
+        height: 28
+        Text {
+            anchors.centerIn: parent
+            text: qsTr("⅓")
+            color: Theme.textPrimary
+            font.pointSize: 10
+            font.bold: true
+        }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.applyPotFrac(1, 3)
+            onPressed: parent.opacity = 0.85
+            onReleased: parent.opacity = 1
+        }
+    }
+
+    Rectangle {
+        color: Theme.hudActionPanel
+        radius: 6
+        width: 34
         height: 28
         Text {
             anchors.centerIn: parent
@@ -76,11 +106,7 @@ Row {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                applyRaiseTotal(hud.facingNeedChips + Math.floor(hud.facingPotAmount / 2))
-                if (root.afterPreset)
-                    root.afterPreset()
-            }
+            onClicked: root.applyPotFrac(1, 2)
             onPressed: parent.opacity = 0.85
             onReleased: parent.opacity = 1
         }
@@ -89,13 +115,35 @@ Row {
     Rectangle {
         color: Theme.hudActionPanel
         radius: 6
-        width: 44
+        width: 34
+        height: 28
+        Text {
+            anchors.centerIn: parent
+            text: qsTr("⅔")
+            color: Theme.textPrimary
+            font.pointSize: 10
+            font.bold: true
+        }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.applyPotFrac(2, 3)
+            onPressed: parent.opacity = 0.85
+            onReleased: parent.opacity = 1
+        }
+    }
+
+    Rectangle {
+        color: Theme.hudActionPanel
+        radius: 6
+        width: 40
         height: 28
         Text {
             anchors.centerIn: parent
             text: qsTr("Pot")
             color: Theme.textPrimary
-            font.pointSize: 10
+            font.pointSize: 9
             font.bold: true
         }
         MouseArea {
@@ -118,13 +166,13 @@ Row {
     Rectangle {
         color: Theme.hudActionPanel
         radius: 6
-        width: 44
+        width: 40
         height: 28
         Text {
             anchors.centerIn: parent
             text: qsTr("All")
             color: Theme.textPrimary
-            font.pointSize: 10
+            font.pointSize: 9
             font.bold: true
         }
         MouseArea {

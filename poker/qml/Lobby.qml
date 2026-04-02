@@ -14,32 +14,8 @@ Page {
     readonly property color silver: Theme.textSecondary
     readonly property color accentFire: Theme.fire
 
-    background: Item {
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: Theme.bgGradientTop
-                }
-                GradientStop {
-                    position: 0.52
-                    color: Theme.bgGradientMid
-                }
-                GradientStop {
-                    position: 1
-                    color: Theme.bgGradientBottom
-                }
-            }
-        }
-        Image {
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectCrop
-            opacity: 0.55
-            source: "qrc:/assets/images/bg_vignette.svg"
-            smooth: true
-            mipmap: true
-        }
+    background: BrandedBackground {
+        anchors.fill: parent
     }
 
     function go(idx) {
