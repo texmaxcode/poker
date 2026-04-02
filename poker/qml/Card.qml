@@ -11,9 +11,6 @@ Flipable {
     property bool tableCard: false
     /// Bumps each new hand (`Game.handSeq`) so rotation snaps to match concealed/revealed state.
     property int dealEpoch: 0
-    /// If false (default), hole cards follow the parent binding only — click-to-flip breaks that binding
-    /// and was letting opponents’ pockets appear face-up.
-    property bool interactivePeek: false
 
     front: Image {
         source: "qrc:/assets/cards/blue2.svg"
@@ -79,11 +76,5 @@ Flipable {
             return
         if (card.length === 0)
             rotation.angle = 0
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        enabled: !tableCard && interactivePeek
-        onClicked: flipable.flipped = !flipable.flipped
     }
 }

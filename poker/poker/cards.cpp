@@ -1,5 +1,7 @@
 #include "cards.hpp"
 
+#include <array>
+
 namespace {
 
 QString rank_to_qml_asset_token(Rank r)
@@ -57,6 +59,25 @@ QString suite_to_qml_asset_token(Suite s)
 
 QString card_to_qml_asset_path(const card &c)
 {
+    static const std::array<QString, 52> k_path_table = [] {
+        std::array<QString, 52> a{};
+        size_t idx = 0;
+        for (int ri = 0; ri < 13; ++ri)
+        {
+            const Rank r = static_cast<Rank>(ri + static_cast<int>(Rank::TWO));
+            for (int si = 0; si < 4; ++si)
+            {
+                const Suite s = static_cast<Suite>(si + static_cast<int>(Suite::CLUBS));
+                a[idx++] = suite_to_qml_asset_token(s) + QLatin1Char('_') + rank_to_qml_asset_token(r)
+                    + QStringLiteral(".svg");
+            }
+        }
+        return a;
+    }();
+    const int ri = static_cast<int>(c.rank) - static_cast<int>(Rank::TWO);
+    const int si = static_cast<int>(c.suite) - static_cast<int>(Suite::CLUBS);
+    if (ri >= 0 && ri < 13 && si >= 0 && si < 4)
+        return k_path_table[static_cast<size_t>(ri * 4 + si)];
     return suite_to_qml_asset_token(c.suite) + QLatin1Char('_') + rank_to_qml_asset_token(c.rank) + QStringLiteral(".svg");
 }
 

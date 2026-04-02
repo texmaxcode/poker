@@ -17,6 +17,9 @@
         <file>Table.qml</file>
         <file>TableBoardCard.qml</file>
         <file>GameControls.qml</file>
+        <file>ThemedSwitch.qml</file>
+        <file>ThemedCheckBox.qml</file>
+        <file>HudButton.qml</file>
         <file>SizingPresetBar.qml</file>
         <file>BrandedBackground.qml</file>
 

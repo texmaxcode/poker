@@ -61,8 +61,6 @@ Item {
         NumberAnimation { duration: 280; easing.type: Easing.InOutQuad }
     }
 
-    property bool secondHoleRevealed: false
-
     property int stackDisplay: root.stackChips
     onStackChipsChanged: stackDisplay = root.stackChips
 
@@ -86,28 +84,6 @@ Item {
     onIsActingChanged: {
         if (root.isActing && !root.isHumanSeat)
             root.botTurnFrac = 1.0
-    }
-
-    Timer {
-        id: holeStagger
-        interval: 300
-        repeat: false
-        onTriggered: root.secondHoleRevealed = true
-    }
-
-    onShow_cardsChanged: {
-        if (root.show_cards) {
-            root.secondHoleRevealed = false
-            holeStagger.start()
-        } else {
-            holeStagger.stop()
-            root.secondHoleRevealed = false
-        }
-    }
-
-    onHandEpochChanged: {
-        holeStagger.stop()
-        root.secondHoleRevealed = false
     }
 
     Rectangle {
@@ -183,7 +159,7 @@ Item {
                         anchors.leftMargin: 2
                         anchors.verticalCenter: parent.verticalCenter
                         card: root.second_card
-                        flipped: root.show_cards && root.secondHoleRevealed && root.second_card.length > 0
+                        flipped: root.show_cards && root.second_card.length > 0
                         dealEpoch: root.handEpoch
                     }
                 }

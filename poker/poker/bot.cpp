@@ -35,22 +35,27 @@ BotParams params_for(BotStrategy s)
     }
 }
 
-bool bot_preflop_continue_p(const BotParams &p, double range_weight, std::mt19937 &rng)
+namespace {
+
+bool bot_continue_trial(double exponent, double metric01, std::mt19937 &rng)
 {
-    const double w = std::clamp(range_weight, 0.0, 1.0);
-    const double exp = std::max(p.preflop_exponent, 1e-6);
-    const double t = std::pow(w, exp);
+    const double m = std::clamp(metric01, 0.0, 1.0);
+    const double exp = std::max(exponent, 1e-6);
+    const double t = std::pow(m, exp);
     std::uniform_real_distribution<double> u(0.0, 1.0);
     return u(rng) < t;
 }
 
+} // namespace
+
+bool bot_preflop_continue_p(const BotParams &p, double range_weight, std::mt19937 &rng)
+{
+    return bot_continue_trial(p.preflop_exponent, range_weight, rng);
+}
+
 bool bot_postflop_continue_p(const BotParams &p, double hand_strength01, std::mt19937 &rng)
 {
-    const double h = std::clamp(hand_strength01, 0.0, 1.0);
-    const double exp = std::max(p.postflop_exponent, 1e-6);
-    const double t = std::pow(h, exp);
-    std::uniform_real_distribution<double> u(0.0, 1.0);
-    return u(rng) < t;
+    return bot_continue_trial(p.postflop_exponent, hand_strength01, rng);
 }
 
 bool bot_wants_raise_after_continue_p(const BotParams &p, double metric01, std::mt19937 &rng)

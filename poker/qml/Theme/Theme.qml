@@ -79,4 +79,14 @@ QtObject {
 
     readonly property color profitUp: "#6fdc8c"
     readonly property color profitDown: "#ff8a8a"
+
+    /// 13×13 range editor: heatmap and composite layers (gold / fire / burgundy — matches logo banner & type).
+    readonly property color rangeHeatLo: panel
+    readonly property color rangeHeatHi: gold
+    /// Call layer — warm gold (passive / continue).
+    readonly property color rangeLayerCall: "#d4b84a"
+    /// Raise layer — fire orange (aggression).
+    readonly property color rangeLayerRaise: fire
+    /// Open / lead layer — burgundy rose (distinct from raise, readable on dark felt).
+    readonly property color rangeLayerOpen: "#a85868"
 }

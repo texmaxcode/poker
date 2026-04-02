@@ -39,168 +39,101 @@ Row {
             root.afterPreset()
     }
 
-    Rectangle {
-        color: Theme.hudActionPanel
-        radius: 6
-        width: 40
-        height: 28
-        Text {
-            anchors.centerIn: parent
-            text: qsTr("Min")
-            color: Theme.textPrimary
-            font.pointSize: 9
-            font.bold: true
+    function runPreset(kind) {
+        switch (kind) {
+        case "min":
+            if (root.flavor === "raise")
+                applyRaiseTotal(hud.facingMinRaiseChips)
+            else
+                applyOpenRaise(hud.openRaiseMinChips)
+            break
+        case "third":
+            applyPotFrac(1, 3)
+            return
+        case "half":
+            applyPotFrac(1, 2)
+            return
+        case "twothirds":
+            applyPotFrac(2, 3)
+            return
+        case "pot":
+            if (root.flavor === "raise")
+                applyRaiseTotal(hud.facingNeedChips + hud.facingPotAmount)
+            else
+                applyOpenRaise(Math.min(hud.facingPotAmount, slider.to))
+            break
+        case "all":
+            if (root.flavor === "raise")
+                applyRaiseTotal(slider.to)
+            else
+                applyOpenRaise(slider.to)
+            break
+        default:
+            return
         }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (root.flavor === "raise")
-                    applyRaiseTotal(hud.facingMinRaiseChips)
-                else
-                    applyOpenRaise(hud.openRaiseMinChips)
-                if (root.afterPreset)
-                    root.afterPreset()
+        if (root.afterPreset)
+            root.afterPreset()
+    }
+
+    Repeater {
+        model: [
+            {
+                label: qsTr("Min"),
+                w: 40,
+                kind: "min"
+            },
+            {
+                label: qsTr("⅓"),
+                w: 34,
+                kind: "third"
+            },
+            {
+                label: qsTr("½"),
+                w: 34,
+                kind: "half"
+            },
+            {
+                label: qsTr("⅔"),
+                w: 34,
+                kind: "twothirds"
+            },
+            {
+                label: qsTr("Pot"),
+                w: 40,
+                kind: "pot"
+            },
+            {
+                label: qsTr("All"),
+                w: 40,
+                kind: "all"
             }
-            onEntered: parent.opacity = 0.88
-            onExited: parent.opacity = 1
-            onPressed: parent.opacity = 0.72
-            onReleased: parent.opacity = containsMouse ? 0.88 : 1
-        }
-    }
+        ]
 
-    Rectangle {
-        color: Theme.hudActionPanel
-        radius: 6
-        width: 34
-        height: 28
-        Text {
-            anchors.centerIn: parent
-            text: qsTr("⅓")
-            color: Theme.textPrimary
-            font.pointSize: 10
-            font.bold: true
-        }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.applyPotFrac(1, 3)
-            onEntered: parent.opacity = 0.88
-            onExited: parent.opacity = 1
-            onPressed: parent.opacity = 0.72
-            onReleased: parent.opacity = containsMouse ? 0.88 : 1
-        }
-    }
+        delegate: Rectangle {
+            required property var modelData
+            width: modelData.w
+            height: 28
+            radius: 6
+            color: Theme.hudActionPanel
 
-    Rectangle {
-        color: Theme.hudActionPanel
-        radius: 6
-        width: 34
-        height: 28
-        Text {
-            anchors.centerIn: parent
-            text: qsTr("½")
-            color: Theme.textPrimary
-            font.pointSize: 10
-            font.bold: true
-        }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.applyPotFrac(1, 2)
-            onEntered: parent.opacity = 0.88
-            onExited: parent.opacity = 1
-            onPressed: parent.opacity = 0.72
-            onReleased: parent.opacity = containsMouse ? 0.88 : 1
-        }
-    }
-
-    Rectangle {
-        color: Theme.hudActionPanel
-        radius: 6
-        width: 34
-        height: 28
-        Text {
-            anchors.centerIn: parent
-            text: qsTr("⅔")
-            color: Theme.textPrimary
-            font.pointSize: 10
-            font.bold: true
-        }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.applyPotFrac(2, 3)
-            onEntered: parent.opacity = 0.88
-            onExited: parent.opacity = 1
-            onPressed: parent.opacity = 0.72
-            onReleased: parent.opacity = containsMouse ? 0.88 : 1
-        }
-    }
-
-    Rectangle {
-        color: Theme.hudActionPanel
-        radius: 6
-        width: 40
-        height: 28
-        Text {
-            anchors.centerIn: parent
-            text: qsTr("Pot")
-            color: Theme.textPrimary
-            font.pointSize: 9
-            font.bold: true
-        }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (root.flavor === "raise")
-                    applyRaiseTotal(hud.facingNeedChips + hud.facingPotAmount)
-                else
-                    applyOpenRaise(Math.min(hud.facingPotAmount, slider.to))
-                if (root.afterPreset)
-                    root.afterPreset()
+            Text {
+                anchors.centerIn: parent
+                text: modelData.label
+                color: Theme.textPrimary
+                font.pointSize: (modelData.kind === "min" || modelData.kind === "pot" || modelData.kind === "all") ? 9 : 10
+                font.bold: true
             }
-            onEntered: parent.opacity = 0.88
-            onExited: parent.opacity = 1
-            onPressed: parent.opacity = 0.72
-            onReleased: parent.opacity = containsMouse ? 0.88 : 1
-        }
-    }
 
-    Rectangle {
-        color: Theme.hudActionPanel
-        radius: 6
-        width: 40
-        height: 28
-        Text {
-            anchors.centerIn: parent
-            text: qsTr("All")
-            color: Theme.textPrimary
-            font.pointSize: 9
-            font.bold: true
-        }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (root.flavor === "raise")
-                    applyRaiseTotal(slider.to)
-                else
-                    applyOpenRaise(slider.to)
-                if (root.afterPreset)
-                    root.afterPreset()
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.runPreset(modelData.kind)
+                onEntered: parent.opacity = 0.88
+                onExited: parent.opacity = 1
+                onPressed: parent.opacity = 0.72
+                onReleased: parent.opacity = containsMouse ? 0.88 : 1
             }
-            onEntered: parent.opacity = 0.88
-            onExited: parent.opacity = 1
-            onPressed: parent.opacity = 0.72
-            onReleased: parent.opacity = containsMouse ? 0.88 : 1
         }
     }
 }

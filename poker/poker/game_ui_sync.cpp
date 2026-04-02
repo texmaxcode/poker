@@ -124,8 +124,10 @@ void game::sync_ui()
         if (i < players_count())
         {
             stacks.append(table[static_cast<size_t>(i)].stack);
-            c1.append(card_to_qml_asset_path(table[static_cast<size_t>(i)].first_card));
-            c2.append(card_to_qml_asset_path(table[static_cast<size_t>(i)].second_card));
+            c1.append(cards_dealt_ ? card_to_qml_asset_path(table[static_cast<size_t>(i)].first_card)
+                                   : QString());
+            c2.append(cards_dealt_ ? card_to_qml_asset_path(table[static_cast<size_t>(i)].second_card)
+                                   : QString());
             inHand.append(in_hand_[static_cast<size_t>(i)]);
         }
         else
@@ -200,6 +202,6 @@ void game::flush_ui()
 
 void game::on_pot_changed()
 {
-    if (m_root)
-        m_root->setProperty("pot", pot);
+    /// Full sync: stack / buy-back eligibility must update whenever chips move (pot_changed alone left QML stale).
+    sync_ui();
 }

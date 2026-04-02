@@ -13,8 +13,6 @@ Page {
     }
 
     property int pot: 0
-    property int smallBlind: 1
-    property int bigBlind: 3
     property var seatStacks: [100, 100, 100, 100, 100, 100]
     property var seatC1: ["", "", "", "", "", ""]
     property var seatC2: ["", "", "", "", "", ""]
@@ -53,11 +51,8 @@ Page {
     property int humanStackChips: 0
     property bool humanBbCanRaise: false
     property var pokerGameAccess: null
-    property string streetPhase: qsTr("Preflop")
     property bool humanSittingOut: false
     property var seatParticipating: [true, true, true, true, true, true]
-    /// Off-table chips (rebuy reserve); index aligns with seats.
-    property var seatWallets: [0, 0, 0, 0, 0, 0]
     property bool humanCanBuyBackIn: false
     property int buyInChips: 100
 
@@ -68,18 +63,27 @@ Page {
         var btn = game_screen.buttonSeat
         var sb = game_screen.sbSeat
         var bb = game_screen.bbSeat
+        var part = game_screen.seatParticipating
+        function inDealingPool(idx) {
+            if (idx < 0 || idx >= n)
+                return false
+            if (part && part.length > idx && part[idx] === false)
+                return false
+            return true
+        }
+        if (bb < 0)
+            return "—"
+        // Heads-up: BTN posts SB — show dealer as BTN, not SB (engine still posts SB correctly).
+        if (seat === btn)
+            return "BTN"
         if (sb >= 0 && seat === sb)
             return "SB"
         if (bb >= 0 && seat === bb)
             return "BB"
-        if (seat === btn)
-            return "BTN"
-        if (bb < 0)
-            return "—"
         var order = []
         for (var k = 1; k <= n; k++) {
             var s = (bb + k) % n
-            if (s !== btn && s !== sb && s !== bb)
+            if (s !== btn && s !== sb && s !== bb && inDealingPool(s))
                 order.push(s)
         }
         if (order.length > 0 && seat === order[0])
@@ -95,9 +99,6 @@ Page {
         anchors.fill: parent
     }
 
-    /// Floating HUD beside seat 0: sit-out toggle is always available; action rows hide when sitting out.
-    readonly property bool humanHudVisible: true
-
     Item {
         id: tableArea
         z: 1
@@ -105,10 +106,6 @@ Page {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.leftMargin: 0
-        anchors.rightMargin: 0
-        anchors.topMargin: 0
-        anchors.bottomMargin: 0
 
         readonly property point feltCenter: Qt.point(width / 2, height / 2)
 
@@ -210,7 +207,7 @@ Page {
             id: game_controls
             z: 20
             embeddedMode: true
-            visible: game_screen.humanHudVisible
+            visible: true
             panelWidth: tableArea.hudPanelW
             x: {
                 var hs = tableArea.humanSeat

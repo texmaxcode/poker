@@ -168,83 +168,17 @@ Item {
             anchors.topMargin: 4
             spacing: 6
 
-            RowLayout {
-                id: statusRow
-                visible: !game_controls.embeddedMode
-                width: parent.width - 12
-                x: 6
-                spacing: 6
-
-                Text {
-                    id: actionsHdr
-                    visible: game_controls.showHumanActions && game_controls.showWagerUi
-                    text: qsTr("Act")
-                    color: Theme.hudActionLabel
-                    font.pointSize: 9
-                    font.bold: true
-                }
-
-                Text {
-                    id: timerLbl
-                    visible: game_controls.showHumanActions && game_controls.showWagerUi
-                            && game_controls.humanDecisionActive
-                    text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
-                    color: Theme.seatBorderAct
-                    font.pointSize: 10
-                    font.bold: true
-                    Layout.preferredWidth: visible ? implicitWidth : 0
-                }
-
-                Rectangle {
-                    id: moreTimeBtn
-                    visible: game_controls.showHumanActions && game_controls.showWagerUi
-                            && game_controls.humanDecisionActive
-                            && game_controls.humanMoreTimeAvailable
-                    color: Theme.hudActionPanel
-                    implicitWidth: visible ? 76 : 0
-                    implicitHeight: 26
-                    radius: 6
-                    Layout.preferredWidth: visible ? 76 : 0
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("More")
-                        color: Theme.hudActionBright
-                        font.pointSize: 9
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (pageRoot)
-                                pageRoot.buttonClicked("MORE_TIME")
-                        }
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
-                    }
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                    height: 1
-                }
-            }
-
             Column {
-                id: embeddedChromeCol
-                visible: game_controls.embeddedMode && game_controls.showHumanActions
-                        && game_controls.humanDecisionActive
+                id: decisionChrome
                 width: parent.width - 12
                 x: 6
                 spacing: 6
+                visible: game_controls.showHumanActions && game_controls.showWagerUi
+                        && (!game_controls.embeddedMode || game_controls.humanDecisionActive)
 
                 RowLayout {
                     width: parent.width
-                    spacing: 10
+                    spacing: game_controls.embeddedMode ? 10 : 6
 
                     Text {
                         text: qsTr("Act")
@@ -254,38 +188,27 @@ Item {
                     }
 
                     Text {
+                        visible: game_controls.humanDecisionActive
                         text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
                         color: Theme.seatBorderAct
                         font.pointSize: 10
                         font.bold: true
+                        Layout.preferredWidth: visible ? implicitWidth : 0
                     }
 
-                    Rectangle {
-                        visible: game_controls.humanMoreTimeAvailable
-                        color: Theme.hudActionPanel
-                        implicitWidth: 76
+                    HudButton {
+                        visible: game_controls.humanDecisionActive && game_controls.humanMoreTimeAvailable
+                        pillWidth: 76
+                        horizontalPadding: 14
+                        fontSize: 9
+                        label: qsTr("More")
+                        buttonColor: Theme.hudActionPanel
+                        textColor: Theme.hudActionBright
                         implicitHeight: 26
-                        radius: 6
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: qsTr("More")
-                            color: Theme.hudActionBright
-                            font.pointSize: 9
-                            font.bold: true
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (pageRoot)
-                                    pageRoot.buttonClicked("MORE_TIME")
-                            }
-                            onEntered: parent.opacity = 0.92
-                            onExited: parent.opacity = 1
-                            onPressed: parent.opacity = 0.80
-                            onReleased: parent.opacity = containsMouse ? 0.92 : 1
+                        Layout.preferredWidth: visible ? 76 : 0
+                        onClicked: {
+                            if (pageRoot)
+                                pageRoot.buttonClicked("MORE_TIME")
                         }
                     }
 
@@ -297,6 +220,7 @@ Item {
 
                 ProgressBar {
                     id: embeddedDecisionBar
+                    visible: game_controls.embeddedMode && game_controls.humanDecisionActive
                     width: parent.width
                     height: 6
                     padding: 2
@@ -399,88 +323,41 @@ Item {
                 x: 6
                 spacing: 10
 
-                Rectangle {
-                    color: Theme.dangerBg
-                    width: 76
-                    height: 32
-                    radius: 6
+                HudButton {
+                    label: qsTr("FOLD")
+                    pillWidth: 76
+                    buttonColor: Theme.dangerBg
+                    textColor: Theme.dangerText
+                    clickEnabled: game_controls.facingRaise
                     opacity: game_controls.facingRaise ? 1.0 : 0.42
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("FOLD")
-                        color: Theme.dangerText
-                        font.pointSize: 12
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        enabled: game_controls.facingRaise
-                        onClicked: {
-                            if (pageRoot && game_controls.facingRaise)
-                                pageRoot.buttonClicked("FOLD")
-                        }
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
+                    onClicked: {
+                        if (pageRoot && game_controls.facingRaise)
+                            pageRoot.buttonClicked("FOLD")
                     }
                 }
 
-                Rectangle {
+                HudButton {
                     visible: game_controls.canFacingCall
-                    color: Theme.focusGold
-                    width: 108
-                    height: 32
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: game_controls.facingNeedChips > 0
-                              ? qsTr("Call %1").arg(game_controls.facingNeedChips)
-                              : qsTr("CALL")
-                        color: Theme.insetDark
-                        font.pointSize: 11
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (pageRoot && game_controls.facingRaise)
-                                pageRoot.buttonClicked("CALL")
-                        }
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
+                    label: game_controls.facingNeedChips > 0
+                          ? qsTr("Call %1").arg(game_controls.facingNeedChips)
+                          : qsTr("CALL")
+                    pillWidth: 108
+                    buttonColor: Theme.focusGold
+                    textColor: Theme.insetDark
+                    fontSize: 11
+                    onClicked: {
+                        if (pageRoot && game_controls.facingRaise)
+                            pageRoot.buttonClicked("CALL")
                     }
                 }
 
-                Rectangle {
+                HudButton {
                     visible: game_controls.canRaiseFacing && !game_controls.raiseSizingExpanded
-                    color: Theme.successGreen
-                    width: 88
-                    height: 32
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("RAISE")
-                        color: "white"
-                        font.pointSize: 12
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: game_controls.raiseSizingExpanded = true
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
-                    }
+                    label: qsTr("RAISE")
+                    pillWidth: 88
+                    buttonColor: Theme.successGreen
+                    textColor: "white"
+                    onClicked: game_controls.raiseSizingExpanded = true
                 }
             }
 
@@ -493,58 +370,26 @@ Item {
                 x: 6
                 spacing: 10
 
-                Rectangle {
-                    color: Theme.panelBorder
-                    width: 96
-                    height: 32
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("CHECK")
-                        color: Theme.textPrimary
-                        font.pointSize: 12
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (pageRoot)
-                                pageRoot.buttonClicked("CHECK")
-                        }
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
+                HudButton {
+                    label: qsTr("CHECK")
+                    pillWidth: 96
+                    buttonColor: Theme.panelBorder
+                    textColor: Theme.textPrimary
+                    onClicked: {
+                        if (pageRoot)
+                            pageRoot.buttonClicked("CHECK")
                     }
                 }
 
-                Rectangle {
+                HudButton {
                     visible: game_controls.humanBbCanRaise && game_controls.humanHasChips
-                    color: Theme.successGreen
-                    width: 96
-                    height: 32
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("Raise")
-                        color: "white"
-                        font.pointSize: 12
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (pageRoot)
-                                pageRoot.buttonClicked("RAISE")
-                        }
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
+                    label: qsTr("Raise")
+                    pillWidth: 96
+                    buttonColor: Theme.successGreen
+                    textColor: "white"
+                    onClicked: {
+                        if (pageRoot)
+                            pageRoot.buttonClicked("RAISE")
                     }
                 }
             }
@@ -627,83 +472,35 @@ Item {
                 x: 6
                 spacing: 10
 
-                Rectangle {
-                    color: Theme.panelBorder
-                    width: 88
-                    height: 32
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("CHECK")
-                        color: Theme.textPrimary
-                        font.pointSize: 12
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (pokerGame)
-                                pokerGame.submitCheckOrBet(true, 0)
-                        }
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
+                HudButton {
+                    label: qsTr("CHECK")
+                    pillWidth: 88
+                    buttonColor: Theme.panelBorder
+                    textColor: Theme.textPrimary
+                    onClicked: {
+                        if (pokerGame)
+                            pokerGame.submitCheckOrBet(true, 0)
                     }
                 }
 
-                Rectangle {
-                    color: Theme.dangerBg
-                    width: 76
-                    height: 32
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("FOLD")
-                        color: Theme.dangerText
-                        font.pointSize: 12
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (pokerGame)
-                                pokerGame.submitFoldFromCheck()
-                        }
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
+                HudButton {
+                    label: qsTr("FOLD")
+                    pillWidth: 76
+                    buttonColor: Theme.dangerBg
+                    textColor: Theme.dangerText
+                    onClicked: {
+                        if (pokerGame)
+                            pokerGame.submitFoldFromCheck()
                     }
                 }
 
-                Rectangle {
+                HudButton {
                     visible: game_controls.canOpenRaise && !game_controls.openRaiseSizingExpanded
-                    color: Theme.successGreen
-                    width: 88
-                    height: 32
-                    radius: 6
-                    Text {
-                        anchors.centerIn: parent
-                        text: qsTr("Raise")
-                        color: "white"
-                        font.pointSize: 12
-                        font.bold: true
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: game_controls.openRaiseSizingExpanded = true
-                        onEntered: parent.opacity = 0.92
-                        onExited: parent.opacity = 1
-                        onPressed: parent.opacity = 0.80
-                        onReleased: parent.opacity = containsMouse ? 0.92 : 1
-                    }
+                    label: qsTr("Raise")
+                    pillWidth: 88
+                    buttonColor: Theme.successGreen
+                    textColor: "white"
+                    onClicked: game_controls.openRaiseSizingExpanded = true
                 }
             }
 
@@ -713,7 +510,7 @@ Item {
                 x: 6
                 spacing: 6
 
-                CheckBox {
+                ThemedCheckBox {
                     id: sitOutCheck
                     text: qsTr("Sit out")
                     font.pointSize: 9
@@ -736,14 +533,20 @@ Item {
             RowLayout {
                 id: buyBackRow
                 visible: game_controls.embeddedMode && game_controls.humanCanBuyBackIn
+                        && game_controls.showHumanActions
                 width: parent.width - 12
                 x: 6
                 spacing: 6
 
-                Button {
-                    text: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
-                    font.pointSize: 9
-                    padding: 8
+                HudButton {
+                    label: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
+                    fontSize: 9
+                    pillWidth: 0
+                    horizontalPadding: 16
+                    implicitHeight: 30
+                    buttonColor: Theme.focusGold
+                    textColor: Theme.insetDark
+                    clickEnabled: game_controls.pokerGame !== null
                     onClicked: {
                         if (game_controls.pokerGame)
                             game_controls.pokerGame.tryBuyBackIn(0)

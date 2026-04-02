@@ -23,9 +23,9 @@ Item {
     implicitWidth: body.implicitWidth
     implicitHeight: body.implicitHeight
 
-    readonly property color layerCallColor: Theme.successGreen
-    readonly property color layerRaiseColor: Theme.fire
-    readonly property color layerBetColor: Theme.accentBlue
+    readonly property color layerCallColor: Theme.rangeLayerCall
+    readonly property color layerRaiseColor: Theme.rangeLayerRaise
+    readonly property color layerBetColor: Theme.rangeLayerOpen
 
     function cellWeight(idx) {
         const w = (weights.length > idx) ? weights[idx] : 0
@@ -34,7 +34,13 @@ Item {
 
     function cellColor(w) {
         const v = (w === undefined || w === null) ? 0 : w
-        return Qt.rgba(0.15 + 0.85 * v, 0.2, 0.25 + 0.5 * v, 1)
+        const base = Qt.color(Theme.rangeHeatLo)
+        const hi = Qt.color(Theme.rangeHeatHi)
+        return Qt.rgba(
+            base.r + (hi.r - base.r) * v,
+            base.g + (hi.g - base.g) * v,
+            base.b + (hi.b - base.b) * v,
+            1)
     }
 
     function refreshFromGame() {
@@ -215,8 +221,18 @@ Item {
                             }
                         }
 
-                        MouseArea {
+                        Rectangle {
                             anchors.fill: parent
+                            z: 1
+                            visible: !root.readOnly && cellMa.containsMouse
+                            color: Qt.rgba(1, 1, 1, 0.1)
+                        }
+
+                        MouseArea {
+                            id: cellMa
+                            z: 2
+                            anchors.fill: parent
+                            hoverEnabled: true
                             enabled: !root.readOnly
                             cursorShape: root.readOnly ? Qt.ArrowCursor : Qt.PointingHandCursor
                             onClicked: root.cycleWeight(rowItem.row, col)

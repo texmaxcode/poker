@@ -115,9 +115,12 @@ Page {
 
             Label {
                 Layout.fillWidth: true
-                maximumLineCount: 2
+                maximumLineCount: 4
                 wrapMode: Text.WordWrap
-                text: qsTr("Turn bots on or off by name, pick a tab to edit that player’s full settings, then play from the table.")
+                text: qsTr(
+                    "Turn bots on or off by name, pick a tab to edit that player’s settings, then play from the table. "
+                    + "On the “You” tab, the 13×13 range grid is hidden until you enable “Full range editor” below; "
+                    + "until then the archetype preset is applied without cell editing. Bot tabs always show the full grid.")
                 font.pixelSize: 12
                 color: Theme.textSecondary
             }
@@ -158,7 +161,7 @@ Page {
                                     font.pixelSize: 9
                                     color: Theme.hudActionLabel
                                 }
-                                Switch {
+                                ThemedSwitch {
                                     checked: pokerGame.seatParticipating(index + 1)
                                     onToggled: {
                                         pokerGame.setSeatParticipating(index + 1, checked)
@@ -197,7 +200,7 @@ Page {
             }
 
             GroupBox {
-                title: qsTr("Strategy presets (reference)")
+                title: qsTr("Strategy presets (reference only)")
                 Layout.fillWidth: true
                 padding: 8
                 topPadding: 22
@@ -210,10 +213,12 @@ Page {
 
                     Label {
                         Layout.fillWidth: true
-                        maximumLineCount: 2
+                        maximumLineCount: 4
                         wrapMode: Text.WordWrap
                         elide: Text.ElideRight
-                        text: qsTr("Reference: archetype chart and engine strategy blurb. Choosing a preset for a player loads that chart there.")
+                        text: qsTr(
+                            "Browse archetypes here without changing any player. The chart is read-only. "
+                            + "To actually assign Rock / LAG / etc. to a seat, use Archetype on that player’s tab.")
                         font.pixelSize: 10
                         color: Theme.textMuted
 
@@ -223,9 +228,9 @@ Page {
                         ToolTip.visible: presetBlurbHover.hovered
                         ToolTip.delay: 400
                         ToolTip.text: qsTr(
-                            "Pick a bot archetype to see its default 13×13 chart and full in-engine strategy "
-                            + "(preflop/postflop exponents and aggression). Choosing a strategy for a player loads "
-                            + "that preset chart; you can still edit cells or paste range text.")
+                            "This block is a library preview: default 13×13 weights and strategy notes. "
+                            + "It does not edit saved ranges. On each seat tab, the Archetype control loads that preset into that player; "
+                            + "you can then customize cells or text (for yourself, enable “Full range editor” first).")
                     }
 
                     ComboBox {
@@ -330,7 +335,7 @@ Page {
                         }
                     }
 
-                    CheckBox {
+                    ThemedCheckBox {
                         id: slowBotsCheck
                         text: qsTr("Slow down bot actions (longer pauses between bot decisions)")
                         onToggled: {
@@ -357,7 +362,9 @@ Page {
                         visible: selectedSeat === 0
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: qsTr("Use a preset for your default opening chart. Enable the full editor only if you want to edit cells or paste range text.")
+                        text: qsTr(
+                            "Archetype below loads that strategy’s default chart into the engine. "
+                            + "To edit cells, paste range text, or see the 13×13 grid, check “Full range editor” at the bottom of this section.")
                         font.pixelSize: 10
                         color: Theme.textMuted
                     }
@@ -534,7 +541,7 @@ Page {
                         }
                     }
 
-                    CheckBox {
+                    ThemedCheckBox {
                         id: humanRangeAdvanced
                         visible: selectedSeat === 0
                         text: qsTr("Full range editor (13×13 grid & text)")
@@ -571,7 +578,7 @@ Page {
                         font.pixelSize: 9
                         color: Theme.textMuted
                         text: qsTr(
-                            "Stacked colors: green = call, orange = raise, blue = open / lead. "
+                            "Stacked colors: gold = call, fire = raise, burgundy = open / lead. "
                             + "Pick a tab to edit that layer (click cells to cycle weights).")
                     }
 

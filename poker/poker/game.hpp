@@ -52,6 +52,9 @@ class game : public QObject
     card_deck deck;
     int starting_stack_ = 100;
     bool ui_showdown_ = false;
+    /// True after `deal_hold_cards()`; false after `clear_for_new_hand()`.
+    /// Prevents `sync_ui()` from sending stale card paths (which kept QML flipped-state stuck).
+    bool cards_dealt_ = false;
     /// Incremented each `clear_for_new_hand()` so QML can reset hole-card visuals between hands.
     int hand_seq_ = 0;
 
@@ -59,6 +62,8 @@ class game : public QObject
     std::array<bool, kMaxPlayers> in_hand_{};
     /// Chips each seat has put in the current betting round (incl. blinds preflop).
     std::array<int, kMaxPlayers> street_contrib_{};
+    /// Total chips each seat has put into the pot this hand (all streets; incl. blinds). Used for side pots.
+    std::array<int, kMaxPlayers> hand_contrib_{};
     /// Short UI label for the last action this street (Call / Raise / Check / Fold / blinds).
     std::array<QString, kMaxPlayers> seat_street_action_label_{};
     int last_raise_increment_ = 0;
@@ -82,6 +87,8 @@ class game : public QObject
     bool handle_bb_preflop_option();
     void award_pot_to_seat(int seat);
     void award_pot_to_last_standing();
+    /// Adds chips to `pot` and `hand_contrib_` for this seat (must match chips taken from `stack`).
+    void add_chips_to_pot(int seat, int chips);
     void note_river_aggressor(Street st, int seat);
     int first_active_clockwise_from_button() const;
 
@@ -145,6 +152,9 @@ public:
     /// Longer pause between bot actions (UI pacing).
     Q_INVOKABLE void setBotSlowActions(bool enabled);
     Q_INVOKABLE bool botSlowActions() const;
+    /// When false, skips the fixed delay after each bot action (default true; set false in unit tests).
+    Q_INVOKABLE void setBotActionDelayEnabled(bool enabled);
+    Q_INVOKABLE bool botActionDelayEnabled() const { return bot_action_delay_enabled_; }
     /// When false (e.g. unit tests), seat 0 auto-acts without UI/timer.
     Q_INVOKABLE void setInteractiveHuman(bool enabled);
     Q_INVOKABLE bool interactiveHuman() const { return interactive_human_; }
@@ -170,6 +180,10 @@ public:
     Q_INVOKABLE int sessionBaselineStack(int seat) const;
     /// Clear history and re-baseline from current stacks (one snapshot).
     Q_INVOKABLE void resetBankrollSession();
+
+    /// Blind seats and first actor seats for the current `button` / `in_hand_` state (tests / diagnostics).
+    /// Preflop first = UTG (clockwise after BB); post-flop first = first active after button (SB or next).
+    Q_INVOKABLE QVariantMap bettingAnchors() const;
 
     /// Off-table chips available for rebuy (session reserve per seat).
     Q_INVOKABLE int seatWallet(int seat) const;
@@ -212,6 +226,8 @@ private:
     /// Bot seats 1–5: must be true to be dealt into the next hand (seat 0 is always true).
     std::array<bool, kMaxPlayers> seat_participating_{};
     bool bot_slow_actions_ = false;
+    /// When false, `bot_action_pause` is a no-op (keeps CI fast; UI keeps default true).
+    bool bot_action_delay_enabled_ = true;
     /// Per-hand stack traces (after each completed hand) for bankroll charts.
     std::vector<std::array<int, kMaxPlayers>> bankroll_history_{};
     std::array<int, kMaxPlayers> session_baseline_{};

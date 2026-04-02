@@ -1,6 +1,8 @@
 #define BOOST_TEST_MODULE PokerSimulatorTests
 #include <boost/test/unit_test.hpp>
 
+#include <QString>
+
 #include <vector>
 
 #include "game.hpp"
@@ -75,7 +77,7 @@ BOOST_AUTO_TEST_CASE(test_that_player_can_hold_two_hold_cards)
   BOOST_CHECK(player_two.second_card == fourth_card);
 }
 
-BOOST_AUTO_TEST_CASE(test_player_with_cards_constructor)
+BOOST_AUTO_TEST_CASE(test_player_hold_cards_assignment)
 {
   card_deck deck;
 
@@ -84,8 +86,10 @@ BOOST_AUTO_TEST_CASE(test_player_with_cards_constructor)
   auto third_card = deck.get_card();
   auto fourth_card = deck.get_card();
 
-  player player_three{third_card, fourth_card};
-  player player_four{second_card, first_card};
+  player player_three;
+  player_three.take_hold_cards(third_card, fourth_card);
+  player player_four;
+  player_four.take_hold_cards(second_card, first_card);
 
   BOOST_CHECK(player_three.first_card == third_card);
   BOOST_CHECK(player_three.second_card == fourth_card);
@@ -101,11 +105,24 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_be_created)
   BOOST_CHECK_EQUAL(game.is_game_in_progress(), false);
 }
 
+/// Default table: button seat 0 — UTG is seat 3, SB=1 acts first post-flop (see `action_order` / `bettingAnchors`).
+BOOST_AUTO_TEST_CASE(betting_starts_utg_preflop_and_sb_postflop_full_ring)
+{
+  game g;
+  const QVariantMap a = g.bettingAnchors();
+  BOOST_CHECK_EQUAL(a.value(QStringLiteral("sbSeat")).toInt(), 1);
+  BOOST_CHECK_EQUAL(a.value(QStringLiteral("bbSeat")).toInt(), 2);
+  BOOST_CHECK_EQUAL(a.value(QStringLiteral("preflopFirstSeat")).toInt(), 3);
+  BOOST_CHECK_EQUAL(a.value(QStringLiteral("postflopFirstSeat")).toInt(), 1);
+}
+
 BOOST_AUTO_TEST_CASE(test_that_game_can_started)
 {
   game game;
   game.setInteractiveHuman(false);
   game.setAutoHandLoop(false);
+  // Otherwise `start()` runs a full hand with ~550 ms per bot action (~20 actions → ~11 s).
+  game.setBotActionDelayEnabled(false);
   game.start();
   BOOST_CHECK_EQUAL(game.players_count(), 6);
   // Full automated hand completes in start(); session is idle until the next deal.
