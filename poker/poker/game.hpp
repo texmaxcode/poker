@@ -82,6 +82,11 @@ class game : public QObject
 
     std::vector<int> action_order(Street st) const;
     int count_active() const;
+    /// True if every seat still `in_hand_` has no chips behind (all-in or blind-only — no further betting).
+    bool everyone_in_hand_is_all_in() const;
+    /// Heads-up: one player is all-in and the other still has chips — no further betting; run the board out
+    /// (`run_street_betting` applies this from the flop onward so preflop can still complete).
+    bool heads_up_one_all_in_other_has_chips() const;
     int max_street_contrib() const;
     void init_preflop_street_contrib();
     void reset_postflop_street_contrib();

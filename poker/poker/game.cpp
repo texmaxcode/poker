@@ -440,6 +440,38 @@ int game::count_active() const
     return c;
 }
 
+bool game::everyone_in_hand_is_all_in() const
+{
+    bool any_in_hand = false;
+    for (int i = 0; i < players_count(); ++i)
+    {
+        if (!in_hand_[static_cast<size_t>(i)])
+            continue;
+        any_in_hand = true;
+        if (table[static_cast<size_t>(i)].stack > 0)
+            return false;
+    }
+    return any_in_hand;
+}
+
+bool game::heads_up_one_all_in_other_has_chips() const
+{
+    if (count_active() != 2)
+        return false;
+    int with_chips = 0;
+    int all_in = 0;
+    for (int i = 0; i < players_count(); ++i)
+    {
+        if (!in_hand_[static_cast<size_t>(i)])
+            continue;
+        if (table[static_cast<size_t>(i)].stack > 0)
+            ++with_chips;
+        else
+            ++all_in;
+    }
+    return with_chips == 1 && all_in == 1;
+}
+
 int game::max_street_contrib() const
 {
     int m = 0;
@@ -1347,6 +1379,15 @@ bool game::run_street_betting(Street st)
 
     if (st != Street::PRE_FLOP)
         reset_postflop_street_contrib();
+
+    /// No further betting when all stacks are in, or (postflop) HU with one all-in — run board out.
+    /// Skip `heads_up…` on preflop so an all-in blind still leaves BB/SB action where rules require it.
+    if (everyone_in_hand_is_all_in()
+        || (st != Street::PRE_FLOP && heads_up_one_all_in_other_has_chips()))
+    {
+        emit pot_changed();
+        return true;
+    }
 
     for (;;)
     {
