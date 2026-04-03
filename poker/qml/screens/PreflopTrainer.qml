@@ -31,6 +31,25 @@ Page {
     property bool _drillSurfaceShown: false
     /// Matches HUD pot / sizing context ($2 BB training table).
     readonly property int trainerPotChips: 12
+    /// Display chips (animates up on call / raise like the table HUD).
+    property int trainerPotShown: trainerPotChips
+
+    function resetTrainerPotDisplay() {
+        trainerPotCountAnim.stop()
+        trainerPotShown = trainerPotChips
+    }
+
+    function bumpTrainerPot(delta) {
+        const d = Math.round(Number(delta))
+        if (!isFinite(d) || d <= 0)
+            return
+        trainerPotCountAnim.stop()
+        trainerPotCountAnim.from = trainerPotShown
+        trainerPotCountAnim.to = trainerPotShown + d
+        trainerPotCountAnim.restart()
+        trainerPotBumpAnim.restart()
+    }
+
     background: BrandedBackground { anchors.fill: parent }
 
     Timer {
@@ -198,6 +217,7 @@ Page {
         card1 = String(q.card1)
         card2 = String(q.card2)
         seatVisualEpoch++
+        resetTrainerPotDisplay()
         statusLine = qsTr("%1 (%2)").arg(position).arg(mode)
         startDecisionClock()
     }
@@ -395,14 +415,22 @@ Page {
                                 border.color: Theme.hudBorder
                                 border.width: 2
 
-                                Label {
+                                Text {
                                     id: trainerPotBanner
                                     anchors.centerIn: parent
-                                    text: qsTr("Pot $%1").arg(page.trainerPotChips)
+                                    text: qsTr("Pot $%1").arg(Math.round(page.trainerPotShown))
                                     color: Theme.gold
                                     font.family: Theme.fontFamilyUi
                                     font.pixelSize: Theme.trainerCaptionPx
                                     font.bold: true
+
+                                    transform: Scale {
+                                        id: trainerPotValueScale
+                                        origin.x: trainerPotBanner.width * 0.5
+                                        origin.y: trainerPotBanner.height * 0.5
+                                        xScale: 1
+                                        yScale: 1
+                                    }
                                 }
                             }
 
@@ -502,10 +530,13 @@ Page {
                                 const u = String(action).toUpperCase()
                                 if (u === "FOLD")
                                     page.submit("fold")
-                                else if (u === "CALL")
+                                else if (u === "CALL") {
+                                    page.bumpTrainerPot(amount > 0 ? Number(amount) : exerciseHud.facingNeedChips)
                                     page.submit("call")
-                                else if (u === "RAISE")
+                                } else if (u === "RAISE") {
+                                    page.bumpTrainerPot(Number(amount))
                                     page.submit("raise")
+                                }
                             }
                         }
 
@@ -526,6 +557,58 @@ Page {
             Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+            }
+        }
+    }
+
+    /// Holder for animations (`Page` expects `Item` children; avoid `visible: false` here — it can suppress animations).
+    Item {
+        id: trainerPotAnimHost
+        width: 0
+        height: 0
+        opacity: 0
+
+        NumberAnimation {
+            id: trainerPotCountAnim
+            target: page
+            property: "trainerPotShown"
+            duration: 320
+            easing.type: Easing.OutCubic
+        }
+
+        SequentialAnimation {
+            id: trainerPotBumpAnim
+            ParallelAnimation {
+                NumberAnimation {
+                    target: trainerPotValueScale
+                    property: "xScale"
+                    to: 1.08
+                    duration: 95
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: trainerPotValueScale
+                    property: "yScale"
+                    to: 1.08
+                    duration: 95
+                    easing.type: Easing.OutCubic
+                }
+            }
+            ParallelAnimation {
+                NumberAnimation {
+                    target: trainerPotValueScale
+                    property: "xScale"
+                    to: 1.0
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: trainerPotValueScale
+                    property: "yScale"
+                    to: 1.0
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
             }
         }
     }

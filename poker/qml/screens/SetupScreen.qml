@@ -448,11 +448,31 @@ Page {
                             Layout.preferredWidth: 200
                             Layout.maximumWidth: 280
 
+                            /// Skip pushing to the engine when syncing from `pokerGame` (tab change / init).
+                            property bool _applyingFromGame: false
+                            /// Avoid applying default `SpinBox` value before the first `refreshFromGame()`.
+                            property bool _ready: false
+
                             function refreshFromGame() {
+                                _applyingFromGame = true
                                 value = Math.min(pokerGame.seatBuyIn(setup.selectedSeat), setup.buyInCapChips)
+                                _applyingFromGame = false
                             }
 
-                            Component.onCompleted: refreshFromGame()
+                            function pushBuyInToEngine() {
+                                pokerGame.setSeatBuyIn(setup.selectedSeat, value)
+                                if (!pokerGame.gameInProgress()) {
+                                    pokerGame.applySeatBuyInsToStacks()
+                                    pokerGame.savePersistedSettings()
+                                } else {
+                                    pokerGame.savePersistedSettings()
+                                }
+                            }
+
+                            Component.onCompleted: {
+                                refreshFromGame()
+                                _ready = true
+                            }
 
                             Connections {
                                 target: seatTabBar
@@ -469,14 +489,12 @@ Page {
                                 }
                             }
 
-                            onValueModified: {
-                                pokerGame.setSeatBuyIn(setup.selectedSeat, value)
-                                if (!pokerGame.gameInProgress()) {
-                                    pokerGame.applySeatBuyInsToStacks()
-                                    pokerGame.savePersistedSettings()
-                                } else {
-                                    pokerGame.savePersistedSettings()
-                                }
+                            /// Use `valueChanged`, not only `valueModified`: the latter can miss updates for
+                            /// editable SpinBox / focus edge cases; `value` is the source of truth.
+                            onValueChanged: {
+                                if (!seatBankSpin._ready || seatBankSpin._applyingFromGame)
+                                    return
+                                seatBankSpin.pushBuyInToEngine()
                             }
                         }
                     }

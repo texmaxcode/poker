@@ -467,7 +467,7 @@ Item {
                             : true
                     onClicked: {
                         if (game_controls.trainerMode) {
-                            game_controls.trainerAction("CALL", 0)
+                            game_controls.trainerAction("CALL", game_controls.facingNeedChips)
                             return
                         }
                         if (pageRoot && game_controls.facingRaise)
@@ -524,7 +524,7 @@ Item {
                     opacity: game_controls.facingRaise ? 1.0 : 0.42
                     onClicked: {
                         if (game_controls.trainerMode)
-                            game_controls.trainerAction("BET33", 0)
+                            game_controls.trainerAction("BET33", Math.max(0, Math.round(0.33 * game_controls.facingPotAmount)))
                     }
                 }
 
@@ -540,7 +540,7 @@ Item {
                     opacity: game_controls.facingRaise ? 1.0 : 0.42
                     onClicked: {
                         if (game_controls.trainerMode)
-                            game_controls.trainerAction("BET75", 0)
+                            game_controls.trainerAction("BET75", Math.max(0, Math.round(0.75 * game_controls.facingPotAmount)))
                     }
                 }
             }

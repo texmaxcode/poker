@@ -29,6 +29,24 @@ Page {
     readonly property real flopSpotPotBb: 5.5
     /// $2 BB → chip pot for display (matches ~5.5 bb spot).
     readonly property int trainerPotChips: Math.round(page.flopSpotPotBb * 2)
+    property int trainerPotShown: trainerPotChips
+
+    function resetTrainerPotDisplay() {
+        trainerPotCountAnim.stop()
+        trainerPotShown = trainerPotChips
+    }
+
+    function bumpTrainerPot(delta) {
+        const d = Math.round(Number(delta))
+        if (!isFinite(d) || d <= 0)
+            return
+        trainerPotCountAnim.stop()
+        trainerPotCountAnim.from = trainerPotShown
+        trainerPotCountAnim.to = trainerPotShown + d
+        trainerPotCountAnim.restart()
+        trainerPotBumpAnim.restart()
+    }
+
     background: BrandedBackground { anchors.fill: parent }
 
     Timer {
@@ -195,6 +213,7 @@ Page {
         board1 = String(q.board1)
         board2 = String(q.board2)
         seatVisualEpoch++
+        resetTrainerPotDisplay()
         statusLine = qsTr("Spot %1").arg(spotId)
         startDecisionClock()
     }
@@ -370,14 +389,22 @@ Page {
                                     border.color: Theme.hudBorder
                                     border.width: 2
 
-                                    Label {
+                                    Text {
                                         id: flopPotBanner
                                         anchors.centerIn: parent
-                                        text: qsTr("Pot $%1").arg(page.trainerPotChips)
+                                        text: qsTr("Pot $%1").arg(Math.round(page.trainerPotShown))
                                         color: Theme.gold
                                         font.family: Theme.fontFamilyUi
                                         font.pixelSize: Theme.trainerCaptionPx
                                         font.bold: true
+
+                                        transform: Scale {
+                                            id: flopTrainerPotValueScale
+                                            origin.x: flopPotBanner.width * 0.5
+                                            origin.y: flopPotBanner.height * 0.5
+                                            xScale: 1
+                                            yScale: 1
+                                        }
                                     }
                                 }
 
@@ -508,10 +535,13 @@ Page {
                                 const u = String(action).toUpperCase()
                                 if (u === "CHECK")
                                     page.submit("check")
-                                else if (u === "BET33")
+                                else if (u === "BET33") {
+                                    page.bumpTrainerPot(Number(amount))
                                     page.submit("bet33")
-                                else if (u === "BET75")
+                                } else if (u === "BET75") {
+                                    page.bumpTrainerPot(Number(amount))
                                     page.submit("bet75")
+                                }
                             }
                         }
 
@@ -532,6 +562,57 @@ Page {
             Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+            }
+        }
+    }
+
+    Item {
+        id: trainerPotAnimHost
+        width: 0
+        height: 0
+        opacity: 0
+
+        NumberAnimation {
+            id: trainerPotCountAnim
+            target: page
+            property: "trainerPotShown"
+            duration: 320
+            easing.type: Easing.OutCubic
+        }
+
+        SequentialAnimation {
+            id: trainerPotBumpAnim
+            ParallelAnimation {
+                NumberAnimation {
+                    target: flopTrainerPotValueScale
+                    property: "xScale"
+                    to: 1.08
+                    duration: 95
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flopTrainerPotValueScale
+                    property: "yScale"
+                    to: 1.08
+                    duration: 95
+                    easing.type: Easing.OutCubic
+                }
+            }
+            ParallelAnimation {
+                NumberAnimation {
+                    target: flopTrainerPotValueScale
+                    property: "xScale"
+                    to: 1.0
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: flopTrainerPotValueScale
+                    property: "yScale"
+                    to: 1.0
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
             }
         }
     }
