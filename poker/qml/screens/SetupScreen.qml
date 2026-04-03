@@ -199,18 +199,25 @@ Page {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        leftPadding: Theme.uiPagePadding
-        rightPadding: Theme.uiPagePadding
-        topPadding: Theme.uiPagePadding
-        bottomPadding: Theme.uiPagePadding
 
-        ColumnLayout {
-            id: setupColumn
-            width: Math.max(300, scrollView.width > 0 ? scrollView.width - 2 * Theme.uiPagePadding : setup.width - 2 * Theme.uiPagePadding)
-            spacing: Theme.uiPageColumnSpacing
+        RowLayout {
+            width: scrollView.availableWidth
+            spacing: 0
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
+
+            ColumnLayout {
+                id: setupColumn
+                Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(300, scrollView.availableWidth - 40))
+                Layout.maximumWidth: Theme.trainerContentMaxWidth
+                spacing: Theme.trainerColumnSpacing
 
             Label {
                 Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 text: qsTr(
                     "Turn bots on or off by name, pick a tab to edit that player’s settings, then play from the table. "
@@ -221,22 +228,13 @@ Page {
                 color: Theme.textSecondary
             }
 
-            GroupBox {
-                title: qsTr("Bots at table")
+            ThemedPanel {
+                panelTitle: qsTr("Bots at table")
                 Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    Layout.fillWidth: true
                     spacing: Theme.uiGroupInnerSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
 
                     Label {
                         Layout.fillWidth: true
@@ -327,22 +325,13 @@ Page {
                 }
             }
 
-            GroupBox {
-                title: qsTr("Table stakes & pacing")
+            ThemedPanel {
+                panelTitle: qsTr("Table stakes & pacing")
                 Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
 
                 ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    Layout.fillWidth: true
                     spacing: Theme.uiGroupInnerSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
 
                     GridLayout {
                         width: parent.width
@@ -412,25 +401,20 @@ Page {
                 }
             }
 
-            GroupBox {
-                title: ""
-                label: Label {
-                    text: botNames.displayName(setup.selectedSeat)
-                    font.bold: true
-                    font.pointSize: Theme.uiGroupTitlePt
-                    color: Theme.colorForSeat(setup.selectedSeat)
-                }
+            ThemedPanel {
                 Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
+                panelTitle: ""
 
                 ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    Layout.fillWidth: true
                     spacing: Theme.uiGroupInnerSpacing
 
-                    Item {
+                    Label {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
+                        text: botNames.displayName(setup.selectedSeat)
+                        font.bold: true
+                        font.pixelSize: Theme.trainerSectionPx
+                        color: Theme.colorForSeat(setup.selectedSeat)
                     }
 
                     RowLayout {
@@ -635,23 +619,14 @@ Page {
                         text: pokerGame.getStrategySummary(stratCombo.currentIndex)
                     }
 
-                    GroupBox {
-                        title: qsTr("Engine parameters (bots)")
+                    ThemedPanel {
+                        panelTitle: qsTr("Engine parameters (bots)")
                         visible: selectedSeat >= 1
                         Layout.fillWidth: true
-                        padding: Theme.uiGroupedPanelPadding
-                        topPadding: Theme.uiGroupedPanelTopPadding
-                        font.bold: true
-                        font.pointSize: Theme.uiGroupTitlePt
 
                         ColumnLayout {
-                            width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                            Layout.fillWidth: true
                             spacing: Theme.uiGroupInnerSpacing
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                            }
 
                             Label {
                                 Layout.fillWidth: true
@@ -885,6 +860,12 @@ Page {
                 Layout.alignment: Qt.AlignLeft
                 flat: true
                 onClicked: reloadSeatEditor()
+            }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
             }
         }
     }

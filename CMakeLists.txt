@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.26)
 
+# Qt commercial installer: silence "qtframework" license service prompts for moc/uic/rcc (set to 0 to enforce).
+if(NOT DEFINED ENV{QTFRAMEWORK_BYPASS_LICENSE_CHECK})
+    set(ENV{QTFRAMEWORK_BYPASS_LICENSE_CHECK} "1")
+endif()
+
 project(Poker VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

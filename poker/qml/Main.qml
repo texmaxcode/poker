@@ -35,6 +35,26 @@ ApplicationWindow {
     title: qsTr("Texas Hold'em Gym")
     color: Theme.bgWindow
 
+    // GroupBox titles, ComboBox, SpinBox, and other Controls read palette roles; defaults are light-theme (black text).
+    palette: Palette {
+        window: Theme.bgWindow
+        windowText: Theme.textPrimary
+        base: Theme.inputBg
+        alternateBase: Theme.panelElevated
+        text: Theme.textPrimary
+        button: Theme.panel
+        buttonText: Theme.textPrimary
+        highlight: Theme.panelBorder
+        highlightedText: Theme.textPrimary
+        toolTipBase: Theme.panelElevated
+        toolTipText: Theme.textPrimary
+        // Fusion/GroupBox frames use mid/shadow/light; without these, borders vanish on dark window.
+        mid: Theme.panelBorder
+        dark: Theme.panelBorderMuted
+        light: Theme.chromeLine
+        shadow: Theme.insetDark
+    }
+
     BrandedBackground {
         z: -1
         anchors.fill: parent

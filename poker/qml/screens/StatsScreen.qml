@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Theme 1.0
 import PokerUi 1.0
 
-/// Session bankroll, leaderboard, training progress, and bankroll-over-time chart.
+/// Session bankroll tables, leaderboard, and bankroll-over-time chart.
 Page {
     id: statsPage
     padding: 0
@@ -19,8 +19,8 @@ Page {
     }
 
     readonly property var lineColors: Theme.chartLineColors
-    readonly property int chartPadL: 44
-    readonly property int chartPadR: 12
+    readonly property int chartPadL: 28
+    readonly property int chartPadR: 8
     readonly property int chartPadT: 10
     readonly property int chartPadB: 36
 
@@ -28,7 +28,6 @@ Page {
     property int chartHoverIndex: -1
     property real chartTipX: 0
     property real chartTipY: 0
-    property var trainingProgress: ({})
     /// Rows from `seatRankings()` sorted by seat index 0–5 (on table / off-table bankroll / total).
     property var seatBankrollDetail: []
     property bool pendingApplyBuyIns: false
@@ -36,6 +35,8 @@ Page {
     property int uiRevision: 0
     /// Bound to C++ `statsSeq` so leaderboard / chart refresh when bankroll snapshots update (not only on restart).
     property int statsSeq: pokerGame.statsSeq
+    /// Same height as the “Blinds” line in Stakes & buy-ins so the three table header rows line up.
+    readonly property int statsTableTopSlotH: Theme.trainerCaptionPx + 10
 
     function formatTimeMs(ms) {
         if (ms === undefined || ms === null || ms <= 0)
@@ -49,10 +50,6 @@ Page {
             return ""
         var d = new Date(ms)
         return Qt.formatDateTime(d, "hh:mm:ss")
-    }
-
-    function refreshTrainingProgress() {
-        trainingProgress = trainingStore.loadProgress()
     }
 
     function refreshSeatBankrollTables() {
@@ -130,354 +127,325 @@ Page {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        leftPadding: Theme.uiPagePadding
-        rightPadding: Theme.uiPagePadding
-        topPadding: Theme.uiPagePadding
-        bottomPadding: Theme.uiPagePadding
 
-        ColumnLayout {
-            width: Math.max(320, scrollView.width > 0 ? scrollView.width - 2 * Theme.uiPagePadding : statsPage.width - 2 * Theme.uiPagePadding)
-            spacing: Theme.uiPageColumnSpacing
+        RowLayout {
+            width: scrollView.availableWidth
+            spacing: 0
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
+
+            ColumnLayout {
+                id: statsMainCol
+                Layout.preferredWidth: Math.max(320, scrollView.availableWidth - 48)
+                Layout.minimumWidth: 320
+                spacing: Theme.trainerColumnSpacing
 
             Label {
                 Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 text: qsTr(
-                    "Tables below list each seat’s chips on the table, bankroll off the table, and total bankroll, plus configured buy-in and blinds. "
-                    + "The leaderboard ranks by total; the chart plots bankroll over time after each hand (bubbles per snapshot). "
-                    + "Set each seat’s bankroll (buy-in) under Bots & ranges — if you change it during a hand, apply when idle (button below) or at the next hand.")
+                    "The three panels summarize seat stacks and wallets, stakes and buy-ins, and the leaderboard. "
+                    + "The chart plots bankroll over time after each hand. "
+                    + "Set buy-ins under Bots & ranges — if you edit during a hand, apply when idle (button below) or at the next hand.")
                 font.pixelSize: Theme.trainerBodyPx
                 lineHeight: 1.25
                 color: Theme.textSecondary
             }
 
-            GroupBox {
-                title: qsTr("Seat bankrolls")
+            ScrollView {
+                id: statsTablesHScroll
                 Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
+                Layout.preferredHeight: statsTablesRow.implicitHeight
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+                ScrollBar.vertical.policy: ScrollBar.AlwaysOff
 
-                ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                RowLayout {
+                    id: statsTablesRow
                     spacing: Theme.uiGroupInnerSpacing
+                    width: statsTablesHScroll.availableWidth
 
-                    Item {
+                    ThemedPanel {
+                        panelTitle: qsTr("Seat bankrolls")
+                        Layout.alignment: Qt.AlignTop
                         Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
+                        Layout.fillHeight: true
+                        Layout.minimumWidth: 160
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Player")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 120
-                        }
-                        Label {
-                            text: qsTr("On table")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 88
-                            horizontalAlignment: Text.AlignRight
-                        }
-                        Label {
-                            text: qsTr("Off table")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 88
-                            horizontalAlignment: Text.AlignRight
-                        }
-                        Label {
-                            text: qsTr("Total")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 88
-                            horizontalAlignment: Text.AlignRight
-                        }
-                    }
-
-                    Repeater {
-                        model: statsPage.seatBankrollDetail
-
-                        RowLayout {
-                            required property var modelData
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: Theme.uiGroupInnerSpacing
 
-                            Label {
-                                text: botNames.displayName(modelData.seat)
-                                Layout.preferredWidth: 120
-                                color: Theme.colorForSeat(modelData.seat)
-                                font.pixelSize: Theme.trainerCaptionPx
-                                font.bold: true
-                            }
-                            Label {
-                                text: "$" + modelData.stack
-                                Layout.preferredWidth: 88
-                                color: Theme.textSecondary
-                                font.pixelSize: Theme.trainerCaptionPx
-                                horizontalAlignment: Text.AlignRight
-                            }
-                            Label {
-                                text: "$" + modelData.wallet
-                                Layout.preferredWidth: 88
-                                color: Theme.textSecondary
-                                font.pixelSize: Theme.trainerCaptionPx
-                                horizontalAlignment: Text.AlignRight
-                            }
-                            Label {
-                                text: "$" + modelData.total
-                                Layout.preferredWidth: 88
-                                color: Theme.gold
-                                font.bold: true
-                                font.pixelSize: Theme.trainerCaptionPx
-                                horizontalAlignment: Text.AlignRight
-                            }
-                        }
-                    }
-                }
-            }
-
-            GroupBox {
-                title: qsTr("Stakes & buy-ins")
-                Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
-
-                ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
-                    spacing: Theme.uiGroupInnerSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
-
-                    Label {
-                        Layout.fillWidth: true
-                        text: qsTr("Blinds: $%1 / $%2").arg(pokerGame.configuredSmallBlind()).arg(pokerGame.configuredBigBlind())
-                                + (statsPage.uiRevision * 0)
-                        font.pixelSize: Theme.trainerCaptionPx
-                        color: Theme.textSecondary
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Player")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 120
-                        }
-                        Label {
-                            text: qsTr("Buy-in (rebuy)")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.fillWidth: true
-                        }
-                    }
-
-                    Repeater {
-                        model: 6
-
-                        RowLayout {
-                            required property int index
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Label {
-                                text: botNames.displayName(index)
-                                Layout.preferredWidth: 120
-                                color: Theme.colorForSeat(index)
-                                font.pixelSize: Theme.trainerCaptionPx
-                                font.bold: true
-                            }
-                            Label {
-                                text: "$" + pokerGame.seatBuyIn(index) + (statsPage.uiRevision * 0)
+                            // Match vertical offset of “Stakes & buy-ins” blinds line so header rows align.
+                            Item {
                                 Layout.fillWidth: true
-                                color: Theme.textSecondary
-                                font.pixelSize: Theme.trainerCaptionPx
+                                Layout.preferredHeight: statsPage.statsTableTopSlotH
                             }
-                        }
-                    }
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-                        visible: statsPage.pendingApplyBuyIns
-
-                        Label {
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                            text: qsTr("Bankroll or buy-in was edited in Bots & ranges during a hand; changes apply when the next hand starts (or use Apply when the table is idle).")
-                            font.pixelSize: Theme.trainerCaptionPx
-                            color: Theme.textPrimary
-                        }
-                        Button {
-                            text: qsTr("Apply buy-ins")
-                            enabled: !pokerGame.gameInProgress()
-                            onClicked: {
-                                pokerGame.applyPendingBankrollTotals()
-                                pokerGame.applySeatBuyInsToStacks()
-                                pokerGame.savePersistedSettings()
-                                statsPage.refreshSeatBankrollTables()
-                            }
-                        }
-                    }
-                }
-            }
-
-            GroupBox {
-                title: qsTr("Leaderboard")
-                Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
-
-                ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
-                    spacing: Theme.uiGroupInnerSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Rank")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 44
-                        }
-                        Label {
-                            text: qsTr("Player")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 120
-                        }
-                        Label {
-                            text: qsTr("Total")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignRight
-                        }
-                        Label {
-                            text: qsTr("P/L")
-                            font.bold: true
-                            font.pixelSize: Theme.trainerCaptionPx
-                            Layout.preferredWidth: 72
-                            horizontalAlignment: Text.AlignRight
-                        }
-                    }
-
-                    Repeater {
-                        id: rankRepeater
-                        model: []
-
-                        RowLayout {
-                            required property var modelData
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Label {
-                                text: "#" + modelData.rank
-                                Layout.preferredWidth: 44
-                                color: Theme.gold
-                                font.bold: true
-                                font.pixelSize: Theme.trainerCaptionPx
-                            }
-                            Label {
-                                text: botNames.displayName(modelData.seat)
-                                Layout.preferredWidth: 120
-                                color: Theme.colorForSeat(modelData.seat)
-                                font.pixelSize: Theme.trainerCaptionPx
-                                font.bold: true
-                            }
-                            Label {
-                                text: "$" + (modelData.total !== undefined ? modelData.total : modelData.stack)
+                            RowLayout {
                                 Layout.fillWidth: true
-                                color: Theme.textSecondary
-                                font.pixelSize: Theme.trainerCaptionPx
-                                horizontalAlignment: Text.AlignRight
+                                Label {
+                                    text: qsTr("Player")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 72
+                                    elide: Text.ElideRight
+                                }
+                                Label {
+                                    text: qsTr("Table")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 52
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                                Label {
+                                    text: qsTr("Off")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 52
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                                Label {
+                                    text: qsTr("Tot")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 52
+                                    horizontalAlignment: Text.AlignRight
+                                }
                             }
+
+                            Repeater {
+                                model: statsPage.seatBankrollDetail
+
+                                RowLayout {
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    spacing: 4
+
+                                    Label {
+                                        text: botNames.displayName(modelData.seat)
+                                        Layout.preferredWidth: 72
+                                        color: Theme.colorForSeat(modelData.seat)
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                    Label {
+                                        text: "$" + modelData.stack
+                                        Layout.preferredWidth: 52
+                                        color: Theme.textSecondary
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        horizontalAlignment: Text.AlignRight
+                                    }
+                                    Label {
+                                        text: "$" + modelData.wallet
+                                        Layout.preferredWidth: 52
+                                        color: Theme.textSecondary
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        horizontalAlignment: Text.AlignRight
+                                    }
+                                    Label {
+                                        text: "$" + modelData.total
+                                        Layout.preferredWidth: 52
+                                        color: Theme.gold
+                                        font.bold: true
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        horizontalAlignment: Text.AlignRight
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    ThemedPanel {
+                        panelTitle: qsTr("Stakes & buy-ins")
+                        Layout.alignment: Qt.AlignTop
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumWidth: 160
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.uiGroupInnerSpacing
+
                             Label {
-                                text: (modelData.profit >= 0 ? "+" : "") + modelData.profit
-                                Layout.preferredWidth: 72
-                                color: modelData.profit >= 0 ? Theme.profitUp : Theme.profitDown
-                                font.pixelSize: Theme.trainerCaptionPx
-                                horizontalAlignment: Text.AlignRight
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                text: qsTr("Blinds: $%1 / $%2").arg(pokerGame.configuredSmallBlind()).arg(pokerGame.configuredBigBlind())
+                                        + (statsPage.uiRevision * 0)
+                                font.pixelSize: Theme.trainerCaptionPx - 1
+                                color: Theme.textSecondary
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Label {
+                                    text: qsTr("Player")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 72
+                                }
+                                Label {
+                                    text: qsTr("Buy-in")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.fillWidth: true
+                                }
+                            }
+
+                            Repeater {
+                                model: 6
+
+                                RowLayout {
+                                    required property int index
+                                    Layout.fillWidth: true
+                                    spacing: 4
+
+                                    Label {
+                                        text: botNames.displayName(index)
+                                        Layout.preferredWidth: 72
+                                        color: Theme.colorForSeat(index)
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                    Label {
+                                        text: "$" + pokerGame.seatBuyIn(index) + (statsPage.uiRevision * 0)
+                                        Layout.fillWidth: true
+                                        color: Theme.textSecondary
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                visible: statsPage.pendingApplyBuyIns
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    text: qsTr("Pending buy-in edits — apply when table is idle.")
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    color: Theme.textPrimary
+                                }
+                                Button {
+                                    text: qsTr("Apply")
+                                    enabled: !pokerGame.gameInProgress()
+                                    onClicked: {
+                                        pokerGame.applyPendingBankrollTotals()
+                                        pokerGame.applySeatBuyInsToStacks()
+                                        pokerGame.savePersistedSettings()
+                                        statsPage.refreshSeatBankrollTables()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    ThemedPanel {
+                        panelTitle: qsTr("Leaderboard")
+                        Layout.alignment: Qt.AlignTop
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumWidth: 160
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.uiGroupInnerSpacing
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: statsPage.statsTableTopSlotH
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Label {
+                                    text: qsTr("#")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 28
+                                }
+                                Label {
+                                    text: qsTr("Player")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 72
+                                }
+                                Label {
+                                    text: qsTr("Total")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                                Label {
+                                    text: qsTr("P/L")
+                                    font.bold: true
+                                    font.pixelSize: Theme.trainerCaptionPx - 1
+                                    Layout.preferredWidth: 48
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                            }
+
+                            Repeater {
+                                id: rankRepeater
+                                model: []
+
+                                RowLayout {
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    spacing: 4
+
+                                    Label {
+                                        text: "#" + modelData.rank
+                                        Layout.preferredWidth: 28
+                                        color: Theme.gold
+                                        font.bold: true
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                    }
+                                    Label {
+                                        text: botNames.displayName(modelData.seat)
+                                        Layout.preferredWidth: 72
+                                        color: Theme.colorForSeat(modelData.seat)
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                    Label {
+                                        text: "$" + (modelData.total !== undefined ? modelData.total : modelData.stack)
+                                        Layout.fillWidth: true
+                                        color: Theme.textSecondary
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        horizontalAlignment: Text.AlignRight
+                                    }
+                                    Label {
+                                        text: (modelData.profit >= 0 ? "+" : "") + modelData.profit
+                                        Layout.preferredWidth: 48
+                                        color: modelData.profit >= 0 ? Theme.profitUp : Theme.profitDown
+                                        font.pixelSize: Theme.trainerCaptionPx - 1
+                                        horizontalAlignment: Text.AlignRight
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            GroupBox {
-                title: qsTr("Training session")
+            ThemedPanel {
                 Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
+                panelTitle: qsTr("Bankroll over time")
 
                 ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                    Layout.fillWidth: true
                     spacing: Theme.uiGroupInnerSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
-
-                    Label {
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        text: qsTr("Drill decisions recorded from Preflop / Flop trainers (persisted in settings).")
-                        font.pixelSize: Theme.trainerCaptionPx
-                        color: Theme.textMuted
-                    }
-
-                    Label {
-                        text: qsTr("Decisions: %1 · Correct: %2 · Acc: %3% · Σ EV loss: %4 bb")
-                                .arg(trainingProgress.totalDecisions !== undefined ? trainingProgress.totalDecisions : 0)
-                                .arg(trainingProgress.totalCorrect !== undefined ? trainingProgress.totalCorrect : 0)
-                                .arg((trainingProgress.totalDecisions > 0)
-                                     ? (Math.round(1000 * trainingProgress.totalCorrect / trainingProgress.totalDecisions) / 10).toFixed(1)
-                                     : "0.0")
-                                .arg((trainingProgress.totalEvLossBb !== undefined ? trainingProgress.totalEvLossBb : 0).toFixed(3))
-                        font.pixelSize: Theme.trainerBodyPx
-                        color: Theme.textSecondary
-                        wrapMode: Text.WordWrap
-                        Layout.fillWidth: true
-                    }
-                }
-            }
-
-            GroupBox {
-                title: qsTr("Bankroll over time")
-                Layout.fillWidth: true
-                padding: Theme.uiGroupedPanelPadding
-                topPadding: Theme.uiGroupedPanelTopPadding
-                font.bold: true
-                font.pointSize: Theme.uiGroupTitlePt
-
-                ColumnLayout {
-                    width: parent.width - 2 * Theme.uiGroupedPanelPadding
-                    spacing: Theme.uiGroupInnerSpacing
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                    }
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -510,7 +478,7 @@ Page {
                         Item {
                             id: chartPanelItem
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 340
+                            Layout.preferredHeight: 380
 
                             Label {
                                 anchors.centerIn: parent
@@ -813,6 +781,12 @@ Page {
                     }
                 }
             }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
         }
     }
 
@@ -827,20 +801,12 @@ Page {
         }
     }
 
-    Connections {
-        target: trainingStore
-        function onProgressChanged() {
-            statsPage.refreshTrainingProgress()
-        }
-    }
-
     onVisibleChanged: {
         if (visible)
             statsPage.refreshSeatBankrollTables()
     }
 
     Component.onCompleted: {
-        statsPage.refreshTrainingProgress()
         statsPage.refreshSeatBankrollTables()
         Qt.callLater(statsPage.refreshChartData)
     }

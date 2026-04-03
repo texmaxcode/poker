@@ -8,6 +8,7 @@
 
         <file>Main.qml</file>
 
+        <file>components/ThemedPanel.qml</file>
         <file>components/GameButton.qml</file>
         <file>components/BrandedBackground.qml</file>
         <file>components/ThemedCheckBox.qml</file>

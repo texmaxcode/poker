@@ -118,21 +118,25 @@ Page {
 
         readonly property point feltCenter: Qt.point(width / 2, height / 2)
 
-        readonly property real seatHalfW: 109
-        readonly property real seatHalfH: 156
-        readonly property real seatGap: 10
-        readonly property real maxLayoutOvalW: Math.max(260, width - 4 * seatHalfW - 2 * seatGap - 28)
-        readonly property real maxLayoutOvalH: Math.max(200, height - 4 * seatHalfH - 2 * seatGap - 40)
+        /// Layout is authored for ~900px short side; scale down so six seats fit without overlap.
+        readonly property real tableScale: Math.min(1.0, Math.min(width, height) / 900.0)
+        readonly property real seatHalfW: 109 * tableScale
+        readonly property real seatHalfH: 156 * tableScale
+        readonly property real seatGap: 10 * tableScale
+        readonly property real maxLayoutOvalW: Math.max(260 * tableScale,
+                                                        width - 4 * seatHalfW - 2 * seatGap - 28 * tableScale)
+        readonly property real maxLayoutOvalH: Math.max(200 * tableScale,
+                                                        height - 4 * seatHalfH - 2 * seatGap - 40 * tableScale)
         readonly property real layoutOvalW: Math.min(Math.min(width * 0.99, height * 1.36), maxLayoutOvalW)
         readonly property real layoutOvalH: Math.min(Math.min(height * 0.76, width * 0.48), maxLayoutOvalH)
-        readonly property real feltBleedW: Math.max(360, width * 0.22)
-        readonly property real feltBleedH: Math.max(280, height * 0.24)
+        readonly property real feltBleedW: Math.max(360 * tableScale, width * 0.22)
+        readonly property real feltBleedH: Math.max(280 * tableScale, height * 0.24)
         readonly property real feltOvalW: Math.min(layoutOvalW + feltBleedW, width - 8)
         readonly property real feltOvalH: Math.min(layoutOvalH + feltBleedH, height - 8)
         readonly property real orbitRxRaw: layoutOvalW * 0.5 + seatGap + seatHalfW
         readonly property real orbitRyRaw: layoutOvalH * 0.5 + seatGap + seatHalfH
-        readonly property real orbitRx: Math.min(orbitRxRaw, (width * 0.5 - seatHalfW - 12) / 0.866)
-        readonly property real orbitRy: Math.min(orbitRyRaw, (height * 0.5 - seatHalfH - 12) / 0.866)
+        readonly property real orbitRx: Math.min(orbitRxRaw, (width * 0.5 - seatHalfW - 12 * tableScale) / 0.866)
+        readonly property real orbitRy: Math.min(orbitRyRaw, (height * 0.5 - seatHalfH - 12 * tableScale) / 0.866)
 
         TableFelt {
             z: 0
@@ -164,8 +168,8 @@ Page {
             delegate: Item {
                 id: seatWrap
                 required property int index
-                width: 218
-                height: 312
+                width: Math.round(218 * tableArea.tableScale)
+                height: Math.round(312 * tableArea.tableScale)
                 readonly property real angle: Math.PI / 2 - index * 2 * Math.PI / 6
                 readonly property real cornerBoost: (index === 1 || index === 2 || index === 4 || index === 5) ? 1.09 : 1.0
                 readonly property real scx: tableArea.feltCenter.x + tableArea.orbitRx * Math.cos(angle) * cornerBoost
@@ -175,6 +179,7 @@ Page {
 
                 Player {
                     anchors.fill: parent
+                    uiScale: tableArea.tableScale
                     seatIndex: index
                     name: botNames.displayName(index)
                     position: game_screen.seatRole(index)

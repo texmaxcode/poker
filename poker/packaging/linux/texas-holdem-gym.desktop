@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Texas Hold'em Gym
+Comment=Practice Texas Hold'em
+Exec=Poker
+Icon=texas-holdem-gym
+StartupWMClass=Poker
+Terminal=false
+Categories=Game;

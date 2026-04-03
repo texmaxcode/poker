@@ -120,14 +120,6 @@ Page {
         anchors.fill: parent
     }
 
-    palette {
-        base: Theme.panelElevated
-        alternateBase: Theme.panel
-        text: Theme.textPrimary
-        window: Theme.headerBg
-        button: Theme.inputBg
-    }
-
     Connections {
         target: ApplicationWindow.window
         function onClosing(close) {
@@ -206,18 +198,23 @@ Page {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        leftPadding: Theme.uiPagePadding
-        rightPadding: Theme.uiPagePadding
-        topPadding: Theme.uiPagePadding
-        bottomPadding: Theme.uiPagePadding
 
-        ColumnLayout {
-            id: solverCol
-            width: Math.max(280, scroll.width - 2 * Theme.uiPagePadding)
-            spacing: Theme.uiPageColumnSpacing
+        RowLayout {
+            width: scroll.availableWidth
+            spacing: 0
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
+
+            ColumnLayout {
+                id: solverCol
+                Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, scroll.availableWidth - 40))
+                Layout.maximumWidth: Theme.trainerContentMaxWidth
+                spacing: Theme.trainerColumnSpacing
 
                 Label {
-                    Layout.topMargin: 8
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
                     text: qsTr("Monte Carlo equity vs range or exact cards — pot odds & chip-EV (not full GTO).")
@@ -237,22 +234,13 @@ Page {
                         + "abstractions (bet sizes, states) and CFR-style algorithms; that's not implemented here.")
                 }
 
-                GroupBox {
-                    title: qsTr("Hand & board")
+                ThemedPanel {
                     Layout.fillWidth: true
-                    padding: Theme.uiGroupedPanelPadding
-                    topPadding: Theme.uiGroupedPanelTopPadding
-                    font.bold: true
-                    font.pointSize: Theme.uiGroupTitlePt
+                    panelTitle: qsTr("Hand & board")
 
                     ColumnLayout {
-                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        Layout.fillWidth: true
                         spacing: 0
-
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                        }
 
                         GridLayout {
                             Layout.fillWidth: true
@@ -335,22 +323,13 @@ Page {
                     }
                 }
 
-                GroupBox {
-                    title: qsTr("Simulation & pot odds")
+                ThemedPanel {
                     Layout.fillWidth: true
-                    padding: Theme.uiGroupedPanelPadding
-                    topPadding: Theme.uiGroupedPanelTopPadding
-                    font.bold: true
-                    font.pointSize: Theme.uiGroupTitlePt
+                    panelTitle: qsTr("Simulation & pot odds")
 
                     ColumnLayout {
-                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        Layout.fillWidth: true
                         spacing: 0
-
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                        }
 
                         GridLayout {
                             Layout.fillWidth: true
@@ -407,7 +386,7 @@ Page {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.uiGroupInnerSpacing
+                    spacing: Theme.trainerColumnSpacing
 
                     Button {
                         id: runSimBtn
@@ -452,22 +431,13 @@ Page {
                     }
                 }
 
-                GroupBox {
-                    title: qsTr("Results")
+                ThemedPanel {
                     Layout.fillWidth: true
-                    padding: Theme.uiGroupedPanelPadding
-                    topPadding: Theme.uiGroupedPanelTopPadding
-                    font.bold: true
-                    font.pointSize: Theme.uiGroupTitlePt
+                    panelTitle: qsTr("Results")
 
                     ColumnLayout {
-                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        Layout.fillWidth: true
                         spacing: Theme.uiGroupInnerSpacing
-
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                        }
 
                         Text {
                             id: summaryLabel
@@ -514,22 +484,13 @@ Page {
                     }
                 }
 
-                GroupBox {
-                    title: qsTr("Nash solver (CFR+) — toy games")
+                ThemedPanel {
                     Layout.fillWidth: true
-                    padding: Theme.uiGroupedPanelPadding
-                    topPadding: Theme.uiGroupedPanelTopPadding
-                    font.bold: true
-                    font.pointSize: Theme.uiGroupTitlePt
+                    panelTitle: qsTr("Nash solver (CFR+) — toy games")
 
                     ColumnLayout {
-                        width: parent.width - 2 * Theme.uiGroupedPanelPadding
+                        Layout.fillWidth: true
                         spacing: Theme.uiGroupInnerSpacing
-
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Theme.uiGroupBoxTitleBodyGap
-                        }
 
                         Text {
                             Layout.fillWidth: true
@@ -608,5 +569,11 @@ Page {
                     }
                 }
             }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
         }
+    }
 }

@@ -23,10 +23,25 @@ Page {
             stackLayout.currentIndex = idx
     }
 
-    ColumnLayout {
+    ScrollView {
+        id: lobbyScroll
         anchors.fill: parent
-        anchors.margins: Theme.uiPagePadding
-        spacing: Theme.uiPageColumnSpacing
+        clip: true
+
+        RowLayout {
+            width: lobbyScroll.availableWidth
+            spacing: 0
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
+
+            ColumnLayout {
+                id: mainCol
+                Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, lobbyScroll.availableWidth - 40))
+                Layout.maximumWidth: Theme.trainerContentMaxWidth
+                spacing: Theme.trainerColumnSpacing
 
         Item {
             Layout.fillWidth: true
@@ -75,21 +90,16 @@ Page {
             }
         }
 
-        Label {
-            Layout.alignment: Qt.AlignHCenter
-            text: qsTr("Choose a screen")
-            color: Theme.goldMuted
-            font.family: Theme.fontFamilyUi
-            font.pointSize: Theme.uiLobbyTitlePt
-            font.bold: true
-            font.letterSpacing: 1.2
-            opacity: 0.92
-        }
-
-        RowLayout {
+        ThemedPanel {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 6
+            panelTitle: qsTr("Choose a screen")
+            panelOpacity: 0.45
+            borderOpacity: 0.45
+
+            RowLayout {
+                id: navTilesRow
+                Layout.fillWidth: true
+                spacing: 6
 
             LobbyNavTile {
                 title: qsTr("Poker table")
@@ -135,10 +145,18 @@ Page {
                 iconSource: "qrc:/assets/icons/table.svg"
                 onClicked: lobbyPage.go(4)
             }
+            }
         }
 
         Item {
             Layout.fillHeight: true
+        }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
         }
     }
 
@@ -150,10 +168,10 @@ Page {
         property string iconSource: ""
         signal clicked()
 
-        Layout.preferredWidth: Math.min(
-            192,
-            Math.floor((lobbyPage.width - 2 * Theme.uiPagePadding - 4 * 6) / 5))
-        Layout.minimumWidth: 124
+        /// Share the row evenly; `mainCol.width` ignored inner `ThemedPanel` padding and caused overflow.
+        Layout.fillWidth: true
+        Layout.minimumWidth: 64
+        Layout.maximumWidth: 220
         Layout.preferredHeight: Theme.uiLobbyNavTileMinHeight
 
         Rectangle {

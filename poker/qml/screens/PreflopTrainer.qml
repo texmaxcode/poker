@@ -366,6 +366,7 @@ Page {
 
                 Label {
                     Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
                     text: qsTr(
                         "Random two cards each hand. Your choice is scored against the 13×13 weights for the position/mode (see JSON). "

@@ -36,6 +36,9 @@ Item {
     property bool instantHoleCards: false
     /// Seat index 0–5 for chart-matched name color; `-1` uses default text color.
     property int seatIndex: -1
+    /// 1.0 = design size; below 1 on small windows (GameScreen tableScale) so seats match orbit spacing.
+    property real uiScale: 1.0
+    readonly property real _s: uiScale > 0 ? uiScale : 1.0
 
     readonly property color gold: Theme.gold
     readonly property color borderAct: Theme.seatBorderAct
@@ -61,12 +64,21 @@ Item {
 
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
     /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
-    readonly property int seatInnerPad: 11
-    implicitHeight: 312
-    implicitWidth: Theme.holePairTotalWidth + 2 * seatInnerPad
+    readonly property int seatInnerPad: Math.max(4, Math.round(11 * _s))
+    implicitHeight: Math.round(312 * _s)
+    implicitWidth: Math.round((Theme.holePairTotalWidth + 22) * _s)
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
-    readonly property int contentWidth: Theme.holePairTotalWidth
+    readonly property int contentWidth: Math.round(Theme.holePairTotalWidth * _s)
+    readonly property int cardW: Math.round(Theme.holeCardWidth * _s)
+    readonly property int cardH: Math.round(Theme.holeCardHeight * _s)
+    readonly property int cardGap: Math.max(2, Math.round(Theme.holeCardGap * _s))
+    readonly property int cardRowH: Math.round((Theme.holeCardHeight + 12) * _s)
+    readonly property int streetRowH: Math.max(18, Math.round(26 * _s))
+    readonly property int nameRowH: Math.max(28, Math.round(40 * _s))
+    readonly property int posBox: Math.max(28, Math.round(40 * _s))
+    readonly property int thinkSlotH: Math.max(8, Math.round(12 * _s))
+    readonly property int stackRowH: Math.max(22, Math.round(30 * _s))
 
     opacity: (foldedDim && seatAtTable) ? 0.52 : 1.0
     Behavior on opacity {
@@ -101,10 +113,10 @@ Item {
     Rectangle {
         id: seatShadow
         anchors.fill: parent
-        anchors.margins: -2
+        anchors.margins: Math.round(-2 * _s)
         anchors.topMargin: 0
-        anchors.bottomMargin: -4
-        radius: 16
+        anchors.bottomMargin: Math.round(-4 * _s)
+        radius: Math.max(8, Math.round(16 * _s))
         color: "#40000000"
         z: -1
     }
@@ -113,8 +125,8 @@ Item {
         id: actGlow
         visible: root.isActing
         anchors.fill: parent
-        anchors.margins: -4
-        radius: 18
+        anchors.margins: Math.round(-4 * _s)
+        radius: Math.max(10, Math.round(18 * _s))
         color: "transparent"
         border.width: 2
         border.color: Qt.alpha(root.borderAct, actGlow._pulse)
@@ -129,10 +141,10 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 14
+        radius: Math.max(8, Math.round(14 * _s))
         color: Theme.seatPanel
         border.color: root.isActing ? root.borderAct : (root.isDealer ? root.borderDealer : root.borderIdle)
-        border.width: root.isActing ? 3 : (root.isDealer ? 2 : 1)
+        border.width: root.isActing ? Math.max(2, Math.round(3 * _s)) : (root.isDealer ? Math.max(1, Math.round(2 * _s)) : 1)
         clip: true
         Behavior on border.color {
             ColorAnimation { duration: 200 }
@@ -145,9 +157,9 @@ Item {
 
             /// Same height for cards / folded / inactive so the seat does not shift between states.
             StackLayout {
-                Layout.preferredHeight: Theme.holeCardHeight + 12
-                Layout.maximumHeight: Theme.holeCardHeight + 12
-                Layout.minimumHeight: Theme.holeCardHeight + 12
+                Layout.preferredHeight: root.cardRowH
+                Layout.maximumHeight: root.cardRowH
+                Layout.minimumHeight: root.cardRowH
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
                 Layout.minimumWidth: root.contentWidth
@@ -156,16 +168,16 @@ Item {
 
                 Item {
                     width: root.contentWidth
-                    height: Theme.holeCardHeight + 12
+                    height: root.cardRowH
 
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.holeCardGap
+                        spacing: root.cardGap
 
                         Card {
-                            width: Theme.holeCardWidth
-                            height: Theme.holeCardHeight
+                            width: root.cardW
+                            height: root.cardH
                             card: root.first_card
                             flipped: root.show_cards && root.first_card.length > 0
                             dealEpoch: root.handEpoch
@@ -173,8 +185,8 @@ Item {
                         }
 
                         Card {
-                            width: Theme.holeCardWidth
-                            height: Theme.holeCardHeight
+                            width: root.cardW
+                            height: root.cardH
                             card: root.second_card
                             flipped: root.show_cards && root.second_card.length > 0
                             dealEpoch: root.handEpoch
@@ -185,14 +197,14 @@ Item {
 
                 Item {
                     width: root.contentWidth
-                    height: Theme.holeCardHeight + 12
+                    height: root.cardRowH
                     Text {
                         anchors.fill: parent
-                        anchors.margins: 4
+                        anchors.margins: Math.max(2, Math.round(4 * _s))
                         text: root.humanWatching ? qsTr("WATCHING") : qsTr("FOLDED")
                         color: root.humanWatching ? Theme.accentBlue : Theme.textMuted
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiSeatFoldPt
+                        font.pointSize: Math.max(8, Theme.uiSeatFoldPt * _s)
                         font.bold: true
                         font.letterSpacing: 1
                         horizontalAlignment: Text.AlignHCenter
@@ -205,14 +217,14 @@ Item {
 
                 Item {
                     width: root.contentWidth
-                    height: Theme.holeCardHeight + 12
+                    height: root.cardRowH
                     Text {
                         anchors.fill: parent
-                        anchors.margins: 4
+                        anchors.margins: Math.max(2, Math.round(4 * _s))
                         text: qsTr("INACTIVE")
                         color: Theme.textMuted
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiSeatFoldPt
+                        font.pointSize: Math.max(8, Theme.uiSeatFoldPt * _s)
                         font.bold: true
                         font.letterSpacing: 1
                         horizontalAlignment: Text.AlignHCenter
@@ -223,9 +235,9 @@ Item {
 
             /// Reserved row: same height always (no jump when street label appears).
             Item {
-                Layout.preferredHeight: 26
-                Layout.maximumHeight: 26
-                Layout.minimumHeight: 26
+                Layout.preferredHeight: root.streetRowH
+                Layout.maximumHeight: root.streetRowH
+                Layout.minimumHeight: root.streetRowH
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
                 Layout.minimumWidth: root.contentWidth
@@ -234,7 +246,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     visible: root.inHand && root.seatAtTable && root.streetActionText.length > 0
-                    radius: 4
+                    radius: Math.max(3, Math.round(4 * _s))
                     color: Theme.hudBg1
                     border.width: 1
                     border.color: Qt.alpha(root.streetActionColor, 0.92)
@@ -242,14 +254,14 @@ Item {
 
                     Text {
                         anchors.fill: parent
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
+                        anchors.leftMargin: Math.max(4, Math.round(8 * _s))
+                        anchors.rightMargin: Math.max(4, Math.round(8 * _s))
                         verticalAlignment: Text.AlignVCenter
                         horizontalAlignment: Text.AlignHCenter
                         text: root.streetActionText
                         color: root.streetActionColor
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiSeatStreetPt
+                        font.pointSize: Math.max(8, Theme.uiSeatStreetPt * _s)
                         font.bold: true
                         elide: Text.ElideRight
                         maximumLineCount: 1
@@ -259,27 +271,27 @@ Item {
 
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredHeight: 40
-                Layout.maximumHeight: 40
+                Layout.preferredHeight: root.nameRowH
+                Layout.maximumHeight: root.nameRowH
                 Layout.preferredWidth: root.contentWidth
                 Layout.maximumWidth: root.contentWidth
                 Layout.minimumWidth: root.contentWidth
-                spacing: 4
+                spacing: Math.max(2, Math.round(4 * _s))
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 40
-                    radius: 6
+                    Layout.preferredHeight: root.nameRowH
+                    radius: Math.max(4, Math.round(6 * _s))
                     color: Theme.panelElevated
                     clip: true
 
                     Text {
                         anchors.fill: parent
-                        anchors.margins: 6
+                        anchors.margins: Math.max(3, Math.round(6 * _s))
                         text: root.name
                         color: root.seatIndex >= 0 ? Theme.colorForSeat(root.seatIndex) : Theme.textPrimary
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiSeatNamePt
+                        font.pointSize: Math.max(8, Theme.uiSeatNamePt * _s)
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -289,10 +301,10 @@ Item {
                 }
 
                 Rectangle {
-                    Layout.preferredWidth: 40
-                    Layout.preferredHeight: 40
+                    Layout.preferredWidth: root.posBox
+                    Layout.preferredHeight: root.posBox
                     Layout.alignment: Qt.AlignVCenter
-                    radius: 6
+                    radius: Math.max(4, Math.round(6 * _s))
                     color: root.isDealer ? Theme.hudBg0 : Theme.panelElevated
                     border.width: root.isDealer ? 2 : 1
                     border.color: root.isDealer ? root.gold : Theme.panelBorderMuted
@@ -300,11 +312,11 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        width: parent.width - 4
+                        width: parent.width - Math.max(2, Math.round(4 * _s))
                         text: root.position
                         color: root.isDealer ? Theme.textPrimary : Theme.textSecondary
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiSeatPosPt
+                        font.pointSize: Math.max(8, Theme.uiSeatPosPt * _s)
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
@@ -318,19 +330,19 @@ Item {
                 Layout.maximumWidth: root.contentWidth
                 Layout.minimumWidth: root.contentWidth
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredHeight: 12
-                Layout.maximumHeight: 12
-                Layout.minimumHeight: 12
+                Layout.preferredHeight: root.thinkSlotH
+                Layout.maximumHeight: root.thinkSlotH
+                Layout.minimumHeight: root.thinkSlotH
 
                 ProgressBar {
                     id: thinkBar
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    height: 6
+                    height: Math.max(4, Math.round(6 * _s))
                     enabled: root.isActing
                     opacity: root.isActing ? 1 : 0
-                    padding: 2
+                    padding: Math.max(1, Math.round(2 * _s))
                     from: 0
                     to: 1
                     value: {
@@ -343,19 +355,19 @@ Item {
                     }
 
                     background: Rectangle {
-                        implicitHeight: 6
-                        implicitWidth: 200
+                        implicitHeight: Math.max(4, Math.round(6 * _s))
+                        implicitWidth: Math.round(200 * _s)
                         color: Theme.progressTrack
-                        radius: 3
+                        radius: Math.max(2, Math.round(3 * _s))
                     }
 
                     contentItem: Item {
-                        implicitHeight: 6
+                        implicitHeight: Math.max(4, Math.round(6 * _s))
 
                         Rectangle {
                             width: thinkBar.visualPosition * parent.width
                             height: parent.height
-                            radius: 3
+                            radius: Math.max(2, Math.round(3 * _s))
                             color: root.borderAct
                         }
                     }
@@ -372,9 +384,9 @@ Item {
                 Rectangle {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 30
-                    Layout.maximumHeight: 30
-                    radius: 6
+                    Layout.preferredHeight: root.stackRowH
+                    Layout.maximumHeight: root.stackRowH
+                    radius: Math.max(4, Math.round(6 * _s))
                     color: root.stackFill
                     border.width: 1
                     border.color: Qt.alpha(Theme.gold, 0.33)
@@ -384,7 +396,7 @@ Item {
                         text: "$" + root.stackDisplay
                         color: Theme.textPrimary
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiStackPt
+                        font.pointSize: Math.max(10, Theme.uiStackPt * _s)
                         font.bold: true
                     }
                 }

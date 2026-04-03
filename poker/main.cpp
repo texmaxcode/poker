@@ -1,9 +1,12 @@
+#include <QByteArray>
 #include <QCoreApplication>
 #include <QFont>
 #include <QFontDatabase>
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickWindow>
 #include <QTimer>
 
 #include "game.hpp"
@@ -17,7 +20,19 @@ int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName(QStringLiteral("TexasHoldemGym"));
     QCoreApplication::setApplicationName(QStringLiteral("Texas Hold'em Gym"));
+
+    // Prefer Wayland when present so the bundled xcb plugin (needs distro libxcb-cursor on X11) is avoided.
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
+    {
+        if (!qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY") || qgetenv("XDG_SESSION_TYPE") == "wayland")
+            qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("wayland"));
+    }
+
     QGuiApplication app(argc, argv);
+    const QIcon appIcon(QStringLiteral(":/assets/images/logo.png"));
+    app.setWindowIcon(appIcon);
+    // Matches `texas-holdem-gym.desktop` so shells resolve the taskbar/dock icon (Wayland uses app_id).
+    app.setDesktopFileName(QStringLiteral("texas-holdem-gym"));
 
     // Register bundled Oswald so QML Controls and raw Text inherit the brand typeface (see Theme.fontFamilyUi).
     QString appFontFamily = QStringLiteral("Oswald");
@@ -81,6 +96,12 @@ int main(int argc, char *argv[])
 
     if (engine.rootObjects().isEmpty())
         return -1;
+
+    if (auto *const qw = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst()))
+    {
+        if (!appIcon.isNull())
+            qw->setIcon(appIcon);
+    }
 
     // After the scene tree is built, bind the Game Page (not the window) and start hand.
     QTimer::singleShot(400, &app, [&engine, &poker_game]() {

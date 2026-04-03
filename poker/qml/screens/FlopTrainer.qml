@@ -334,6 +334,7 @@ Page {
 
                 Label {
                     Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
                     text: qsTr(
                         "Single raised pot, flop only. Spots cycle in file order. Check, or bet 33% / 75% pot — same grading bands from strategy frequency; "
