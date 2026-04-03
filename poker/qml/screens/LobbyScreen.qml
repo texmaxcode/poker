@@ -28,103 +28,118 @@ Page {
         anchors.fill: parent
         clip: true
 
-        RowLayout {
-            width: lobbyScroll.availableWidth
-            spacing: 0
-
-            Item {
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
-            }
-
-            ColumnLayout {
-                id: mainCol
-                Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, lobbyScroll.availableWidth - 40))
-                Layout.maximumWidth: Theme.trainerContentMaxWidth
-                spacing: Theme.trainerColumnSpacing
-
         Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: Math.min(400, lobbyPage.height * 0.46)
-            Layout.maximumHeight: 500
-
-            Image {
-                anchors.centerIn: parent
-                width: Math.min(540, parent.width - 24)
-                height: Math.min(parent.height, width * 0.72)
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                mipmap: true
-                source: "qrc:/assets/images/logo.png"
-            }
-        }
-
-        ThemedPanel {
-            Layout.fillWidth: true
-            panelTitle: qsTr("Choose a screen")
-            panelOpacity: 0.45
-            borderOpacity: 0.45
+            id: lobbyScrollContent
+            width: lobbyScroll.availableWidth
+            height: Math.max(lobbyScroll.availableHeight, mainCol.implicitHeight)
 
             RowLayout {
-                id: navTilesRow
-                Layout.fillWidth: true
-                spacing: 6
+                anchors.fill: parent
+                spacing: 0
 
-            LobbyNavTile {
-                title: qsTr("Poker table")
-                sub: qsTr("Play hands")
-                detailTip: qsTr(
-                    "6-max Texas Hold’em table: you and five named bots. "
-                    + "Use the HUD to act; you can sit out and watch bots. Blinds and pot are centered on the felt.")
-                iconSource: "qrc:/assets/icons/table.svg"
-                onClicked: lobbyPage.go(1)
-            }
-            LobbyNavTile {
-                title: qsTr("Bots & ranges")
-                sub: qsTr("Configure bots")
-                detailTip: qsTr(
-                    "Set stakes and stack, pick a bot archetype per player, and edit 13×13 range grids or paste "
-                    + "text ranges. Reference presets show default charts and full strategy notes on hover there.")
-                iconSource: "qrc:/assets/icons/bots.svg"
-                onClicked: lobbyPage.go(2)
-            }
-            LobbyNavTile {
-                title: qsTr("Solver & equity")
-                sub: qsTr("Study tools")
-                detailTip: qsTr(
-                    "Monte Carlo equity vs a range or exact villain cards, with optional pot-odds and chip-EV. "
-                    + "Helpful for study — not a full multi-street GTO solver.")
-                iconSource: "qrc:/assets/icons/solver.svg"
-                onClicked: lobbyPage.go(3)
-            }
-            LobbyNavTile {
-                title: qsTr("Training")
-                sub: qsTr("Drills")
-                detailTip: qsTr(
-                    "Preflop and postflop trainers with immediate feedback, mistake tracking, and progress stats.")
-                iconSource: "qrc:/assets/icons/bots.svg"
-                onClicked: lobbyPage.go(5)
-            }
-            LobbyNavTile {
-                title: qsTr("Bankroll & stats")
-                sub: qsTr("Ranks & charts")
-                detailTip: qsTr(
-                    "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "
-                    + "Set total bankroll and table buy-in on each player’s tab under Bots & ranges.")
-                iconSource: "qrc:/assets/icons/table.svg"
-                onClicked: lobbyPage.go(4)
-            }
-            }
-        }
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
 
-        Item {
-            Layout.fillHeight: true
-        }
-            }
+                ColumnLayout {
+                    id: mainCol
+                    Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, lobbyScroll.availableWidth - 40))
+                    Layout.maximumWidth: Theme.trainerContentMaxWidth
+                    Layout.fillHeight: true
+                    spacing: 16
 
-            Item {
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
+                    Item {
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 0
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.min(360, lobbyPage.height * 0.38)
+                        Layout.maximumHeight: 460
+
+                        Image {
+                            anchors.centerIn: parent
+                            width: Math.min(520, parent.width - 24)
+                            height: Math.min(parent.height, width * 0.72)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            mipmap: true
+                            source: "qrc:/assets/images/logo.png"
+                        }
+                    }
+
+                    ThemedPanel {
+                        Layout.fillWidth: true
+                        panelTitle: qsTr("Choose a screen")
+                        panelTitlePixelSize: Theme.uiLobbyPanelTitlePx
+                        panelSectionSpacing: 12
+                        panelOpacity: 0.45
+                        borderOpacity: 0.45
+
+                        RowLayout {
+                            id: navTilesRow
+                            Layout.fillWidth: true
+                            spacing: 12
+
+                            LobbyNavTile {
+                                title: qsTr("Poker table")
+                                sub: qsTr("Play hands")
+                                detailTip: qsTr(
+                                    "6-max Texas Hold’em table: you and five named bots. "
+                                    + "Use the HUD to act; you can sit out and watch bots. Blinds and pot are centered on the felt.")
+                                iconSource: "qrc:/assets/icons/table.svg"
+                                onClicked: lobbyPage.go(1)
+                            }
+                            LobbyNavTile {
+                                title: qsTr("Bots & ranges")
+                                sub: qsTr("Configure bots")
+                                detailTip: qsTr(
+                                    "Set stakes and stack, pick a bot archetype per player, and edit 13×13 range grids or paste "
+                                    + "text ranges. Reference presets show default charts and full strategy notes on hover there.")
+                                iconSource: "qrc:/assets/icons/bots.svg"
+                                onClicked: lobbyPage.go(2)
+                            }
+                            LobbyNavTile {
+                                title: qsTr("Solver & equity")
+                                sub: qsTr("Study tools")
+                                detailTip: qsTr(
+                                    "Monte Carlo equity vs a range or exact villain cards, with optional pot-odds and chip-EV. "
+                                    + "Helpful for study — not a full multi-street GTO solver.")
+                                iconSource: "qrc:/assets/icons/solver.svg"
+                                onClicked: lobbyPage.go(3)
+                            }
+                            LobbyNavTile {
+                                title: qsTr("Training")
+                                sub: qsTr("Drills")
+                                detailTip: qsTr(
+                                    "Preflop and postflop trainers with immediate feedback, mistake tracking, and progress stats.")
+                                iconSource: "qrc:/assets/icons/bots.svg"
+                                onClicked: lobbyPage.go(5)
+                            }
+                            LobbyNavTile {
+                                title: qsTr("Bankroll & stats")
+                                sub: qsTr("Ranks & charts")
+                                detailTip: qsTr(
+                                    "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "
+                                    + "Set total bankroll and table buy-in on each player’s tab under Bots & ranges.")
+                                iconSource: "qrc:/assets/icons/table.svg"
+                                onClicked: lobbyPage.go(4)
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 0
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
             }
         }
     }
@@ -167,20 +182,10 @@ Page {
                     ? Qt.lighter(Theme.chromeLineGold, 1.15)
                     : Qt.alpha(Theme.chromeLine, 0.85)
 
-            // Light top edge like stamped metal / logo bevel
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                height: 1
-                radius: 12
-                color: Qt.alpha(Theme.gold, 0.22)
-            }
-
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: Theme.uiLobbyNavTilePadding
-                spacing: 5
+                anchors.margins: 10
+                spacing: 6
 
                 Image {
                     Layout.alignment: Qt.AlignHCenter

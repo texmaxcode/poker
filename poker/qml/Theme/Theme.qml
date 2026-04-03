@@ -180,12 +180,14 @@ QtObject {
     readonly property int uiMicroPx: 11
     readonly property int uiMonoPx: 13
     readonly property int uiLobbyTitlePt: 19
+    /// Lobby framed panel heading (“Choose a screen”).
+    readonly property int uiLobbyPanelTitlePx: 22
     /// Nav tiles: title line (two lines max).
-    readonly property int uiLobbyNavTileTitlePt: 15
-    readonly property int uiLobbyNavSubPx: 15
+    readonly property int uiLobbyNavTileTitlePt: 17
+    readonly property int uiLobbyNavSubPx: 17
     readonly property int uiLobbyNavTilePadding: 11
-    readonly property int uiLobbyNavTileMinHeight: 124
-    readonly property int uiLobbyNavIconPx: 28
+    readonly property int uiLobbyNavTileMinHeight: 136
+    readonly property int uiLobbyNavIconPx: 32
     readonly property int uiPotMainPt: 22
     readonly property int uiPotSepPt: 18
     readonly property int uiPotCallPt: 18

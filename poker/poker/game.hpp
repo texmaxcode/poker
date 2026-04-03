@@ -199,6 +199,9 @@ public:
     /// Increments on bankroll snapshots and on `notifySessionStatsChanged()` — binds QML to refresh invokables.
     Q_PROPERTY(int statsSeq READ statsSeq NOTIFY sessionStatsChanged)
     int statsSeq() const { return stats_seq_; }
+    /// Bumped when any seat range matrix changes so QML range grids can refresh (`getRangeGrid` has no NOTIFY).
+    Q_PROPERTY(int rangeRevision READ rangeRevision NOTIFY rangeRevisionChanged)
+    int rangeRevision() const { return range_revision_; }
     /// No new chart point: bumps `statsSeq` so Stats / buy-in lines refresh (e.g. after `setSeatBuyIn`).
     Q_INVOKABLE void notifySessionStatsChanged();
 
@@ -232,6 +235,7 @@ public:
 signals:
     void pot_changed();
     void sessionStatsChanged();
+    void rangeRevisionChanged();
     void humanDecisionFinished();
     void humanCheckFinished();
     void humanBbPreflopFinished();
@@ -267,6 +271,8 @@ private:
     bool bot_action_delay_enabled_ = true;
     /// Bumped in `record_bankroll_snapshot()` so QML can refresh stats tied to `sessionStatsChanged`.
     int stats_seq_ = 0;
+    /// Bumped when call/raise/bet range weights change (text parse, cell edit, reset full).
+    int range_revision_ = 0;
     /// Per-hand stack traces (after each completed hand) for bankroll charts.
     std::vector<std::array<int, kMaxPlayers>> bankroll_history_{};
     /// Parallel to `bankroll_history_`: snapshot timestamp (ms since epoch).

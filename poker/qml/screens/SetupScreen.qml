@@ -160,7 +160,8 @@ Page {
     function applyRangeTextFromField() {
         if (!setup.showFullRangeEditor)
             return
-        pokerGame.applySeatRangeText(setup.selectedSeat, textArea.text, rangeLayerTab.currentIndex)
+        const t = textArea.text.trim()
+        pokerGame.applySeatRangeText(setup.selectedSeat, t, rangeLayerTab.currentIndex)
         pokerGame.savePersistedSettings()
         setup.refreshRangeGrids()
     }
@@ -339,56 +340,71 @@ Page {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.uiGroupInnerSpacing
+                    spacing: 8
 
-                    GridLayout {
-                        width: parent.width
-                        columns: 4
-                        rowSpacing: 8
-                        columnSpacing: 12
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 18
 
-                        Label {
-                            text: qsTr("SB")
-                            font.pixelSize: Theme.trainerCaptionPx
+                        RowLayout {
+                            spacing: 4
+                            Label {
+                                text: qsTr("SB")
+                                font.pixelSize: Theme.trainerCaptionPx
+                                font.bold: true
+                            }
+                            SpinBox {
+                                id: sbSpin
+                                from: 1
+                                to: 50
+                                value: 1
+                                editable: true
+                                Layout.preferredWidth: 104
+                                Layout.maximumWidth: 120
+                            }
                         }
-                        SpinBox {
-                            id: sbSpin
-                            from: 1
-                            to: 50
-                            value: 1
-                            editable: true
+                        RowLayout {
+                            spacing: 4
+                            Label {
+                                text: qsTr("BB")
+                                font.pixelSize: Theme.trainerCaptionPx
+                                font.bold: true
+                            }
+                            SpinBox {
+                                id: bbSpin
+                                from: 1
+                                to: 100
+                                value: 3
+                                editable: true
+                                Layout.preferredWidth: 104
+                                Layout.maximumWidth: 120
+                            }
                         }
-                        Label {
-                            text: qsTr("BB")
-                            font.pixelSize: Theme.trainerCaptionPx
-                        }
-                        SpinBox {
-                            id: bbSpin
-                            from: 1
-                            to: 100
-                            value: 3
-                            editable: true
-                        }
-                        Label {
-                            text: qsTr("Min raise")
-                            font.pixelSize: Theme.trainerCaptionPx
-                        }
-                        SpinBox {
-                            id: streetSpin
-                            from: 1
-                            to: 200
-                            value: 9
-                            editable: true
+                        RowLayout {
+                            spacing: 4
+                            Label {
+                                text: qsTr("Min raise")
+                                font.pixelSize: Theme.trainerCaptionPx
+                                font.bold: true
+                            }
+                            SpinBox {
+                                id: streetSpin
+                                from: 1
+                                to: 200
+                                value: 9
+                                editable: true
+                                Layout.preferredWidth: 104
+                                Layout.maximumWidth: 120
+                            }
                         }
                         Item {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 8
                         }
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Button {
+                        RangeActionButton {
                             text: qsTr("Apply stakes")
-                            Layout.columnSpan: 4
+                            fillCol: Qt.tint(Theme.panelElevated, "#42c9a227")
+                            borderCol: Theme.goldMuted
                             onClicked: {
                                 pokerGame.configure(sbSpin.value, bbSpin.value, streetSpin.value,
                                         pokerGame.configuredStartStack())
@@ -415,7 +431,7 @@ Page {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.uiGroupInnerSpacing
+                    spacing: 8
 
                     Label {
                         Layout.fillWidth: true
@@ -427,11 +443,11 @@ Page {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 10
+                        spacing: 6
                         Label {
                             text: qsTr("Total bankroll")
                             font.bold: true
-                            font.pixelSize: Theme.trainerSectionPx
+                            font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: totalBankSpin
@@ -440,8 +456,8 @@ Page {
                             stepSize: 100
                             editable: true
                             Layout.fillWidth: false
-                            Layout.preferredWidth: 200
-                            Layout.maximumWidth: 280
+                            Layout.preferredWidth: 160
+                            Layout.maximumWidth: 200
 
                             property bool _applyingFromGame: false
                             property bool _ready: false
@@ -474,15 +490,11 @@ Page {
                                 totalBankSpin.pushTotalToEngine()
                             }
                         }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
                         Label {
-                            text: qsTr("Table buy-in (target stack)")
+                            text: qsTr("Table buy-in")
                             font.bold: true
-                            font.pixelSize: Theme.trainerSectionPx
+                            font.pixelSize: Theme.trainerCaptionPx
+                            Layout.leftMargin: 8
                         }
                         SpinBox {
                             id: seatBankSpin
@@ -491,8 +503,8 @@ Page {
                             stepSize: 1
                             editable: true
                             Layout.fillWidth: false
-                            Layout.preferredWidth: 200
-                            Layout.maximumWidth: 280
+                            Layout.preferredWidth: 160
+                            Layout.maximumWidth: 200
 
                             /// Skip pushing to the engine when syncing from `pokerGame` (tab change / init).
                             property bool _applyingFromGame: false
@@ -550,6 +562,9 @@ Page {
                                     return
                                 seatBankSpin.pushBuyInToEngine()
                             }
+                        }
+                        Item {
+                            Layout.fillWidth: true
                         }
                     }
                     Label {
@@ -830,20 +845,24 @@ Page {
                     }
                     RowLayout {
                         visible: showFullRangeEditor
-                        spacing: 4
-                        Button {
+                        spacing: 14
+                        Layout.topMargin: 6
+                        RangeActionButton {
                             text: qsTr("Apply")
-                            flat: true
+                            fillCol: Qt.tint(Theme.panelElevated, "#42c9a227")
+                            borderCol: Theme.goldMuted
                             onClicked: setup.applyRangeTextFromField()
                         }
-                        Button {
+                        RangeActionButton {
                             text: qsTr("Export")
-                            flat: true
+                            fillCol: Qt.tint(Theme.panelElevated, "#2a7eb8e8")
+                            borderCol: Theme.accentBlue
                             onClicked: textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
                         }
-                        Button {
+                        RangeActionButton {
                             text: qsTr("Full")
-                            flat: true
+                            fillCol: Qt.tint(Theme.panelElevated, "#38dc2626")
+                            borderCol: Theme.ember
                             onClicked: {
                                 pokerGame.resetSeatRangeFull(setup.selectedSeat)
                                 pokerGame.savePersistedSettings()
@@ -859,7 +878,7 @@ Page {
                         composite: true
                         editLayer: rangeLayerTab.currentIndex
                         Layout.fillWidth: true
-                        Layout.topMargin: 4
+                        Layout.topMargin: 0
                     }
                 }
             }
@@ -876,6 +895,40 @@ Page {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
             }
+        }
+    }
+
+    /// Range text row: larger hit targets and chrome vs flat panel background.
+    component RangeActionButton: Button {
+        id: rangeActBtn
+        property color fillCol: Theme.panelElevated
+        property color borderCol: Theme.chromeLineGold
+
+        flat: false
+        focusPolicy: Qt.NoFocus
+        font.pixelSize: Theme.trainerButtonLabelPx
+        font.bold: true
+        leftPadding: 22
+        rightPadding: 22
+        topPadding: 12
+        bottomPadding: 12
+
+        background: Rectangle {
+            implicitWidth: rangeActBtn.contentItem.implicitWidth + rangeActBtn.leftPadding + rangeActBtn.rightPadding
+            implicitHeight: rangeActBtn.contentItem.implicitHeight + rangeActBtn.topPadding + rangeActBtn.bottomPadding
+            radius: 9
+            color: rangeActBtn.pressed ? Qt.darker(rangeActBtn.fillCol, 1.14)
+                    : (rangeActBtn.hovered ? Qt.lighter(rangeActBtn.fillCol, 1.06) : rangeActBtn.fillCol)
+            border.width: 1
+            border.color: rangeActBtn.hovered ? Qt.lighter(rangeActBtn.borderCol, 1.12) : rangeActBtn.borderCol
+        }
+
+        contentItem: Label {
+            text: rangeActBtn.text
+            font: rangeActBtn.font
+            color: Theme.textPrimary
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
         }
     }
 }

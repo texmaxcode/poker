@@ -92,6 +92,13 @@ Item {
     }
     Component.onCompleted: Qt.callLater(refreshFromGame)
 
+    Connections {
+        target: pokerGame
+        function onRangeRevisionChanged() {
+            Qt.callLater(refreshFromGame)
+        }
+    }
+
     ColumnLayout {
         id: body
         spacing: 2

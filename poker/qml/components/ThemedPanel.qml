@@ -9,6 +9,10 @@ Rectangle {
     property string panelTitle: ""
     property real panelOpacity: 0.5
     property real borderOpacity: 0.5
+    /// Title row (`panelTitle`); default matches other trainer sections.
+    property int panelTitlePixelSize: Theme.trainerSectionPx
+    /// Vertical gap between title and body; default `Theme.uiGroupInnerSpacing`.
+    property int panelSectionSpacing: -1
 
     Layout.fillWidth: true
     clip: true
@@ -27,14 +31,14 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: Theme.trainerPanelPadding
-        spacing: Theme.uiGroupInnerSpacing
+        spacing: root.panelSectionSpacing >= 0 ? root.panelSectionSpacing : Theme.uiGroupInnerSpacing
 
         Label {
             visible: root.panelTitle.length > 0
             Layout.fillWidth: true
             text: root.panelTitle
             font.bold: true
-            font.pixelSize: Theme.trainerSectionPx
+            font.pixelSize: root.panelTitlePixelSize
             color: Theme.textPrimary
             wrapMode: Text.WordWrap
         }

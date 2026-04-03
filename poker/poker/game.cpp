@@ -2184,8 +2184,15 @@ bool game::applySeatRangeText(int seat, const QString &text, int layer)
 {
     if (seat < 0 || seat >= kMaxPlayers)
         return false;
-    return layer_matrix(seat_cfg_[static_cast<size_t>(seat)], layer)
+    if (layer < 0 || layer > 2)
+        return false;
+    const bool ok = layer_matrix(seat_cfg_[static_cast<size_t>(seat)], layer)
         ->parse_text(text.toStdString());
+    if (ok) {
+        ++range_revision_;
+        emit rangeRevisionChanged();
+    }
+    return ok;
 }
 
 void game::setRangeCell(int seat, int row, int col, double w, int layer)
@@ -2193,6 +2200,8 @@ void game::setRangeCell(int seat, int row, int col, double w, int layer)
     if (seat < 0 || seat >= kMaxPlayers)
         return;
     layer_matrix(seat_cfg_[static_cast<size_t>(seat)], layer)->set_cell(row, col, w);
+    ++range_revision_;
+    emit rangeRevisionChanged();
 }
 
 void game::resetSeatRangeFull(int seat)
@@ -2203,6 +2212,8 @@ void game::resetSeatRangeFull(int seat)
     sb.range_call.fill(1.0);
     sb.range_raise.fill(1.0);
     sb.range_bet.fill(1.0);
+    ++range_revision_;
+    emit rangeRevisionChanged();
 }
 
 void game::setSeatParticipating(int seat, bool participating)

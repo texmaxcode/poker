@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <sstream>
+#include <string>
 
 int rank_index(Rank r)
 {
@@ -155,14 +156,29 @@ static void trim_inplace(std::string &s)
 
 bool RangeMatrix::parse_text(const std::string &text)
 {
-    if (text.find_first_not_of(" \t\n\r") == std::string::npos)
+    // Accept commas, semicolons, and any whitespace as separators (e.g. "AA AKs" or "AA, AKs").
+    std::string norm;
+    norm.reserve(text.size());
+    for (unsigned char uc : text)
+    {
+        const char c = static_cast<char>(uc);
+        if (c == ',' || c == ';')
+            norm.push_back(' ');
+        else
+            norm.push_back(c);
+    }
+    trim_inplace(norm);
+    if (norm.empty())
+    {
+        fill(0.0);
         return true;
+    }
 
     fill(0.0);
-    std::stringstream ss(text);
+    std::stringstream ss(norm);
     std::string item;
     bool any = false;
-    while (std::getline(ss, item, ','))
+    while (ss >> item)
     {
         trim_inplace(item);
         if (item.empty())

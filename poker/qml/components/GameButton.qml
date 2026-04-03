@@ -68,17 +68,26 @@ Button {
         return Metrics.hudButtonHeight
     }
 
-    /// For implicitWidth when style === chrome (contentItem is Row).
-    Row {
+    /// Invisible twin of chrome layout — `Row` top-aligns children; we use verticalCenter for measurement.
+    Item {
         id: chromeRowCalc
         visible: false
-        spacing: 6
+        implicitWidth: crIcon.width + 6 + crLabel.implicitWidth
+        implicitHeight: Math.max(crIcon.height, crLabel.implicitHeight)
+
         Image {
+            id: crIcon
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
             width: Metrics.iconToolbarChrome
             height: Metrics.iconToolbarChrome
             source: root.iconSource
         }
         Text {
+            id: crLabel
+            anchors.left: crIcon.right
+            anchors.leftMargin: 6
+            anchors.verticalCenter: parent.verticalCenter
             text: root.text
             font.bold: true
             font.pointSize: Theme.uiToolBarTitlePt
@@ -118,20 +127,30 @@ Button {
 
     Component {
         id: chromeContent
-        Row {
-            spacing: 6
+        Item {
+            implicitWidth: chIcon.width + 6 + chLabel.implicitWidth
+            implicitHeight: Math.max(chIcon.height, chLabel.implicitHeight)
+
             Image {
+                id: chIcon
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
                 width: Metrics.iconToolbarChrome
                 height: Metrics.iconToolbarChrome
                 source: root.iconSource
                 opacity: root.clickEnabled ? 1 : 0.45
+                fillMode: Image.PreserveAspectFit
             }
             Text {
+                id: chLabel
+                anchors.left: chIcon.right
+                anchors.leftMargin: 6
+                anchors.verticalCenter: parent.verticalCenter
                 text: root.text
                 font.bold: true
                 font.pointSize: Theme.uiToolBarTitlePt
                 font.family: root.chromeFontFamily.length > 0 ? root.chromeFontFamily : root._fontFamily
-                color: root.down ? Theme.fire : (root.hovered ? Theme.gold : Theme.textPrimary)
+                color: root.pressed ? Theme.fire : (root.hovered ? Theme.gold : Theme.textPrimary)
                 elide: Text.ElideRight
             }
         }
@@ -172,14 +191,6 @@ Button {
             border.color: root.down ? Theme.fireDeep
                     : (root.hovered ? Theme.chromeLineGold : Qt.alpha(Theme.chromeLine, 0.88))
             border.width: 1
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                height: 1
-                radius: Metrics.radiusToolbarButton
-                color: Qt.alpha(Theme.gold, 0.22)
-            }
         }
 
         Rectangle {
