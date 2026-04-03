@@ -157,6 +157,14 @@ Page {
         rng.refreshFromGame()
     }
 
+    function applyRangeTextFromField() {
+        if (!setup.showFullRangeEditor)
+            return
+        pokerGame.applySeatRangeText(setup.selectedSeat, textArea.text, rangeLayerTab.currentIndex)
+        pokerGame.savePersistedSettings()
+        setup.refreshRangeGrids()
+    }
+
     function reloadSeatEditor() {
         stratCombo.currentIndex = pokerGame.seatStrategyIndex(setup.selectedSeat)
         textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
@@ -794,8 +802,10 @@ Page {
                     Connections {
                         target: rangeLayerTab
                         function onCurrentIndexChanged() {
-                            if (setup.showFullRangeEditor)
+                            if (setup.showFullRangeEditor) {
                                 textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
+                                setup.refreshRangeGrids()
+                            }
                         }
                     }
 
@@ -813,7 +823,10 @@ Page {
                         wrapMode: TextArea.Wrap
                         font.family: Theme.fontFamilyUi
                         font.pixelSize: Theme.trainerBodyPx
+                        color: Theme.textPrimary
                         placeholderText: "AA,AKs,AKo,TT+"
+                        placeholderTextColor: Theme.textSecondary
+                        onEditingFinished: setup.applyRangeTextFromField()
                     }
                     RowLayout {
                         visible: showFullRangeEditor
@@ -821,11 +834,7 @@ Page {
                         Button {
                             text: qsTr("Apply")
                             flat: true
-                            onClicked: {
-                                pokerGame.applySeatRangeText(setup.selectedSeat, textArea.text, rangeLayerTab.currentIndex)
-                                pokerGame.savePersistedSettings()
-                                setup.refreshRangeGrids()
-                            }
+                            onClicked: setup.applyRangeTextFromField()
                         }
                         Button {
                             text: qsTr("Export")

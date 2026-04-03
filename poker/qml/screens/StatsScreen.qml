@@ -127,6 +127,10 @@ Page {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        leftPadding: Theme.uiPagePadding + 8
+        rightPadding: Theme.uiPagePadding + 8
+        topPadding: 10
+        bottomPadding: Theme.uiPagePadding + 6
 
         RowLayout {
             width: scrollView.availableWidth
@@ -139,7 +143,7 @@ Page {
 
             ColumnLayout {
                 id: statsMainCol
-                Layout.preferredWidth: Math.max(320, scrollView.availableWidth - 48)
+                Layout.preferredWidth: Math.max(320, scrollView.availableWidth - 24)
                 Layout.minimumWidth: 320
                 spacing: Theme.trainerColumnSpacing
 

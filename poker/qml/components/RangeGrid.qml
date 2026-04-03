@@ -46,6 +46,10 @@ Item {
     function refreshFromGame() {
         if (!root.composite || typeof pokerGame === "undefined")
             return
+        // Clear first so QML always sees a new assignment (avoids stale composite bindings).
+        root.wCall = []
+        root.wRaise = []
+        root.wBet = []
         root.wCall = pokerGame.getRangeGrid(root.seatIndex, 0)
         root.wRaise = pokerGame.getRangeGrid(root.seatIndex, 1)
         root.wBet = pokerGame.getRangeGrid(root.seatIndex, 2)
