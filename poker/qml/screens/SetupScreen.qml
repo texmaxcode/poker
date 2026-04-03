@@ -180,13 +180,16 @@ Page {
     }
 
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
+            totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
+        }
     }
 
     Connections {
         target: pokerGame
         function onSessionStatsChanged() {
+            totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
         }
     }
@@ -434,7 +437,58 @@ Page {
                         Layout.fillWidth: true
                         spacing: 10
                         Label {
-                            text: qsTr("Bankroll (buy-in)")
+                            text: qsTr("Total bankroll")
+                            font.bold: true
+                            font.pixelSize: Theme.trainerSectionPx
+                        }
+                        SpinBox {
+                            id: totalBankSpin
+                            from: 1
+                            to: 100000000
+                            stepSize: 100
+                            editable: true
+                            Layout.fillWidth: false
+                            Layout.preferredWidth: 200
+                            Layout.maximumWidth: 280
+
+                            property bool _applyingFromGame: false
+                            property bool _ready: false
+
+                            function refreshFromGame() {
+                                _applyingFromGame = true
+                                value = Math.max(1, pokerGame.seatBankrollTotal(setup.selectedSeat))
+                                _applyingFromGame = false
+                            }
+
+                            function pushTotalToEngine() {
+                                pokerGame.setSeatBankrollTotal(setup.selectedSeat, value)
+                            }
+
+                            Component.onCompleted: {
+                                refreshFromGame()
+                                _ready = true
+                            }
+
+                            Connections {
+                                target: seatTabBar
+                                function onCurrentIndexChanged() {
+                                    totalBankSpin.refreshFromGame()
+                                }
+                            }
+
+                            onValueChanged: {
+                                if (!totalBankSpin._ready || totalBankSpin._applyingFromGame)
+                                    return
+                                totalBankSpin.pushTotalToEngine()
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Label {
+                            text: qsTr("Table buy-in (target stack)")
                             font.bold: true
                             font.pixelSize: Theme.trainerSectionPx
                         }
@@ -489,6 +543,14 @@ Page {
                                 }
                             }
 
+                            Connections {
+                                target: pokerGame
+                                function onSessionStatsChanged() {
+                                    if (seatBankSpin._ready)
+                                        seatBankSpin.refreshFromGame()
+                                }
+                            }
+
                             /// Use `valueChanged`, not only `valueModified`: the latter can miss updates for
                             /// editable SpinBox / focus edge cases; `value` is the source of truth.
                             onValueChanged: {
@@ -502,9 +564,10 @@ Page {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                         text: qsTr(
-                            "Starting stack and rebuy unit for this seat (saved per player). "
-                            + "You cannot buy in for more than 100 big blinds (%1 chips at this BB); anything above that stays off the table as the rest of your bankroll. "
-                            + "Table stacks update when no hand is in progress; if a hand is running, the new amount is stored for the next apply.")
+                            "Total bankroll adds or removes chips for this seat (play money). "
+                            + "Table buy-in is how many chips you want on the felt up to 100 big blinds (%1 at this BB); the rest stays off-table. "
+                            + "Changing only buy-in moves chips between table and wallet without changing total. "
+                            + "When a hand is running, edits apply after the hand.")
                                 .arg(setup.buyInCapChips)
                         font.pixelSize: Theme.trainerCaptionPx
                         lineHeight: 1.25

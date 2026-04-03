@@ -4,6 +4,7 @@ import Theme 1.0
 import PokerUi 1.0
 
 /// Pot HUD + board below. Pot ticks up with animation; pot bumps when chips grow.
+/// One total pot amount only (side-pot math runs in the engine; we do not split the HUD).
 Item {
     id: table_container
     anchors.fill: parent
@@ -22,30 +23,8 @@ Item {
     property string board3: ""
     property string board4: ""
 
-    /// From engine: tier sizes match payout — shortest contribution level is main; each higher level is the next side pot.
-    /// Shown only when length > 1 (requires an all-in and at least one side tier).
-    property var sidePotAmounts: []
-
     property int smallBlind: 1
     property int bigBlind: 3
-
-    readonly property bool showSidePotBreakdown: sidePotAmounts !== undefined && sidePotAmounts !== null
-            && sidePotAmounts.length > 1
-    /// Main first, then each side tier; single line in the HUD (e.g. "Main $100 · Side 1 $30 · Side 2 $20").
-    readonly property string sidePotBreakdownText: {
-        if (!sidePotAmounts || sidePotAmounts.length < 2)
-            return ""
-        var parts = []
-        parts.push(qsTr("Main $%1").arg(Math.round(Number(sidePotAmounts[0]))))
-        for (var i = 1; i < sidePotAmounts.length; ++i) {
-            var v = Math.round(Number(sidePotAmounts[i]))
-            if (sidePotAmounts.length === 2)
-                parts.push(qsTr("Side $%1").arg(v))
-            else
-                parts.push(qsTr("Side %1 $%2").arg(i).arg(v))
-        }
-        return parts.join(qsTr(" · "))
-    }
 
     readonly property color gold: Theme.gold
 
@@ -76,16 +55,14 @@ Item {
 
     Column {
         id: col
-        /// Extra gap so the pot sits clearly above the board (was 8; side-pot reserve keeps vertical position stable).
         spacing: 18
         anchors.centerIn: parent
 
-        /// Fixed height: side-pot row reserves space so the board does not jump when all-ins create tiers.
         Rectangle {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.min(340, Math.max(260, table_container.width * 0.38))
-            height: Math.max(82, potHudInner.implicitHeight + 20)
+            height: Math.max(64, potHudInner.implicitHeight + 20)
             radius: 14
             color: Theme.hudBg1
             border.width: 2
@@ -150,26 +127,6 @@ Item {
                         font.family: Theme.fontFamilyUi
                         font.bold: true
                         font.pointSize: Theme.uiPotCallPt
-                    }
-                }
-
-                /// Side tiers when all-ins split the pot (one compact line).
-                Item {
-                    width: parent.width
-                    height: table_container.showSidePotBreakdown ? sidePotLine.implicitHeight : 30
-
-                    Text {
-                        id: sidePotLine
-                        width: parent.width
-                        visible: table_container.showSidePotBreakdown
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.NoWrap
-                        elide: Text.ElideMiddle
-                        text: table_container.sidePotBreakdownText
-                        color: Theme.textSecondary
-                        font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiPotSidePt
-                        font.bold: true
                     }
                 }
             }

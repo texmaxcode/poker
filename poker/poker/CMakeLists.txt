@@ -8,6 +8,7 @@ endif()
 qt_add_library(poker
   cards.cpp
   player.cpp
+  holdem_side_pot.cpp
   game.cpp
   game_ui_sync.cpp
   hand_eval.cpp

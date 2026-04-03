@@ -4,6 +4,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <vector>
 
 namespace detail {
 
@@ -192,7 +193,12 @@ static bool mask_5_of_7(int mask)
 std::array<int, 8> best_of_seven(const std::vector<card> &seven_cards)
 {
     assert(seven_cards.size() == 7);
+    /// Permutation-invariant: same seven cards in any order must yield the same best hand.
+    std::vector<card> cards = seven_cards;
+    std::sort(cards.begin(), cards.end(), [](const card &a, const card &b) { return a < b; });
+
     std::array<int, 8> best{};
+    bool have = false;
     for (int mask = 0; mask < 128; ++mask)
     {
         if (!mask_5_of_7(mask))
@@ -202,12 +208,16 @@ std::array<int, 8> best_of_seven(const std::vector<card> &seven_cards)
         for (int i = 0; i < 7; ++i)
         {
             if (mask & (1 << i))
-                five[p++] = seven_cards[static_cast<size_t>(i)];
+                five[p++] = cards[static_cast<size_t>(i)];
         }
         const auto sc = evaluate_5(five);
-        if (std::lexicographical_compare(best.begin(), best.end(), sc.begin(), sc.end()))
+        if (!have || std::lexicographical_compare(best.begin(), best.end(), sc.begin(), sc.end()))
+        {
             best = sc;
+            have = true;
+        }
     }
+    assert(have);
     return best;
 }
 

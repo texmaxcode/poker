@@ -32,6 +32,10 @@ Page {
     /// Rows from `seatRankings()` sorted by seat index 0–5 (on table / off-table bankroll / total).
     property var seatBankrollDetail: []
     property bool pendingApplyBuyIns: false
+    /// Bumped whenever tables refresh so `seatBuyIn()` / blinds labels re-bind (invokables have no NOTIFY).
+    property int uiRevision: 0
+    /// Bound to C++ `statsSeq` so leaderboard / chart refresh when bankroll snapshots update (not only on restart).
+    property int statsSeq: pokerGame.statsSeq
 
     function formatTimeMs(ms) {
         if (ms === undefined || ms === null || ms <= 0)
@@ -53,6 +57,7 @@ Page {
 
     function refreshSeatBankrollTables() {
         var list = pokerGame.seatRankings()
+        rankRepeater.model = list
         var map = {}
         for (var i = 0; i < list.length; i++)
             map[list[i].seat] = list[i]
@@ -62,7 +67,8 @@ Page {
                 out.push(map[s])
         }
         seatBankrollDetail = out
-        pendingApplyBuyIns = pokerGame.pendingSeatBuyInsApply()
+        pendingApplyBuyIns = pokerGame.pendingSeatBuyInsApply() || pokerGame.pendingSeatBankrollApply()
+        uiRevision = (uiRevision + 1) % 2000000000
     }
 
     function refreshChartData() {
@@ -255,6 +261,7 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         text: qsTr("Blinds: $%1 / $%2").arg(pokerGame.configuredSmallBlind()).arg(pokerGame.configuredBigBlind())
+                                + (statsPage.uiRevision * 0)
                         font.pixelSize: Theme.trainerCaptionPx
                         color: Theme.textSecondary
                     }
@@ -291,7 +298,7 @@ Page {
                                 font.bold: true
                             }
                             Label {
-                                text: "$" + pokerGame.seatBuyIn(index)
+                                text: "$" + pokerGame.seatBuyIn(index) + (statsPage.uiRevision * 0)
                                 Layout.fillWidth: true
                                 color: Theme.textSecondary
                                 font.pixelSize: Theme.trainerCaptionPx
@@ -307,7 +314,7 @@ Page {
                         Label {
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
-                            text: qsTr("Buy-in amounts were edited in Bots & ranges and are waiting to be pushed to the table stacks.")
+                            text: qsTr("Bankroll or buy-in was edited in Bots & ranges during a hand; changes apply when the next hand starts (or use Apply when the table is idle).")
                             font.pixelSize: Theme.trainerCaptionPx
                             color: Theme.textPrimary
                         }
@@ -315,10 +322,10 @@ Page {
                             text: qsTr("Apply buy-ins")
                             enabled: !pokerGame.gameInProgress()
                             onClicked: {
+                                pokerGame.applyPendingBankrollTotals()
                                 pokerGame.applySeatBuyInsToStacks()
                                 pokerGame.savePersistedSettings()
                                 statsPage.refreshSeatBankrollTables()
-                                rankRepeater.model = pokerGame.seatRankings()
                             }
                         }
                     }
@@ -374,7 +381,7 @@ Page {
 
                     Repeater {
                         id: rankRepeater
-                        model: pokerGame.seatRankings()
+                        model: []
 
                         RowLayout {
                             required property var modelData
@@ -811,12 +818,11 @@ Page {
 
     Connections {
         target: pokerGame
-        function onSessionStatsChanged() {
-            rankRepeater.model = pokerGame.seatRankings()
-            statsPage.refreshChartData()
+        function onPot_changed() {
             statsPage.refreshSeatBankrollTables()
         }
-        function onPot_changed() {
+        function onSessionStatsChanged() {
+            statsPage.refreshChartData()
             statsPage.refreshSeatBankrollTables()
         }
     }

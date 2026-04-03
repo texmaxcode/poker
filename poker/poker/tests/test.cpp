@@ -7,6 +7,7 @@
 
 #include "game.hpp"
 #include "hand_eval.hpp"
+#include "holdem_side_pot.hpp"
 #include "range_matrix.hpp"
 #include "equity_engine.hpp"
 
@@ -310,6 +311,64 @@ BOOST_AUTO_TEST_CASE(straight_beats_three_of_a_kind)
       {Rank::TWO, Suite::SPADES}, {Rank::FOUR, Suite::HEARTS}, {Rank::NINE, Suite::DIAMONDS},
       {Rank::JACK, Suite::CLUBS}};
   BOOST_CHECK(compare_holdem_hands(straight, trips) > 0);
+}
+
+BOOST_AUTO_TEST_CASE(royal_flush_beats_lower_straight_flush)
+{
+  std::vector<card> royal{
+      {Rank::ACE, Suite::SPADES}, {Rank::KING, Suite::SPADES}, {Rank::QUEEN, Suite::SPADES},
+      {Rank::JACK, Suite::SPADES}, {Rank::TEN, Suite::SPADES}, {Rank::TWO, Suite::HEARTS},
+      {Rank::THREE, Suite::DIAMONDS}};
+  std::vector<card> nine_high_sf{
+      {Rank::NINE, Suite::HEARTS}, {Rank::EIGHT, Suite::HEARTS}, {Rank::SEVEN, Suite::HEARTS},
+      {Rank::SIX, Suite::HEARTS}, {Rank::FIVE, Suite::HEARTS}, {Rank::KING, Suite::CLUBS},
+      {Rank::ACE, Suite::DIAMONDS}};
+  BOOST_CHECK(compare_holdem_hands(royal, nine_high_sf) > 0);
+}
+
+BOOST_AUTO_TEST_CASE(identical_best_five_chops)
+{
+  // Same seven cards in different order → same best five → chop.
+  std::vector<card> a{
+      {Rank::ACE, Suite::SPADES}, {Rank::KING, Suite::CLUBS}, {Rank::QUEEN, Suite::HEARTS},
+      {Rank::JACK, Suite::DIAMONDS}, {Rank::TEN, Suite::CLUBS}, {Rank::TWO, Suite::SPADES},
+      {Rank::THREE, Suite::HEARTS}};
+  std::vector<card> b = a;
+  std::swap(b[0], b[1]);
+  BOOST_CHECK_EQUAL(compare_holdem_hands(a, b), 0);
+}
+
+BOOST_AUTO_TEST_CASE(side_pot_three_distinct_contributions)
+{
+  const std::vector<int> contrib{50, 100, 150};
+  std::vector<int> levels;
+  std::vector<int> tiers;
+  BOOST_CHECK(holdem_nlhe_side_pot_breakdown(contrib, 300, &levels, &tiers));
+  BOOST_REQUIRE_EQUAL(tiers.size(), 3u);
+  BOOST_CHECK_EQUAL(levels[0], 50);
+  BOOST_CHECK_EQUAL(levels[1], 100);
+  BOOST_CHECK_EQUAL(levels[2], 150);
+  /// Shortest stack layer = main pot (everyone matched 50); then side pots for higher depths.
+  BOOST_CHECK_EQUAL(tiers[0], 150);
+  BOOST_CHECK_EQUAL(tiers[1], 100);
+  BOOST_CHECK_EQUAL(tiers[2], 50);
+}
+
+BOOST_AUTO_TEST_CASE(side_pot_sum_must_match_pot)
+{
+  std::vector<int> levels;
+  std::vector<int> tiers;
+  BOOST_CHECK(!holdem_nlhe_side_pot_breakdown({10, 20, 20}, 49, &levels, &tiers));
+}
+
+BOOST_AUTO_TEST_CASE(side_pot_single_depth_one_physical_pot)
+{
+  std::vector<int> levels;
+  std::vector<int> tiers;
+  const std::vector<int> contrib{100, 100, 100};
+  BOOST_CHECK(holdem_nlhe_side_pot_breakdown(contrib, 300, &levels, &tiers));
+  BOOST_REQUIRE_EQUAL(tiers.size(), 1u);
+  BOOST_CHECK_EQUAL(tiers[0], 300);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

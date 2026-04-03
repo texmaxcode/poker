@@ -131,7 +131,7 @@ Page {
                 sub: qsTr("Ranks & charts")
                 detailTip: qsTr(
                     "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "
-                    + "Each player’s buy-in is set on that player’s tab under Bots & ranges (Bankroll).")
+                    + "Set total bankroll and table buy-in on each player’s tab under Bots & ranges.")
                 iconSource: "qrc:/assets/icons/table.svg"
                 onClicked: lobbyPage.go(4)
             }

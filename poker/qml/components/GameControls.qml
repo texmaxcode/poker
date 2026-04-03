@@ -886,7 +886,9 @@ Item {
 
             Rectangle {
                 id: statusBanner
+                /// Hide while your decision timer runs: last-hand showdown text/cards would otherwise sit on top of actions.
                 visible: !game_controls.trainerMode
+                        && !(game_controls.embeddedMode && game_controls.humanDecisionActive)
                 width: parent.width - 16
                 x: 8
                 implicitHeight: statusTableColumn.implicitHeight + 12

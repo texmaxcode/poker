@@ -37,7 +37,9 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 |--------|----------------|
 | **`cards.*`** | Ranks, suits, deck; compact string form + **`card_to_qml_asset_path`** for SVG resource names |
 | **`player.*`** | Hole cards, stack, **`pay`** / **`take_from_stack`** (clamped) |
-| **`hand_eval.*`** | Best 5 of 7, comparison, human-readable descriptions |
+| **`hand_eval.*`** | Best 5 of 7, comparison, human-readable descriptions (order-invariant best-of-seven) |
+| **`holdem_side_pot.*`** | NLHE main/side pot breakdown (`holdem_nlhe_side_pot_breakdown`) — payouts / `do_payouts` only |
+| **`holdem_rules_facade.hpp`** | Optional `Holdem::HandEvaluator` / `Holdem::SidePot` aliases over existing modules |
 | **`game.*` / `game_ui_sync.cpp`** | Table vector, button, blinds, streets, **`in_hand`**, betting loop, bots, persistence, QML API; **`sync_ui`** / **`flush_ui`** in **`game_ui_sync.cpp`** |
 | **`session_store.*`** | **`QSettings`** load/save for solver screen fields |
 | **`training_store.*`** / **`training_controller.*`** | Persisted training progress; prefop/flop drill generation and scoring |
@@ -64,9 +66,9 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 Bundled training JSON lives under **`poker/qml/assets/training/`** (e.g. `preflop_ranges_v1.json`, `spots_v1.json`). Assets are embedded via **`application.qrc`**.
 
-## Rules and engine fidelity
+## Game behavior (what the code does)
 
-Betting order, blinds (including **heads-up**), burns before board cards, showdown messaging, **side pots** (HUD: shortest all-in defines the main pot; deeper stacks contest sides), and **best hand** selection follow the intended Hold’em model; some **simplifications** still apply. See **[rules-and-limitations.md](rules-and-limitations.md)**.
+Blinds (including **heads-up**), street order, burns before board cards, NL betting, showdown and **side-pot** payouts (`do_payouts` / `holdem_nlhe_side_pot_breakdown`), **HUD total pot only**, stake cap, bankroll/rebuy, and what is **not** implemented are summarized in **[game-in-code.md](game-in-code.md)**.
 
 ## Tests
 

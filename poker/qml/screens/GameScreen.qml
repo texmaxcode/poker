@@ -15,8 +15,6 @@ Page {
     }
 
     property int pot: 0
-    /// Per-tier side pot sizes (main first); length > 1 means multiple pots — see `Table` HUD.
-    property var sidePotAmounts: []
     property var seatStacks: [100, 100, 100, 100, 100, 100]
     property var seatC1: ["", "", "", "", "", ""]
     property var seatC2: ["", "", "", "", "", ""]
@@ -148,7 +146,6 @@ Page {
             z: 3
             anchors.fill: parent
             pot_amount: game_screen.pot
-            sidePotAmounts: game_screen.sidePotAmounts
             actingSeat: game_screen.actingSeat
             decisionSecondsLeft: game_screen.decisionSecondsLeft
             facingNeedChips: game_screen.facingNeedChips

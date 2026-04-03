@@ -4,6 +4,7 @@
 #include "game.hpp"
 
 #include "hand_eval.hpp"
+#include "holdem_side_pot.hpp"
 
 #include "cards.hpp"
 
@@ -332,60 +333,6 @@ QString game::hand_result_status_line(int seat) const
     return line;
 }
 
-QVariantList game::side_pot_amounts_for_ui() const
-{
-    QVariantList out;
-    const int n = players_count();
-    if (n < 2 || pot <= 0)
-        return out;
-
-    int sum_contrib = 0;
-    for (int i = 0; i < n; ++i)
-        sum_contrib += hand_contrib_[static_cast<size_t>(i)];
-    if (sum_contrib != pot)
-        return out;
-
-    // Same tier sizes as `do_payouts`: sort unique contribution amounts ascending; each step from
-    // `prev` to `level` adds (level - prev) * (# seats with contrib >= level). Shortest stack’s
-    // total is the first level — that tier is the main pot; higher levels are side pots.
-    std::vector<int> levels;
-    for (int i = 0; i < n; ++i)
-    {
-        const int c = hand_contrib_[static_cast<size_t>(i)];
-        if (c > 0)
-            levels.push_back(c);
-    }
-    if (levels.size() < 2)
-        return out;
-
-    std::sort(levels.begin(), levels.end());
-    levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
-
-    int distributed = 0;
-    int prev = 0;
-    for (int level : levels)
-    {
-        const int increment = level - prev;
-        int n_cover = 0;
-        for (int i = 0; i < n; ++i)
-        {
-            if (hand_contrib_[static_cast<size_t>(i)] >= level)
-                ++n_cover;
-        }
-        const int tier_chips = increment * n_cover;
-        if (tier_chips > 0)
-        {
-            out.append(tier_chips);
-            distributed += tier_chips;
-        }
-        prev = level;
-    }
-
-    if (distributed != pot || out.size() < 2)
-        return {};
-    return out;
-}
-
 // Preflop: first actor is UTG — clockwise after the big blind (heads-up: button / small blind first).
 // Flop+: first actor is clockwise from the button (small blind if still in; heads-up: big blind first).
 std::vector<int> game::action_order(Street st) const
@@ -561,13 +508,7 @@ bool game::wait_for_human_check_or_bet(Street st)
         return false;
 
     if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
-    {
-        /// Cannot open — auto check (all-in players still "pass" when checked around to them).
-        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
-        push_human_action_status(QStringLiteral("Check"));
-        sync_ui();
         return false;
-    }
 
     waiting_for_human_check_ = true;
     human_opened_bet_from_check_ = false;
@@ -657,13 +598,6 @@ bool game::wait_for_human_bb_preflop()
 {
     if (!m_root)
         return false;
-    if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
-    {
-        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
-        push_human_action_status(QStringLiteral("Check"));
-        sync_ui();
-        return false;
-    }
 
     waiting_for_human_bb_preflop_ = true;
     human_bb_preflop_raised_ = false;
@@ -1189,6 +1123,9 @@ bool game::handle_postflop_check_or_bet(Street st)
     {
         if (!in_hand_[static_cast<size_t>(seat)])
             continue;
+        /// No check/bet turn when already all-in for this hand — action skips to players with chips behind.
+        if (table[static_cast<size_t>(seat)].stack <= 0)
+            continue;
         if (seat == kHumanSeat)
         {
             if (!interactive_human_ || !m_root)
@@ -1261,10 +1198,15 @@ bool game::handle_bb_preflop_option()
     {
         if (!interactive_human_ || !m_root)
             return false;
+        if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
+            return false;
         return wait_for_human_bb_preflop();
     }
 
     const size_t bi = static_cast<size_t>(bb);
+    if (table[bi].stack <= 0)
+        return false;
+
     acting_seat_ = bb;
     flush_ui();
     bot_action_pause();
@@ -1462,40 +1404,24 @@ void game::do_payouts()
         return;
     }
 
-    int sum_contrib = 0;
+    std::vector<int> contrib(static_cast<size_t>(n));
     for (int i = 0; i < n; ++i)
-        sum_contrib += hand_contrib_[static_cast<size_t>(i)];
+        contrib[static_cast<size_t>(i)] = hand_contrib_[static_cast<size_t>(i)];
 
     std::vector<int> levels;
-    for (int i = 0; i < n; ++i)
-    {
-        const int c = hand_contrib_[static_cast<size_t>(i)];
-        if (c > 0)
-            levels.push_back(c);
-    }
-    std::sort(levels.begin(), levels.end());
-    levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
-
-    const bool use_side_pots = (sum_contrib == pot) && !levels.empty();
+    std::vector<int> tier_amounts;
+    const bool use_side_pots = holdem_nlhe_side_pot_breakdown(contrib, pot, &levels, &tier_amounts);
 
     if (use_side_pots)
     {
         std::array<int, kMaxPlayers> stack_gain{};
         stack_gain.fill(0);
         int distributed = 0;
-        int prev = 0;
         QStringList tier_status_lines;
-        int pot_segment = 0;
-        for (int level : levels)
+        for (size_t ti = 0; ti < levels.size(); ++ti)
         {
-            const int increment = level - prev;
-            int n_cover = 0;
-            for (int i = 0; i < n; ++i)
-            {
-                if (hand_contrib_[static_cast<size_t>(i)] >= level)
-                    ++n_cover;
-            }
-            const int side_pot = increment * n_cover;
+            const int level = levels[ti];
+            const int side_pot = tier_amounts[ti];
             if (side_pot > 0)
             {
                 std::vector<int> eligible;
@@ -1528,9 +1454,9 @@ void game::do_payouts()
 
                     if (levels.size() > 1)
                     {
-                        const QString seg_name = (pot_segment == 0 ? QStringLiteral("Main")
-                                                                   : QStringLiteral("Side %1").arg(pot_segment));
-                        ++pot_segment;
+                        const QString seg_name =
+                            (ti == 0 ? QStringLiteral("Main pot")
+                                     : QStringLiteral("Side pot %1").arg(static_cast<int>(ti)));
                         QString seg_body;
                         if (tier_winners.size() == 1)
                         {
@@ -1561,7 +1487,6 @@ void game::do_payouts()
                     }
                 }
             }
-            prev = level;
         }
         if (distributed == pot)
         {
@@ -1879,6 +1804,8 @@ void game::clear_for_new_hand()
     clear_street_action_labels();
     if (m_root)
     {
+        /// Re-apply last result so QML keeps winner line + banner cards until the next showdown updates them.
+        /// (Clearing to empty broke the GameControls banner after we stopped pushing stale text elsewhere.)
         m_root->setProperty("statusText", last_hand_result_message_);
         m_root->setProperty("resultBannerCardAssets", QVariant::fromValue(last_hand_result_card_assets_));
     }
@@ -1925,6 +1852,26 @@ int game::maxBuyInChips() const
     return 100 * std::max(1, big_blind);
 }
 
+int game::seatBankrollTotal(int seat) const
+{
+    if (seat < 0 || seat >= kMaxPlayers)
+        return 0;
+    const size_t si = static_cast<size_t>(seat);
+    if (pending_bankroll_total_[si] >= 0)
+        return pending_bankroll_total_[si];
+    return table[si].stack + seat_wallet_[si];
+}
+
+bool game::pendingSeatBankrollApply() const
+{
+    for (int i = 0; i < kMaxPlayers; ++i)
+    {
+        if (pending_bankroll_total_[static_cast<size_t>(i)] >= 0)
+            return true;
+    }
+    return false;
+}
+
 int game::seatBuyIn(int seat) const
 {
     if (seat < 0 || seat >= kMaxPlayers)
@@ -1943,6 +1890,7 @@ void game::setSeatBuyIn(int seat, int chips)
     // If a hand is currently running, wait until the next hand to re-apply stacks.
     if (in_progress)
         pending_seat_buyins_apply_ = true;
+    notifySessionStatsChanged();
 }
 
 void game::applySeatBuyInsToStacks()
@@ -2276,6 +2224,12 @@ QString game::exportSeatRangeText(int seat, int layer) const
         layer_matrix_c(seat_cfg_[static_cast<size_t>(seat)], layer)->export_text());
 }
 
+void game::notifySessionStatsChanged()
+{
+    ++stats_seq_;
+    emit sessionStatsChanged();
+}
+
 void game::record_bankroll_snapshot()
 {
     std::array<int, kMaxPlayers> snap{};
@@ -2285,6 +2239,7 @@ void game::record_bankroll_snapshot()
                                         + seat_wallet_[static_cast<size_t>(i)];
     bankroll_history_.push_back(snap);
     bankroll_snapshot_times_ms_.push_back(QDateTime::currentMSecsSinceEpoch());
+    ++stats_seq_;
     emit sessionStatsChanged();
 }
 
@@ -2302,6 +2257,7 @@ void game::init_bankroll_after_configure()
 void game::complete_hand_idle()
 {
     try_auto_rebuys_for_busted_bots();
+    flush_pending_bankroll_totals();
     record_bankroll_snapshot();
     sync_seat_buy_in_from_table_when_wallet_empty();
     savePersistedSettings();
@@ -2415,11 +2371,29 @@ void game::sync_seat_buy_in_from_table_when_wallet_empty()
     }
 }
 
-void game::setSeatBankrollTotal(int seat, int totalChips)
+void game::flush_pending_bankroll_totals()
+{
+    if (in_progress)
+        return;
+    for (int i = 0; i < kMaxPlayers; ++i)
+    {
+        const int pending = pending_bankroll_total_[static_cast<size_t>(i)];
+        if (pending >= 0)
+        {
+            apply_seat_bankroll_total_now(i, pending);
+            pending_bankroll_total_[static_cast<size_t>(i)] = -1;
+        }
+    }
+}
+
+void game::applyPendingBankrollTotals()
+{
+    flush_pending_bankroll_totals();
+}
+
+void game::apply_seat_bankroll_total_now(int seat, int totalChips)
 {
     if (seat < 0 || seat >= kMaxPlayers)
-        return;
-    if (in_progress)
         return;
     const int t = std::max(1, std::min(100000000, totalChips));
     const size_t si = static_cast<size_t>(seat);
@@ -2431,6 +2405,21 @@ void game::setSeatBankrollTotal(int seat, int totalChips)
     record_bankroll_snapshot();
     savePersistedSettings();
     flush_ui();
+}
+
+void game::setSeatBankrollTotal(int seat, int totalChips)
+{
+    if (seat < 0 || seat >= kMaxPlayers)
+        return;
+    const int t = std::max(1, std::min(100000000, totalChips));
+    if (in_progress)
+    {
+        pending_bankroll_total_[static_cast<size_t>(seat)] = t;
+        notifySessionStatsChanged();
+        return;
+    }
+    apply_seat_bankroll_total_now(seat, t);
+    pending_bankroll_total_[static_cast<size_t>(seat)] = -1;
 }
 
 int game::sessionBaselineStack(int seat) const
@@ -2472,6 +2461,7 @@ game::game(QObject *parent)
     seat_participating_.fill(true);
     seat_buy_in_.fill(starting_stack_);
     seat_wallet_.fill(0);
+    pending_bankroll_total_.fill(-1);
     for (int s = 0; s < kMaxPlayers; ++s)
     {
         player p;
