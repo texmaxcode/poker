@@ -19,6 +19,9 @@ using ::describe_holdem_hand;
 
 namespace SidePot {
 using ::holdem_nlhe_side_pot_breakdown;
+using ::nlhe_build_side_pot_slices;
+using ::NlheSidePotSlice;
+using ::nlhe_effective_stack_chips;
 } // namespace SidePot
 
 } // namespace Holdem

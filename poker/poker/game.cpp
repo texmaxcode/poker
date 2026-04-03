@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <vector>
 #include <cmath>
 #include <random>
 
@@ -310,6 +311,67 @@ QString game::hole_cards_display(int seat) const
         return {};
     return card_to_display_string(table[static_cast<size_t>(seat)].first_card) + QLatin1Char(' ')
         + card_to_display_string(table[static_cast<size_t>(seat)].second_card);
+}
+
+QString game::format_showdown_payout_lines_from_gains(const std::array<int, kMaxPlayers> &stack_gain,
+                                                      int players_n) const
+{
+    QStringList lines;
+    std::vector<int> seats;
+    seats.reserve(static_cast<size_t>(players_n));
+    for (int s = 0; s < players_n; ++s)
+    {
+        if (stack_gain[static_cast<size_t>(s)] > 0)
+            seats.push_back(s);
+    }
+    std::sort(seats.begin(), seats.end(), [&](int a, int b) {
+        const int ga = stack_gain[static_cast<size_t>(a)];
+        const int gb = stack_gain[static_cast<size_t>(b)];
+        if (ga != gb)
+            return ga > gb;
+        return a < b;
+    });
+    const QString brd = board_compact_for_result();
+    const QString board_text = brd.isEmpty() ? QStringLiteral("—") : brd;
+    for (int s : seats)
+    {
+        QString hand_name = winning_hand_label(s);
+        if (hand_name.isEmpty())
+            hand_name = QStringLiteral("—");
+        lines.append(QStringLiteral("%1 wins $%2 holding %3 on %4 with %5.")
+                         .arg(seat_display_name(s))
+                         .arg(stack_gain[static_cast<size_t>(s)])
+                         .arg(hole_cards_display(s))
+                         .arg(board_text)
+                         .arg(hand_name));
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
+int game::banner_seat_from_showdown_gains(const std::array<int, kMaxPlayers> &stack_gain, int players_n) const
+{
+    int best_seat = -1;
+    int best_amt = -1;
+    for (int s = 0; s < players_n; ++s)
+    {
+        const int g = stack_gain[static_cast<size_t>(s)];
+        if (g <= 0)
+            continue;
+        if (g > best_amt || (g == best_amt && (best_seat < 0 || s < best_seat)))
+        {
+            best_amt = g;
+            best_seat = s;
+        }
+    }
+    return best_seat >= 0 ? best_seat : 0;
+}
+
+QString game::fold_win_status_line(int seat, int pot_chips) const
+{
+    return QStringLiteral("%1 wins $%2 with %3 Everybody folded.")
+        .arg(seat_display_name(seat))
+        .arg(pot_chips)
+        .arg(hole_cards_display(seat));
 }
 
 QString game::winning_hand_label(int seat) const
@@ -1265,7 +1327,8 @@ void game::award_pot_to_last_standing()
     if (winner < 0)
         return;
 
-    const QString msg = hand_result_status_line(winner);
+    const int won = pot;
+    const QString msg = fold_win_status_line(winner, won);
     award_pot_to_seat(winner);
     set_hand_result_status(msg, result_banner_card_assets_for_seat(winner));
 }
@@ -1397,8 +1460,9 @@ void game::do_payouts()
     if (contenders.size() == 1)
     {
         const int s = contenders.front();
+        const int won = pot;
         table[static_cast<size_t>(s)].stack += pot;
-        const QString msg = hand_result_status_line(s);
+        const QString msg = fold_win_status_line(s, won);
         pot = 0;
         emit pot_changed();
         set_hand_result_status(msg, result_banner_card_assets_for_seat(s));
@@ -1409,16 +1473,14 @@ void game::do_payouts()
     for (int i = 0; i < n; ++i)
         contrib[static_cast<size_t>(i)] = hand_contrib_[static_cast<size_t>(i)];
 
-    std::vector<int> levels;
-    std::vector<int> side_pot_amounts;
-    const bool use_side_pots = holdem_nlhe_side_pot_breakdown(contrib, pot, &levels, &side_pot_amounts);
+    std::vector<NlheSidePotSlice> side_pots;
+    const bool use_side_pots = nlhe_build_side_pot_slices(contrib, pot, &side_pots);
 
     if (use_side_pots)
     {
         std::array<int, kMaxPlayers> stack_gain{};
         stack_gain.fill(0);
         int distributed = 0;
-        QStringList side_pot_status_lines;
 
         auto best_hands_among = [this](std::vector<int> seats) -> std::vector<int> {
             if (seats.empty())
@@ -1437,16 +1499,15 @@ void game::do_payouts()
             return winners;
         };
 
-        for (size_t ti = 0; ti < levels.size(); ++ti)
+        for (size_t ti = 0; ti < side_pots.size(); ++ti)
         {
-            const int level = levels[ti];
-            const int side_pot = side_pot_amounts[ti];
+            const int level = side_pots[ti].contribution_threshold;
+            const int side_pot = side_pots[ti].amount;
             if (side_pot <= 0)
                 continue;
 
-            /// Seats still in the showdown that have matched at least `level` this hand win this slice.
-            /// If every seat that contributed ≥ `level` has folded, award the slice among all remaining
-            /// contenders (their chips stay in the middle; standard “orphan” side-pot resolution).
+            /// Table stakes: only seats with total hand contribution ≥ this pot’s threshold may win it.
+            /// If every such seat folded, award among remaining contenders (orphan side pot).
             std::vector<int> eligible;
             for (int s : contenders)
             {
@@ -1464,38 +1525,6 @@ void game::do_payouts()
             for (int w = 0; w < nw; ++w)
                 stack_gain[static_cast<size_t>(pot_winners[static_cast<size_t>(w)])] += share + (w < rem ? 1 : 0);
             distributed += side_pot;
-
-            if (levels.size() > 1)
-            {
-                const QString seg_name =
-                    (ti == 0 ? QStringLiteral("Main pot") : QStringLiteral("Side pot %1").arg(static_cast<int>(ti)));
-                QString seg_body;
-                if (pot_winners.size() == 1)
-                {
-                    const int ts = pot_winners.front();
-                    seg_body = seat_display_name(ts);
-                    const QString wn = winning_hand_label(ts);
-                    if (!wn.isEmpty())
-                        seg_body += QStringLiteral(" — ") + wn;
-                    seg_body += QStringLiteral(" — ") + hole_cards_display(ts);
-                }
-                else
-                {
-                    QString hl;
-                    for (int ts : pot_winners)
-                    {
-                        if (!hl.isEmpty())
-                            hl += QStringLiteral(" · ");
-                        hl += QStringLiteral("%1 %2").arg(seat_display_name(ts)).arg(hole_cards_display(ts));
-                    }
-                    const QString wn = winning_hand_label(pot_winners.front());
-                    if (!wn.isEmpty())
-                        seg_body = hl + QStringLiteral(" — ") + wn;
-                    else
-                        seg_body = hl;
-                }
-                side_pot_status_lines.append(QStringLiteral("%1 ($%2): %3").arg(seg_name).arg(side_pot).arg(seg_body));
-            }
         }
 
         if (distributed < pot)
@@ -1523,58 +1552,8 @@ void game::do_payouts()
             pot = 0;
             emit pot_changed();
 
-            std::vector<size_t> win_idx = {0};
-            for (size_t w = 1; w < contenders.size(); ++w)
-            {
-                const int cmp = compare_holdem_hands(hole_vecs[w], hole_vecs[win_idx.front()]);
-                if (cmp > 0)
-                    win_idx = {w};
-                else if (cmp == 0)
-                    win_idx.push_back(w);
-            }
-            const int banner_seat = contenders[win_idx.front()];
-
-            if (levels.size() > 1 && !side_pot_status_lines.isEmpty())
-            {
-                QString msg = side_pot_status_lines.join(QLatin1Char('\n'));
-                const QString brd = board_compact_for_result();
-                if (!brd.isEmpty())
-                    msg += QLatin1Char('\n') + brd;
-                set_hand_result_status(msg, result_banner_card_assets_for_seat(banner_seat));
-                return;
-            }
-
-            std::vector<int> winners;
-            for (size_t i : win_idx)
-                winners.push_back(contenders[i]);
-
-            QString msg;
-            if (winners.size() == 1)
-            {
-                const int wseat = winners.front();
-                msg = hand_result_status_line(wseat);
-            }
-            else
-            {
-                QString holes_line;
-                for (int wseat : winners)
-                {
-                    if (!holes_line.isEmpty())
-                        holes_line += QStringLiteral(" · ");
-                    holes_line += QStringLiteral("%1 %2")
-                                      .arg(seat_display_name(wseat))
-                                      .arg(hole_cards_display(wseat));
-                }
-                msg = holes_line;
-                {
-                    const QString hn = winning_hand_label(winners.front());
-                    if (!hn.isEmpty())
-                        msg += QStringLiteral(" — ") + hn;
-                    const QString brd = board_compact_for_result();
-                    if (!brd.isEmpty())
-                        msg += QStringLiteral(" · ") + brd;
-                }
-            }
+            const QString msg = format_showdown_payout_lines_from_gains(stack_gain, n);
+            const int banner_seat = banner_seat_from_showdown_gains(stack_gain, n);
             set_hand_result_status(msg, result_banner_card_assets_for_seat(banner_seat));
             return;
         }
@@ -1598,41 +1577,23 @@ void game::do_payouts()
     const int nw = static_cast<int>(winners.size());
     const int share = pot / nw;
     const int rem = pot % nw;
+    std::array<int, kMaxPlayers> gain{};
+    gain.fill(0);
     for (int i = 0; i < nw; ++i)
-        table[static_cast<size_t>(winners[static_cast<size_t>(i)])].stack += share + (i < rem ? 1 : 0);
+    {
+        const int seat = winners[static_cast<size_t>(i)];
+        const int add = share + (i < rem ? 1 : 0);
+        table[static_cast<size_t>(seat)].stack += add;
+        gain[static_cast<size_t>(seat)] = add;
+    }
 
-    QString msg;
-    if (winners.size() == 1)
-    {
-        const int wseat = winners.front();
-        msg = hand_result_status_line(wseat);
-    }
-    else
-    {
-        QString holes_line;
-        for (int wseat : winners)
-        {
-            if (!holes_line.isEmpty())
-                holes_line += QStringLiteral(" · ");
-            holes_line += QStringLiteral("%1 %2")
-                              .arg(seat_display_name(wseat))
-                              .arg(hole_cards_display(wseat));
-        }
-        msg = holes_line;
-        {
-            const QString hn = winning_hand_label(winners.front());
-            if (!hn.isEmpty())
-                msg += QStringLiteral(" — ") + hn;
-            const QString brd = board_compact_for_result();
-            if (!brd.isEmpty())
-                msg += QStringLiteral(" · ") + brd;
-        }
-    }
+    const QString msg = format_showdown_payout_lines_from_gains(gain, n);
+    const int banner_seat = banner_seat_from_showdown_gains(gain, n);
 
     pot = 0;
     emit pot_changed();
 
-    set_hand_result_status(msg, result_banner_card_assets_for_seat(winners.front()));
+    set_hand_result_status(msg, result_banner_card_assets_for_seat(banner_seat));
 }
 
 void game::switch_button()

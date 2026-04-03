@@ -38,7 +38,7 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 | **`cards.*`** | Ranks, suits, deck; compact string form + **`card_to_qml_asset_path`** for SVG resource names |
 | **`player.*`** | Hole cards, stack, **`pay`** / **`take_from_stack`** (clamped) |
 | **`hand_eval.*`** | Best 5 of 7, comparison, human-readable descriptions (order-invariant best-of-seven) |
-| **`holdem_side_pot.*`** | NLHE main/side pot breakdown (`holdem_nlhe_side_pot_breakdown`) — payouts / `do_payouts` only |
+| **`holdem_side_pot.*`** | Table-stakes **main + side pot** slices (`nlhe_build_side_pot_slices`, `NlheSidePotSlice`) — `do_payouts` |
 | **`holdem_rules_facade.hpp`** | Optional `Holdem::HandEvaluator` / `Holdem::SidePot` aliases over existing modules |
 | **`game.*` / `game_ui_sync.cpp`** | Table vector, button, blinds, streets, **`in_hand`**, betting loop, bots, persistence, QML API; **`sync_ui`** / **`flush_ui`** in **`game_ui_sync.cpp`** |
 | **`session_store.*`** | **`QSettings`** load/save for solver screen fields |

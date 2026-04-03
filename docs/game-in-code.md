@@ -24,19 +24,22 @@ This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold�
    - **Seat numbering** — `GameScreen` places seat **0** (human) on the felt and increases the index around the oval; geometrically that walks **counter-clockwise** on the layout, so **clockwise** poker order in code is **next lower index** with wrap: `(seat + n - 1) % n` (`first_in_hand_after`, `next_seat_in_position_pool`, deal order).
    - **Preflop** — First to act is `first_in_hand_after(bb_seat_)` (UTG after the big blind; heads-up: the button / small blind).
    - **Flop / turn / river** — First to act is `first_in_hand_after(button)` among seats still **in the hand** (small blind leads when still in; heads-up postflop, big blind acts first).
-6. **Fold wins** — If only one player remains, they take the pot without a showdown (`award_pot_to_last_standing`).
+6. **Fold wins** — If only one player remains, they take the pot without a showdown (`award_pot_to_last_standing`); status text is `Name wins $N with … Everybody folded.`
 7. **Showdown** — `do_payouts` compares hole cards + board (`hand_eval`) and pays **main pot** and **side pots** the same way major sites do: from each seat’s **total contribution this hand** (`hand_contrib_`), build **one main pot** (everyone’s money up to the smallest stack in play for that layer) and **side pots** for each deeper stack; each physical pot is won by the best hand among players **eligible for that pot** (and chops split evenly, remainder by seat order).
 
 ---
 
-## Main pot and side pots (Global Poker–style)
+## Main pot and side pots (table stakes, Global Poker–style)
 
-This is **not** a separate rules system—it is the usual NLHE **main + side pot** breakdown:
+**Table stakes:** you can only win chips you matched; larger stacks’ excess goes into **side pots**.
 
-- **Main pot** — Chips everyone matched who was still contesting that “layer” (short stack, then the next, etc.).
-- **Side pot 1, side pot 2, …** — Extra chips only the deeper stacks put in; each side pot is awarded only to players who **put in enough** to be in that pot **and** are still live at showdown (with a fallback when the only funders folded—see `do_payouts`).
+**Pot building** (`nlhe_build_side_pot_slices` in `holdem_side_pot.cpp`): from each seat’s **total committed this hand** (`hand_contrib_`), take **distinct positive contribution levels** L₁ < … < Lₖ. For each j, slice size is **(Lⱼ − Lⱼ₋₁) × (number of seats with contrib ≥ Lⱼ)**. That yields **main pot** + **side pot 1 / 2 / …** whose sizes sum to the center pot. Example: contributions **100, 300, 500** → main **300** (100×3), side **400** (200×2), side **200** (200×1).
 
-The engine computes chip amounts with `holdem_nlhe_side_pot_breakdown()` (sorted **unique contribution depths** → one amount per **main or side pot**). The UI does **not** show a running main/side split in the center; only the **total** is on the table during play.
+**Showdown** (`do_payouts`): for each slice in order, the winner is the best hand among **live** seats with **contrib ≥ that slice’s threshold**; chops split only among those winners. Folded players never win, but their chips were already included in the slice sizes.
+
+**Two-player effective stack** (for intuition when betting): `nlhe_effective_stack_chips(a, b)` = min(a, b); actual engine accounting uses **stack** + **pay** so all-in calls cap at the caller’s stack.
+
+The **table HUD** shows one **combined** pot during the hand (and resets after the hand). At showdown, **GameControls** shows **one line per player who won chips** (e.g. `Alice wins $450 holding … on … with Two pair, …`). Amounts are **actual stack awards** (main + side pots for that seat), matching the table pot total across winners.
 
 ---
 
@@ -85,7 +88,7 @@ The engine computes chip amounts with `holdem_nlhe_side_pot_breakdown()` (sorted
 | Cards, deck, burns | `cards.hpp` / `cards.cpp` |
 | Player stack, hole cards | `player.hpp` / `player.cpp` |
 | Best hand, compare, descriptions | `hand_eval.hpp` / `hand_eval.cpp` |
-| Side-pot chip math | `holdem_side_pot.hpp` / `holdem_side_pot.cpp` — used in **`do_payouts`** |
+| Main / side pot slices (`NlheSidePotSlice`) | `holdem_side_pot.hpp` / `holdem_side_pot.cpp` — `nlhe_build_side_pot_slices`; **`do_payouts`** awards each slice |
 | Full table engine | `game.hpp` / `game.cpp`, `game_ui_sync.cpp` |
 | QML table / HUD | `GameScreen.qml`, `GameControls.qml`, `Table.qml`, … |
 

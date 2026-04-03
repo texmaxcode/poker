@@ -385,4 +385,20 @@ BOOST_AUTO_TEST_CASE(side_pot_folded_high_contributor_tiers)
   BOOST_CHECK_EQUAL(tiers[1], 200);
 }
 
+/// Three-way all-in 100 / 300 / 500: main 300, side 400, side 200 (table-stakes tier build).
+BOOST_AUTO_TEST_CASE(nlhe_side_pots_three_stacks_global_poker_example)
+{
+  const std::vector<int> contrib{100, 300, 500};
+  std::vector<NlheSidePotSlice> slices;
+  BOOST_CHECK(nlhe_build_side_pot_slices(contrib, 900, &slices));
+  BOOST_REQUIRE_EQUAL(slices.size(), 3u);
+  BOOST_CHECK_EQUAL(slices[0].amount, 300);
+  BOOST_CHECK_EQUAL(slices[0].contribution_threshold, 100);
+  BOOST_CHECK_EQUAL(slices[1].amount, 400);
+  BOOST_CHECK_EQUAL(slices[1].contribution_threshold, 300);
+  BOOST_CHECK_EQUAL(slices[2].amount, 200);
+  BOOST_CHECK_EQUAL(slices[2].contribution_threshold, 500);
+  BOOST_CHECK_EQUAL(nlhe_effective_stack_chips(100, 300), 100);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

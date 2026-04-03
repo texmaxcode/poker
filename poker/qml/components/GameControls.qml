@@ -886,6 +886,7 @@ Item {
 
             Rectangle {
                 id: statusBanner
+                /// Showdown: one line per winner (`Name wins $N holding … on … with hand name`).
                 /// Hide while your decision timer runs: last-hand showdown text/cards would otherwise sit on top of actions.
                 visible: !game_controls.trainerMode
                         && !(game_controls.embeddedMode && game_controls.humanDecisionActive)

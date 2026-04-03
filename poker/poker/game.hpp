@@ -316,6 +316,11 @@ private:
     void push_human_action_status(const QString &actionLabel);
     void set_hand_result_status(const QString &msg, const QStringList &cardAssets = {});
     QString board_compact_for_result() const;
+    /// One line per seat with chips won: `Name wins $N holding … on … with …` (hand name from `winning_hand_label`).
+    QString format_showdown_payout_lines_from_gains(const std::array<int, kMaxPlayers> &stack_gain, int players_n) const;
+    int banner_seat_from_showdown_gains(const std::array<int, kMaxPlayers> &stack_gain, int players_n) const;
+    /// Last player wins the pot because everyone else folded (no showdown).
+    QString fold_win_status_line(int seat, int pot_chips) const;
     /// `Name — [hand name] — holes · board` (viz still shows the 5-card combination).
     QString hand_result_status_line(int seat) const;
     /// Human-readable winning holding from holes + board at `street` (e.g. “Two pair, Q and 10”).

@@ -4,7 +4,7 @@ import Theme 1.0
 import PokerUi 1.0
 
 /// Pot HUD + board below. Pot ticks up with animation; pot bumps when chips grow.
-/// One total pot amount only (side-pot math runs in the engine; we do not split the HUD).
+/// **One combined total** during play (engine still splits main/side for payouts; `GameControls` banner may list both).
 Item {
     id: table_container
     anchors.fill: parent
