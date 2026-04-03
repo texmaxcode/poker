@@ -1,6 +1,6 @@
 # What the app implements (engine + UI)
 
-This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold’em Gym**—the same style of play-money cash table you get on sites like **Global Poker**: fixed blinds, optional stakes in setup, one human seat vs bots, **no antes**, **no straddles**, and chip conservation through standard **side-pot** math in the engine. The **table shows one total pot**; payouts use a full contribution-tier split (`holdem_nlhe_side_pot_breakdown` in `do_payouts`).
+This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold’em Gym**—the same style of play-money cash table you get on sites like **Global Poker**: fixed blinds, optional stakes in setup, one human seat vs bots, **no antes**, **no straddles**, and chip conservation through standard **main + side pot** math in the engine. The **table HUD shows one total pot** (like Global Poker’s felt); at **showdown**, the result banner can list **Main pot** and **Side pot 1, 2, …** when more than one pot exists (`do_payouts`).
 
 ---
 
@@ -24,7 +24,18 @@ This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold�
    - **Preflop** — First to act is `first_in_hand_after(bb_seat_)` (UTG: clockwise after the big blind; heads-up: the button / small blind).
    - **Flop / turn / river** — First to act is `first_in_hand_after(button)` among seats still **in the hand** (so the small blind leads when still in; in heads-up postflop, the big blind acts first).
 6. **Fold wins** — If only one player remains, they take the pot without a showdown (`award_pot_to_last_standing`).
-7. **Showdown** — `do_payouts` compares hole cards + board (`hand_eval`), awards **main and side pots** by walking **sorted unique per-seat hand contributions**; chops split evenly with remainder chips assigned in code order.
+7. **Showdown** — `do_payouts` compares hole cards + board (`hand_eval`) and pays **main pot** and **side pots** the same way major sites do: from each seat’s **total contribution this hand** (`hand_contrib_`), build **one main pot** (everyone’s money up to the smallest stack in play for that layer) and **side pots** for each deeper stack; each physical pot is won by the best hand among players **eligible for that pot** (and chops split evenly, remainder by seat order).
+
+---
+
+## Main pot and side pots (Global Poker–style)
+
+This is **not** a separate rules system—it is the usual NLHE **main + side pot** breakdown:
+
+- **Main pot** — Chips everyone matched who was still contesting that “layer” (short stack, then the next, etc.).
+- **Side pot 1, side pot 2, …** — Extra chips only the deeper stacks put in; each side pot is awarded only to players who **put in enough** to be in that pot **and** are still live at showdown (with a fallback when the only funders folded—see `do_payouts`).
+
+The engine computes chip amounts with `holdem_nlhe_side_pot_breakdown()` (sorted **unique contribution depths** → one amount per **main or side pot**). The UI does **not** show a running main/side split in the center; only the **total** is on the table during play.
 
 ---
 
@@ -34,7 +45,7 @@ This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold�
 - **Illegal check facing a bet** — Not offered: `humanCanCheck` and engine state only allow check when there is nothing to call.
 - **Minimum raise** — `min_raise_increment_chips` (at least the big blind, or last raise increment as applicable).
 - **All-in** — Players with no chips behind skip further action on a check/bet round (`handle_postflop_check_or_bet` / forced-response paths skip `stack <= 0`).
-- **Side pots** — Built from each seat’s **total chips put into the current hand** (`hand_contrib_`). The engine allocates every chip; the **center HUD only displays the total pot**, not a main/side breakdown.
+- **Side pots** — Same as above: built from each seat’s **total chips put into the current hand** (`hand_contrib_`). The **center HUD only shows combined pot size** during the hand; **main / side labels** appear in the **showdown banner** when applicable.
 
 ---
 

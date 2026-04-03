@@ -1409,85 +1409,112 @@ void game::do_payouts()
         contrib[static_cast<size_t>(i)] = hand_contrib_[static_cast<size_t>(i)];
 
     std::vector<int> levels;
-    std::vector<int> tier_amounts;
-    const bool use_side_pots = holdem_nlhe_side_pot_breakdown(contrib, pot, &levels, &tier_amounts);
+    std::vector<int> side_pot_amounts;
+    const bool use_side_pots = holdem_nlhe_side_pot_breakdown(contrib, pot, &levels, &side_pot_amounts);
 
     if (use_side_pots)
     {
         std::array<int, kMaxPlayers> stack_gain{};
         stack_gain.fill(0);
         int distributed = 0;
-        QStringList tier_status_lines;
+        QStringList side_pot_status_lines;
+
+        auto best_hands_among = [this](std::vector<int> seats) -> std::vector<int> {
+            if (seats.empty())
+                return {};
+            std::sort(seats.begin(), seats.end());
+            std::vector<int> winners = {seats.front()};
+            for (size_t e = 1; e < seats.size(); ++e)
+            {
+                const int cmp = compare_holdem_hands(get_hand_vector(seats[e]), get_hand_vector(winners.front()));
+                if (cmp > 0)
+                    winners = {seats[e]};
+                else if (cmp == 0)
+                    winners.push_back(seats[e]);
+            }
+            std::sort(winners.begin(), winners.end());
+            return winners;
+        };
+
         for (size_t ti = 0; ti < levels.size(); ++ti)
         {
             const int level = levels[ti];
-            const int side_pot = tier_amounts[ti];
-            if (side_pot > 0)
-            {
-                std::vector<int> eligible;
-                for (int s : contenders)
-                {
-                    if (hand_contrib_[static_cast<size_t>(s)] >= level)
-                        eligible.push_back(s);
-                }
-                if (!eligible.empty())
-                {
-                    std::sort(eligible.begin(), eligible.end());
-                    std::vector<int> tier_winners = {eligible.front()};
-                    for (size_t e = 1; e < eligible.size(); ++e)
-                    {
-                        const int cmp =
-                            compare_holdem_hands(get_hand_vector(eligible[e]), get_hand_vector(tier_winners.front()));
-                        if (cmp > 0)
-                            tier_winners = {eligible[e]};
-                        else if (cmp == 0)
-                            tier_winners.push_back(eligible[e]);
-                    }
-                    std::sort(tier_winners.begin(), tier_winners.end());
-                    const int nw = static_cast<int>(tier_winners.size());
-                    const int share = side_pot / nw;
-                    const int rem = side_pot % nw;
-                    for (int w = 0; w < nw; ++w)
-                        stack_gain[static_cast<size_t>(tier_winners[static_cast<size_t>(w)])] +=
-                            share + (w < rem ? 1 : 0);
-                    distributed += side_pot;
+            const int side_pot = side_pot_amounts[ti];
+            if (side_pot <= 0)
+                continue;
 
-                    if (levels.size() > 1)
+            /// Seats still in the showdown that have matched at least `level` this hand win this slice.
+            /// If every seat that contributed ≥ `level` has folded, award the slice among all remaining
+            /// contenders (their chips stay in the middle; standard “orphan” side-pot resolution).
+            std::vector<int> eligible;
+            for (int s : contenders)
+            {
+                if (contrib[static_cast<size_t>(s)] >= level)
+                    eligible.push_back(s);
+            }
+            if (eligible.empty())
+                eligible = contenders;
+
+            const std::vector<int> pot_winners = best_hands_among(std::move(eligible));
+
+            const int nw = static_cast<int>(pot_winners.size());
+            const int share = side_pot / nw;
+            const int rem = side_pot % nw;
+            for (int w = 0; w < nw; ++w)
+                stack_gain[static_cast<size_t>(pot_winners[static_cast<size_t>(w)])] += share + (w < rem ? 1 : 0);
+            distributed += side_pot;
+
+            if (levels.size() > 1)
+            {
+                const QString seg_name =
+                    (ti == 0 ? QStringLiteral("Main pot") : QStringLiteral("Side pot %1").arg(static_cast<int>(ti)));
+                QString seg_body;
+                if (pot_winners.size() == 1)
+                {
+                    const int ts = pot_winners.front();
+                    seg_body = seat_display_name(ts);
+                    const QString wn = winning_hand_label(ts);
+                    if (!wn.isEmpty())
+                        seg_body += QStringLiteral(" — ") + wn;
+                    seg_body += QStringLiteral(" — ") + hole_cards_display(ts);
+                }
+                else
+                {
+                    QString hl;
+                    for (int ts : pot_winners)
                     {
-                        const QString seg_name =
-                            (ti == 0 ? QStringLiteral("Main pot")
-                                     : QStringLiteral("Side pot %1").arg(static_cast<int>(ti)));
-                        QString seg_body;
-                        if (tier_winners.size() == 1)
-                        {
-                            const int ts = tier_winners.front();
-                            seg_body = seat_display_name(ts);
-                            const QString wn = winning_hand_label(ts);
-                            if (!wn.isEmpty())
-                                seg_body += QStringLiteral(" — ") + wn;
-                            seg_body += QStringLiteral(" — ") + hole_cards_display(ts);
-                        }
-                        else
-                        {
-                            QString hl;
-                            for (int ts : tier_winners)
-                            {
-                                if (!hl.isEmpty())
-                                    hl += QStringLiteral(" · ");
-                                hl += QStringLiteral("%1 %2").arg(seat_display_name(ts)).arg(hole_cards_display(ts));
-                            }
-                            const QString wn = winning_hand_label(tier_winners.front());
-                            if (!wn.isEmpty())
-                                seg_body = hl + QStringLiteral(" — ") + wn;
-                            else
-                                seg_body = hl;
-                        }
-                        tier_status_lines.append(
-                            QStringLiteral("%1 ($%2): %3").arg(seg_name).arg(side_pot).arg(seg_body));
+                        if (!hl.isEmpty())
+                            hl += QStringLiteral(" · ");
+                        hl += QStringLiteral("%1 %2").arg(seat_display_name(ts)).arg(hole_cards_display(ts));
                     }
+                    const QString wn = winning_hand_label(pot_winners.front());
+                    if (!wn.isEmpty())
+                        seg_body = hl + QStringLiteral(" — ") + wn;
+                    else
+                        seg_body = hl;
+                }
+                side_pot_status_lines.append(QStringLiteral("%1 ($%2): %3").arg(seg_name).arg(side_pot).arg(seg_body));
+            }
+        }
+
+        if (distributed < pot)
+        {
+            const int remainder = pot - distributed;
+            if (remainder > 0)
+            {
+                const std::vector<int> rw = best_hands_among(contenders);
+                if (!rw.empty())
+                {
+                    const int nw = static_cast<int>(rw.size());
+                    const int share = remainder / nw;
+                    const int rem = remainder % nw;
+                    for (int w = 0; w < nw; ++w)
+                        stack_gain[static_cast<size_t>(rw[static_cast<size_t>(w)])] += share + (w < rem ? 1 : 0);
+                    distributed += remainder;
                 }
             }
         }
+
         if (distributed == pot)
         {
             for (int i = 0; i < n; ++i)
@@ -1506,9 +1533,9 @@ void game::do_payouts()
             }
             const int banner_seat = contenders[win_idx.front()];
 
-            if (levels.size() > 1 && !tier_status_lines.isEmpty())
+            if (levels.size() > 1 && !side_pot_status_lines.isEmpty())
             {
-                QString msg = tier_status_lines.join(QLatin1Char('\n'));
+                QString msg = side_pot_status_lines.join(QLatin1Char('\n'));
                 const QString brd = board_compact_for_result();
                 if (!brd.isEmpty())
                     msg += QLatin1Char('\n') + brd;

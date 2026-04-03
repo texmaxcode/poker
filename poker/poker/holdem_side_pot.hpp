@@ -3,19 +3,22 @@
 
 #include <vector>
 
-/// NLHE side pots (same model as major play-money sites): take each seat’s **total** contribution
-/// to this hand (all streets). Sort **unique** positive amounts ascending — each is a stack depth
-/// (short stack first, then next all-in, …). Between consecutive depths `prev` and `L`, the pot is
-/// `(L - prev) * (# seats whose contribution >= L)` (everyone still in for that layer pays the
-/// slice). The first slice is the **main pot**; each further slice is **side pot 1, 2, …**
+/// NLHE side-pot decomposition from **per-seat total contributions this hand** (all streets).
 ///
-/// `hand_contribution_per_seat[i]` = total chips seat `i` put into this hand.
-/// `total_pot_chips` must equal the sum of contributions.
+/// Algorithm (standard cash-game model):
+/// - Take **unique positive** contribution amounts, sorted ascending: L₁ < L₂ < … < Lₖ.
+/// - Between depths `prev` and `Lⱼ`, each seat with **total contribution ≥ Lⱼ** puts `(Lⱼ − prev)` into
+///   that slice. Slice size = `(Lⱼ − prev) × |{ i : contrib[i] ≥ Lⱼ }|`.
+/// - Sums of all slices equal `sum(contrib)` (must match `total_pot_chips`).
 ///
-/// On success, `sorted_unique_levels` has length `k >= 1` and `tier_chips` has the same length;
-/// `tier_chips[0]` is the main pot, `tier_chips[1]` the first side pot, etc. Sums to `total_pot_chips`.
-/// For a single contribution depth (`k == 1`), there is only one physical pot — callers treat
-/// `k < 2` as “no side-pot breakdown” for HUD.
+/// **Showdown eligibility** (handled in `game::do_payouts`, not here): a live player wins slice `j`
+/// only if `contrib[seat] ≥ Lⱼ`. If every seat with `contrib ≥ Lⱼ` has **folded**, that slice is
+/// still in the middle; callers award it to the best hand among **remaining** contenders (orphan
+/// side pot).
+///
+/// Output: `sorted_unique_levels` = distinct contribution cutoffs (smallest … largest).
+/// `tier_chips` = chip count for **main pot** (`[0]`) then **side pot 1** (`[1]`), **side pot 2** (`[2]`), …
+/// (same breakdown as on Global Poker / other NL sites; the name “tier” is historical).
 bool holdem_nlhe_side_pot_breakdown(const std::vector<int> &hand_contribution_per_seat,
                                     int total_pot_chips,
                                     std::vector<int> *sorted_unique_levels,

@@ -1,6 +1,7 @@
 #include "holdem_side_pot.hpp"
 
 #include <algorithm>
+#include <numeric>
 
 bool holdem_nlhe_side_pot_breakdown(const std::vector<int> &hand_contribution_per_seat,
                                     int total_pot_chips,
@@ -12,10 +13,9 @@ bool holdem_nlhe_side_pot_breakdown(const std::vector<int> &hand_contribution_pe
     sorted_unique_levels->clear();
     tier_chips->clear();
 
-    long sum = 0;
-    for (int c : hand_contribution_per_seat)
-        sum += c;
-    if (sum != total_pot_chips || total_pot_chips <= 0)
+    const long sum =
+        std::accumulate(hand_contribution_per_seat.begin(), hand_contribution_per_seat.end(), 0L);
+    if (sum != static_cast<long>(total_pot_chips) || total_pot_chips <= 0)
         return false;
 
     std::vector<int> levels;
@@ -36,6 +36,8 @@ bool holdem_nlhe_side_pot_breakdown(const std::vector<int> &hand_contribution_pe
     for (int level : levels)
     {
         const int increment = level - prev;
+        if (increment < 0)
+            return false;
         int n_cover = 0;
         for (int i = 0; i < n; ++i)
         {

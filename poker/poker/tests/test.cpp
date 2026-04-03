@@ -371,4 +371,18 @@ BOOST_AUTO_TEST_CASE(side_pot_single_depth_one_physical_pot)
   BOOST_CHECK_EQUAL(tiers[0], 300);
 }
 
+/// High stack folded; two survivors each put 100 — unique levels 100 and 300; orphan 200-chip tier.
+BOOST_AUTO_TEST_CASE(side_pot_folded_high_contributor_tiers)
+{
+  std::vector<int> levels;
+  std::vector<int> tiers;
+  const std::vector<int> contrib{300, 100, 100};
+  BOOST_CHECK(holdem_nlhe_side_pot_breakdown(contrib, 500, &levels, &tiers));
+  BOOST_REQUIRE_EQUAL(tiers.size(), 2u);
+  BOOST_CHECK_EQUAL(levels[0], 100);
+  BOOST_CHECK_EQUAL(levels[1], 300);
+  BOOST_CHECK_EQUAL(tiers[0], 300);
+  BOOST_CHECK_EQUAL(tiers[1], 200);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
