@@ -208,7 +208,7 @@ void game::deal_hold_cards()
     {
         if (in_hand_[static_cast<size_t>(s)])
             deal_order.push_back(s);
-        s = (s + 1) % n;
+        s = (s + n - 1) % n;
     }
     if (deal_order.size() < 2)
         return;
@@ -360,7 +360,7 @@ std::vector<int> game::action_order(Street st) const
     order.reserve(static_cast<size_t>(n));
     for (int k = 0; k < n; ++k)
     {
-        const int seat = (start + k) % n;
+        const int seat = (start + n - k) % n;
         if (in_hand_[static_cast<size_t>(seat)])
             order.push_back(seat);
     }
@@ -724,9 +724,11 @@ int game::first_in_hand_after(int prev_seat) const
     const int n = players_count();
     if (n < 1)
         return -1;
+    /// Next seat in **clockwise** poker order around the felt. `GameScreen` maps increasing seat index
+    /// around the oval in the **counter-clockwise** direction, so clockwise is `(prev + n - 1) % n`.
     for (int k = 1; k <= n; ++k)
     {
-        const int s = (prev_seat + k) % n;
+        const int s = (prev_seat + n - k) % n;
         if (in_hand_[static_cast<size_t>(s)])
             return s;
     }
@@ -751,7 +753,7 @@ int game::next_seat_in_position_pool(int from) const
         return -1;
     for (int k = 1; k <= n; ++k)
     {
-        const int s = (from + k) % n;
+        const int s = (from + n - k) % n;
         if (seat_eligible_for_positions(s))
             return s;
     }
@@ -796,9 +798,8 @@ void game::compute_blind_seats(int &sb, int &bb) const
         sb = bb = -1;
         return;
     }
-    // 3+ players: SB clockwise from button, BB clockwise from SB (Bicycle / standard ring).
-    // Heads-up: the button posts the small blind; the other player posts the big blind
-    // (WSOP / Robert's Rules — differs from "next active after button" which would swap SB/BB).
+    // 3+ players: SB clockwise from button, BB clockwise from SB (standard ring).
+    // Heads-up: button posts SB; the other seat posts BB.
     if (active == 2)
     {
         sb = button;

@@ -86,11 +86,11 @@ Page {
             return "SB"
         if (bb >= 0 && seat === bb)
             return "BB"
-        // Clockwise from BB: non-blind seats are UTG, then optional middle(s), then CO (last before BTN).
-        // 6-max: UTG — HJ — CO; 5-max: UTG — CO only (second seat is not "HJ"). Matches common charts / WPF flow.
+        // Clockwise from BB (same direction as engine `action_order`): non-blind seats UTG … CO.
+        // 6-max: UTG — HJ — CO; 5-max: UTG — CO only (second seat is not "HJ").
         var order = []
         for (var k = 1; k <= n; k++) {
-            var s = (bb + k) % n
+            var s = (bb + n - k) % n
             if (s !== btn && s !== sb && s !== bb && inDealingPool(s))
                 order.push(s)
         }

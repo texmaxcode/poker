@@ -214,7 +214,7 @@ public:
     Q_INVOKABLE void applyPendingBankrollTotals();
 
     /// Blind seats and first actor seats for the current `button` / `in_hand_` state (tests / diagnostics).
-    /// Preflop first = UTG (clockwise after BB); post-flop first = first active after button (SB or next).
+    /// Clockwise table order uses `(seat + n - 1) % n` in index space (see `first_in_hand_after`).
     Q_INVOKABLE QVariantMap bettingAnchors() const;
 
     /// Off-table portion of bankroll, available for rebuy (starts at 0 after apply; persistence may restore a reserve).
@@ -321,11 +321,12 @@ private:
     /// Human-readable winning holding from holes + board at `street` (e.g. “Two pair, Q and 10”).
     QString winning_hand_label(int seat) const;
     QStringList result_banner_card_assets_for_seat(int seat) const;
-    /// First seat clockwise after `prev_seat` that is still in the hand (-1 if none).
+    /// First seat **clockwise** from `prev_seat` that is still in the hand (-1 if none). Implemented as
+    /// `(prev_seat + n - 1) % n` in seat index (see `game-in-code.md`).
     int first_in_hand_after(int prev_seat) const;
     /// In rotation for the button: has chips, human not sitting out, bots not opted out.
     bool seat_eligible_for_positions(int seat) const;
-    /// Next clockwise seat that counts for dealer / blind rotation (skips sit-outs).
+    /// Next **clockwise** eligible seat for dealer rotation (`(from + n - 1) % n` scan).
     int next_seat_in_position_pool(int from) const;
     void ensure_button_on_eligible_seat();
     void compute_blind_seats(int &sb, int &bb) const;

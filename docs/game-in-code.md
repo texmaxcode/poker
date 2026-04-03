@@ -16,13 +16,14 @@ This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold�
 
 1. **New hand** — `beginNewHand()` calls `start()`, which calls `clear_for_new_hand()` to reset street state, pot, contributions, deck; previous hand result text and banner card assets are re-pushed from `last_hand_result_*` so the UI keeps the last winner line until the next showdown updates them.
 2. **Blinds** — `collect_blinds` / `compute_blind_seats`:
-   - **Three or more active players** — SB is the first active seat clockwise from the button; BB is the next active seat clockwise from the SB.
-   - **Heads-up** — Button posts the **small blind**; the other seat posts the **big blind** (standard online convention).
+   - **Three or more active players** — SB is the first active seat **clockwise** from the button, BB the next clockwise from the SB (same order as live / online NLHE).
+   - **Heads-up** — Button posts the **small blind**; the other seat posts the **big blind**.
 3. **Hole cards** — Two cards per active seat (`deal_hold_cards`).
 4. **Streets** — Preflop → flop (three cards) → turn → river. A **burn** card is discarded from the deck before dealing **flop**, **turn**, and **river**.
-5. **Betting** — `run_street_betting` for each street; action order comes from `action_order()`:
-   - **Preflop** — First to act is `first_in_hand_after(bb_seat_)` (UTG: clockwise after the big blind; heads-up: the button / small blind).
-   - **Flop / turn / river** — First to act is `first_in_hand_after(button)` among seats still **in the hand** (so the small blind leads when still in; in heads-up postflop, the big blind acts first).
+5. **Betting** — `run_street_betting` for each street; action order comes from `action_order()` (same **clockwise** direction as the dealer button advance).
+   - **Seat numbering** — `GameScreen` places seat **0** (human) on the felt and increases the index around the oval; geometrically that walks **counter-clockwise** on the layout, so **clockwise** poker order in code is **next lower index** with wrap: `(seat + n - 1) % n` (`first_in_hand_after`, `next_seat_in_position_pool`, deal order).
+   - **Preflop** — First to act is `first_in_hand_after(bb_seat_)` (UTG after the big blind; heads-up: the button / small blind).
+   - **Flop / turn / river** — First to act is `first_in_hand_after(button)` among seats still **in the hand** (small blind leads when still in; heads-up postflop, big blind acts first).
 6. **Fold wins** — If only one player remains, they take the pot without a showdown (`award_pot_to_last_standing`).
 7. **Showdown** — `do_payouts` compares hole cards + board (`hand_eval`) and pays **main pot** and **side pots** the same way major sites do: from each seat’s **total contribution this hand** (`hand_contrib_`), build **one main pot** (everyone’s money up to the smallest stack in play for that layer) and **side pots** for each deeper stack; each physical pot is won by the best hand among players **eligible for that pot** (and chops split evenly, remainder by seat order).
 

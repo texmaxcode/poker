@@ -106,15 +106,15 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_be_created)
   BOOST_CHECK_EQUAL(game.is_game_in_progress(), false);
 }
 
-/// Default table: button seat 0 — UTG is seat 3, SB=1 acts first post-flop (see `action_order` / `bettingAnchors`).
+/// Default table: button seat 0 — clockwise in index space is `(s + n - 1) % n`, so SB=5, BB=4, UTG=3, first postflop=5.
 BOOST_AUTO_TEST_CASE(betting_starts_utg_preflop_and_sb_postflop_full_ring)
 {
   game g;
   const QVariantMap a = g.bettingAnchors();
-  BOOST_CHECK_EQUAL(a.value(QStringLiteral("sbSeat")).toInt(), 1);
-  BOOST_CHECK_EQUAL(a.value(QStringLiteral("bbSeat")).toInt(), 2);
+  BOOST_CHECK_EQUAL(a.value(QStringLiteral("sbSeat")).toInt(), 5);
+  BOOST_CHECK_EQUAL(a.value(QStringLiteral("bbSeat")).toInt(), 4);
   BOOST_CHECK_EQUAL(a.value(QStringLiteral("preflopFirstSeat")).toInt(), 3);
-  BOOST_CHECK_EQUAL(a.value(QStringLiteral("postflopFirstSeat")).toInt(), 1);
+  BOOST_CHECK_EQUAL(a.value(QStringLiteral("postflopFirstSeat")).toInt(), 5);
 }
 
 BOOST_AUTO_TEST_CASE(test_that_game_can_started)

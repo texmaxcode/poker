@@ -73,7 +73,7 @@ Table stakes, per-seat bot strategy and range text (exported form), per-seat **b
 |----------|----------|
 | [docs/building.md](docs/building.md) | Full dependency list, configure variables, OS notes, Qt commercial / license service env, tests, card assets script |
 | [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, tests |
-| [docs/game-in-code.md](docs/game-in-code.md) | NLHE behavior as implemented: blinds, streets, payouts, stake cap, bankroll, non-features |
+| [docs/game-in-code.md](docs/game-in-code.md) | NLHE as implemented: blinds, clockwise button/action/deal order, streets, side pots, stake cap, bankroll |
 | [docs/mvp-trainer-roadmap.md](docs/mvp-trainer-roadmap.md) | Trainer roadmap (see status note at top of that file if present) |
 
 ## Tests

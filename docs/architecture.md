@@ -68,7 +68,7 @@ Bundled training JSON lives under **`poker/qml/assets/training/`** (e.g. `preflo
 
 ## Game behavior (what the code does)
 
-Blinds (including **heads-up**), street order, burns before board cards, NL betting, showdown and **side-pot** payouts (`do_payouts` / `holdem_nlhe_side_pot_breakdown`), **HUD total pot only**, stake cap, bankroll/rebuy, and what is **not** implemented are summarized in **[game-in-code.md](game-in-code.md)**.
+Blinds (including **heads-up**), **clockwise** button rotation and action/deal order (see `game-in-code.md`), burns, NL betting, showdown and **side-pot** payouts, **HUD total pot only**, stake cap, bankroll/rebuy, and what is **not** implemented are summarized in **[game-in-code.md](game-in-code.md)**.
 
 ## Tests
 
