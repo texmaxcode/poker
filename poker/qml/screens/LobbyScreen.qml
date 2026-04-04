@@ -150,7 +150,7 @@ Page {
                                 detailTip: qsTr(
                                     "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "
                                     + "Set wallet and on-the-table amount on each player’s tab under Bots & ranges.")
-                                iconSource: "qrc:/assets/icons/table.svg"
+                                iconSource: "qrc:/assets/icons/stats.svg"
                                 onClicked: lobbyPage.go(4)
                             }
                         }

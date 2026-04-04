@@ -85,7 +85,8 @@ Page {
                             font.bold: true
                             font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
-                            color: Theme.textPrimary
+                            font.letterSpacing: 0.5
+                            color: Theme.sectionTitle
                         }
 
                         Label {
@@ -96,7 +97,7 @@ Page {
                                 + "EV lost adds flop EV gaps in big blinds vs the best line; preflop rows add 0 EV here. Reset clears stats but keeps your auto-advance delay.")
                             color: Theme.textSecondary
                             font.pixelSize: Theme.trainerBodyPx
-                            lineHeight: 1.25
+                            lineHeight: Theme.bodyLineHeight
                         }
 
                         readonly property int totalD: Number(page.trainingProgress.totalDecisions || 0)
@@ -110,70 +111,70 @@ Page {
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                implicitHeight: trainingMetricsCol.implicitHeight + 22
+                                implicitHeight: trainingMetricsCol.implicitHeight + 28
                                 radius: 10
                                 color: Theme.panelElevated
                                 border.width: 1
                                 border.color: Qt.alpha(Theme.chromeLine, 0.55)
                                 Column {
                                     id: trainingMetricsCol
-                                    x: 10
-                                    y: 10
-                                    width: parent.width - 20
-                                    spacing: 4
+                                    x: 14
+                                    y: 14
+                                    width: parent.width - 28
+                                    spacing: 6
                                     Text {
-                                        text: qsTr("Decisions")
+                                        text: qsTr("DECISIONS")
                                         color: Theme.textMuted
                                         font.pixelSize: Theme.trainerMetricLabelPx
-                                        font.capitalization: Font.AllUppercase
+                                        font.letterSpacing: 1
                                     }
-                                    Text { text: String(progressCol.totalD); color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                                    Text { text: String(progressCol.totalD); color: Theme.gold; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                implicitHeight: trainingAccCol.implicitHeight + 22
+                                implicitHeight: trainingAccCol.implicitHeight + 28
                                 radius: 10
                                 color: Theme.panelElevated
                                 border.width: 1
                                 border.color: Qt.alpha(Theme.chromeLine, 0.55)
                                 Column {
                                     id: trainingAccCol
-                                    x: 10
-                                    y: 10
-                                    width: parent.width - 20
-                                    spacing: 4
+                                    x: 14
+                                    y: 14
+                                    width: parent.width - 28
+                                    spacing: 6
                                     Text {
-                                        text: qsTr("Accuracy")
+                                        text: qsTr("ACCURACY")
                                         color: Theme.textMuted
                                         font.pixelSize: Theme.trainerMetricLabelPx
-                                        font.capitalization: Font.AllUppercase
+                                        font.letterSpacing: 1
                                     }
-                                    Text { text: progressCol.accPct.toFixed(1) + "%"; color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                                    Text { text: progressCol.accPct.toFixed(1) + "%"; color: Theme.gold; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
 
                             Rectangle {
                                 Layout.fillWidth: true
-                                implicitHeight: trainingEvCol.implicitHeight + 22
+                                implicitHeight: trainingEvCol.implicitHeight + 28
                                 radius: 10
                                 color: Theme.panelElevated
                                 border.width: 1
                                 border.color: Qt.alpha(Theme.chromeLine, 0.55)
                                 Column {
                                     id: trainingEvCol
-                                    x: 10
-                                    y: 10
-                                    width: parent.width - 20
-                                    spacing: 4
+                                    x: 14
+                                    y: 14
+                                    width: parent.width - 28
+                                    spacing: 6
                                     Text {
-                                        text: qsTr("EV lost")
+                                        text: qsTr("EV LOST")
                                         color: Theme.textMuted
                                         font.pixelSize: Theme.trainerMetricLabelPx
-                                        font.capitalization: Font.AllUppercase
+                                        font.letterSpacing: 1
                                     }
-                                    Text { text: progressCol.totalEv.toFixed(3) + " bb"; color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                                    Text { text: progressCol.totalEv.toFixed(3) + " bb"; color: Theme.gold; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
                         }
@@ -213,7 +214,8 @@ Page {
                             font.bold: true
                             font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
-                            color: Theme.textPrimary
+                            font.letterSpacing: 0.5
+                            color: Theme.sectionTitle
                         }
                         Label {
                             Layout.fillWidth: true
@@ -227,7 +229,7 @@ Page {
                                 + "Flop: each option has a model EV in big blinds; EV loss is how far below the best EV your choice is. That loss is summed in your progress.")
                             color: Theme.textSecondary
                             font.pixelSize: Theme.trainerBodyPx
-                            lineHeight: 1.25
+                            lineHeight: Theme.bodyLineHeight
                         }
                     }
                 }
@@ -329,10 +331,11 @@ Page {
                         Label {
                             Layout.fillWidth: true
                             text: qsTr("Coming next")
-                            color: Theme.textPrimary
+                            color: Theme.sectionTitle
                             font.bold: true
                             font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
+                            font.letterSpacing: 0.5
                         }
                         Label {
                             Layout.fillWidth: true
@@ -342,7 +345,7 @@ Page {
                                 + "Opening ranges (reference) live under Ranges. Current drills use bundled example strategies — replace the JSON to train your own charts.")
                             color: Theme.textSecondary
                             font.pixelSize: Theme.trainerBodyPx
-                            lineHeight: 1.25
+                            lineHeight: Theme.bodyLineHeight
                         }
                     }
                 }

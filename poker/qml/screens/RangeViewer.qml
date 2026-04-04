@@ -414,7 +414,7 @@ Page {
                     text: page.loadError.length ? page.loadError : qsTr("Could not load range data.")
                     color: Theme.dangerText
                     font.pixelSize: Theme.trainerBodyPx
-                    lineHeight: 1.25
+                    lineHeight: Theme.bodyLineHeight
                 }
 
                 ThemedPanel {
@@ -457,7 +457,7 @@ Page {
                                 .arg(page.position)
                         color: Theme.textSecondary
                         font.pixelSize: Theme.trainerBodyPx
-                        lineHeight: 1.25
+                        lineHeight: Theme.bodyLineHeight
                     }
 
                     RowLayout {

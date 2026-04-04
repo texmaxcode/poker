@@ -9,7 +9,7 @@
     <linearGradient id="emberGlow" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#ff4a12" stop-opacity="0.09"/>
       <stop offset="45%" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#c9a227" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#b89a52" stop-opacity="0.05"/>
     </linearGradient>
     <linearGradient id="topHeat" x1="50%" y1="0%" x2="50%" y2="40%">
       <stop offset="0%" stop-color="#ff6a1a" stop-opacity="0.07"/>

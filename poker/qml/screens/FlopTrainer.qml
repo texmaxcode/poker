@@ -275,7 +275,7 @@ Page {
                     text: qsTr("Flop spots failed to load. The bundled JSON asset may be missing or invalid.")
                     color: Theme.dangerText
                     font.pixelSize: Theme.trainerBodyPx
-                    lineHeight: 1.25
+                    lineHeight: Theme.bodyLineHeight
                 }
 
                 RowLayout {

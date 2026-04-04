@@ -42,7 +42,8 @@ Rectangle {
             font.bold: true
             font.capitalization: Font.AllUppercase
             font.pixelSize: root.panelTitlePixelSize
-            color: Theme.textPrimary
+            font.letterSpacing: 0.5
+            color: Theme.sectionTitle
             wrapMode: Text.WordWrap
         }
 

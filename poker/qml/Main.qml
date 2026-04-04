@@ -87,11 +87,11 @@ ApplicationWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Metrics.toolbarMarginH
-            anchors.rightMargin: Metrics.toolbarMarginH
+            anchors.leftMargin: Metrics.toolbarMarginH + 4
+            anchors.rightMargin: Metrics.toolbarMarginH + 4
             anchors.topMargin: Metrics.toolbarMarginV
             anchors.bottomMargin: Metrics.toolbarMarginV
-            spacing: 6
+            spacing: 8
 
             GameButton {
                 id: backBtn
@@ -114,6 +114,7 @@ ApplicationWindow {
                 font.bold: true
                 font.capitalization: Font.AllUppercase
                 font.pointSize: Theme.uiToolBarTitlePt
+                font.letterSpacing: 1
                 color: Theme.gold
                 text: headerTitleForIndex(stack.currentIndex)
             }
@@ -147,12 +148,12 @@ ApplicationWindow {
         anchors.rightMargin: 10
         anchors.topMargin: win.header.visible ? win.header.height + 2 : 6
         width: 400
-        height: visible ? toastLabel.implicitHeight + 14 : 0
+        height: visible ? toastLabel.implicitHeight + 18 : 0
         visible: win.appToastText.length > 0
-        radius: 8
+        radius: 10
         color: Theme.panelElevated
         border.width: 1
-        border.color: Theme.headerRule
+        border.color: Theme.chromeLineGold
         Label {
             id: toastLabel
             anchors.centerIn: parent

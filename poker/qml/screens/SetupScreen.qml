@@ -73,6 +73,7 @@ Page {
                 font.bold: true
                 font.capitalization: Font.AllUppercase
                 font.pointSize: Theme.trainerSectionPx
+                font.letterSpacing: 0.5
                 color: Theme.gold
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
@@ -300,7 +301,7 @@ Page {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                         font.pixelSize: Theme.trainerBodyPx
-                        lineHeight: 1.25
+                        lineHeight: Theme.bodyLineHeight
                         color: Theme.textSecondary
                         text: qsTr("When a bot is off, they sit out (not dealt in) until you turn them back on.")
                     }
@@ -335,12 +336,13 @@ Page {
 
                     Label {
                         Layout.fillWidth: true
-                        Layout.topMargin: 4
+                        Layout.topMargin: 8
                         text: qsTr("Game settings")
                         font.bold: true
                         font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerCaptionPx
-                        color: Theme.textPrimary
+                        font.letterSpacing: 0.5
+                        color: Theme.sectionTitle
                     }
 
                     RowLayout {
@@ -629,10 +631,13 @@ Page {
                     }
 
                     Label {
+                        Layout.topMargin: 4
                         text: qsTr("Strategy selection")
                         font.bold: true
                         font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerSectionPx
+                        font.letterSpacing: 0.5
+                        color: Theme.sectionTitle
                     }
                     RowLayout {
                         Layout.fillWidth: true
@@ -699,8 +704,8 @@ Page {
 
                             GridLayout {
                                 columns: 2
-                                columnSpacing: 10
-                                rowSpacing: 4
+                                columnSpacing: Theme.formColGap
+                                rowSpacing: Theme.formRowSpacing
                                 Layout.fillWidth: true
 
                                 Label {
@@ -947,6 +952,7 @@ Page {
                 text: qsTr("Reload from engine")
                 Layout.alignment: Qt.AlignLeft
                 flat: true
+                font.pixelSize: Theme.trainerCaptionPx
                 onClicked: reloadSeatEditor()
             }
             }

@@ -86,6 +86,7 @@ Page {
                 font.bold: true
                 font.capitalization: Font.AllUppercase
                 font.pixelSize: Theme.trainerSectionPx
+                font.letterSpacing: 0.5
                 color: Theme.gold
             }
 
@@ -260,14 +261,14 @@ Page {
                         GridLayout {
                             Layout.fillWidth: true
                             columns: 2
-                            columnSpacing: 10
-                            rowSpacing: 6
+                            columnSpacing: Theme.formColGap
+                            rowSpacing: Theme.formRowSpacing
 
                         Label {
                             text: qsTr("Hero card 1")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                             Layout.maximumWidth: 120
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         TextField {
                             id: h1
@@ -284,7 +285,7 @@ Page {
                         Label {
                             text: qsTr("Hero card 2")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         TextField {
                             id: h2
@@ -301,7 +302,7 @@ Page {
                         Label {
                             text: qsTr("Board (optional)")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         TextField {
                             id: brd
@@ -318,7 +319,7 @@ Page {
                         Label {
                             text: qsTr("Villain range")
                             Layout.alignment: Qt.AlignRight | Qt.AlignTop
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         TextField {
                             id: vrange
@@ -335,7 +336,7 @@ Page {
                         Label {
                             text: qsTr("Villain exact")
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         RowLayout {
                             spacing: 8
@@ -380,13 +381,13 @@ Page {
                         GridLayout {
                             Layout.fillWidth: true
                             columns: 2
-                            columnSpacing: 10
-                            rowSpacing: 6
+                            columnSpacing: Theme.formColGap
+                            rowSpacing: Theme.formRowSpacing
 
                         Label {
                             text: qsTr("Iterations")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         SpinBox {
                             id: iters
@@ -401,7 +402,7 @@ Page {
                         Label {
                             text: qsTr("Pot before call")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         SpinBox {
                             id: potSpin
@@ -415,7 +416,7 @@ Page {
                         Label {
                             text: qsTr("To call")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                            font.pixelSize: Theme.trainerCaptionPx
+                            font.pixelSize: Theme.formLabelPx
                         }
                         SpinBox {
                             id: callSpin
@@ -494,7 +495,7 @@ Page {
                             color: solverPage.equitySummaryIsError ? Theme.dangerText : Theme.textSecondary
                             font.family: Theme.fontFamilyUi
                             font.pixelSize: Theme.trainerBodyPx
-                            lineHeight: 1.25
+                            lineHeight: Theme.bodyLineHeight
                             HoverHandler {
                                 id: summaryHover
                             }
@@ -547,7 +548,7 @@ Page {
                             wrapMode: Text.Wrap
                             color: Theme.textSecondary
                             font.pixelSize: Theme.trainerBodyPx
-                            lineHeight: 1.25
+                            lineHeight: Theme.bodyLineHeight
                         }
 
                         RowLayout {

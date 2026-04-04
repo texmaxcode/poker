@@ -16,8 +16,9 @@ QtObject {
     readonly property color chromeLine: "#6b5030"
     readonly property color chromeLineGold: "#8a6028"
 
-    readonly property color gold: "#d4af37"
-    readonly property color goldMuted: "#9a7a30"
+    /// Primary accent — muted brass (was brighter #d4af37; toned down for less glare on dark UI).
+    readonly property color gold: "#b89a52"
+    readonly property color goldMuted: "#8a6f38"
     readonly property color fire: "#ff6a1a"
     readonly property color fireDeep: "#c2410c"
     readonly property color ember: "#dc2626"
@@ -55,7 +56,7 @@ QtObject {
     readonly property color dangerBg: "#4a2020"
     readonly property color dangerText: "#f5d0d0"
     readonly property color successGreen: "#1a6b45"
-    readonly property color focusGold: "#c9a227"
+    readonly property color focusGold: "#a89248"
     /// Seat street-action strip (Call / Raise / Check / All-in / Fold).
     readonly property color streetActionCall: "#e8d040"
     readonly property color streetActionRaise: "#4ade80"
@@ -95,6 +96,13 @@ QtObject {
 
     readonly property color profitUp: "#6fdc8c"
     readonly property color profitDown: "#ff8a8a"
+
+    readonly property color sectionTitle: gold
+    readonly property real bodyLineHeight: 1.35
+    readonly property int formLabelPx: 14
+    readonly property int formRowSpacing: 10
+    readonly property int formColGap: 12
+    readonly property int panelGap: 16
 
     /// Playing cards (~1 : 1.48 width:height). Pair width matches 204px seat inner (margins 4).
     readonly property int holeCardWidth: 96
