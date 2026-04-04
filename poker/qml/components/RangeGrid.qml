@@ -20,12 +20,37 @@ Item {
     property int editLayer: 0
     property var rankLabels: ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"]
 
-    implicitWidth: body.implicitWidth
+    /// Gap between grid cells (matches `RowLayout` `spacing` below).
+    readonly property int gridGap: 2
+    /// Row/column header width — align top-left corner with row labels.
+    readonly property real labelColW: Math.max(Theme.uiRangeGridCornerW, Theme.uiRangeGridRowHeaderW)
+    /// Cell size grows with available width so the matrix spans the parent when `Layout.fillWidth` is set.
+    /// Prefer laid-out width; during the first frames `width` can be 0 while the parent row already has width.
+    readonly property real layoutWidth: {
+        const w = root.width
+        if (w > 1)
+            return w
+        const pw = parent ? parent.width : 0
+        return pw > 1 ? pw : w
+    }
+    readonly property real cellW: {
+        const w = layoutWidth
+        const g = gridGap
+        const lw = labelColW
+        if (!w || w < lw + 13 * 20 + 13 * g)
+            return Theme.uiRangeGridCellW
+        return Math.max(18, Math.floor((w - lw - 13 * g) / 13))
+    }
+    readonly property real cellH: Math.max(20, cellW * (Theme.uiRangeGridCellH / Theme.uiRangeGridCellW))
+    readonly property real cornerH: Theme.uiRangeGridCornerH * (cellW / Theme.uiRangeGridCellW)
+    readonly property int axisPx: Math.max(10, Math.round(Theme.uiRangeGridAxisPx * Math.min(1.15, cellW / Theme.uiRangeGridCellW)))
+
+    implicitWidth: labelColW + 13 * Theme.uiRangeGridCellW + 13 * gridGap
     implicitHeight: body.implicitHeight
 
-    readonly property color layerCallColor: Theme.rangeLayerCall
-    readonly property color layerRaiseColor: Theme.rangeLayerRaise
-    readonly property color layerBetColor: Theme.rangeLayerOpen
+    readonly property color layerCallColor: Theme.rangeLayerCallSubdued
+    readonly property color layerRaiseColor: Theme.rangeLayerRaiseSubdued
+    readonly property color layerBetColor: Theme.rangeLayerOpenSubdued
 
     function cellWeight(idx) {
         const w = (weights.length > idx) ? weights[idx] : 0
@@ -35,12 +60,91 @@ Item {
     function cellColor(w) {
         const v = (w === undefined || w === null) ? 0 : w
         const base = Qt.color(Theme.rangeHeatLo)
-        const hi = Qt.color(Theme.rangeHeatHi)
+        const hi = Qt.color(Theme.rangeHeatHiSubdued)
         return Qt.rgba(
             base.r + (hi.r - base.r) * v,
             base.g + (hi.g - base.g) * v,
             base.b + (hi.b - base.b) * v,
             1)
+    }
+
+    function handNotation(row, col) {
+        if (row === col)
+            return rankLabels[row] + rankLabels[row]
+        if (row < col)
+            return rankLabels[row] + rankLabels[col] + "s"
+        return rankLabels[col] + rankLabels[row] + "o"
+    }
+
+    function cellRegionColor(row, col) {
+        if (row === col)
+            return Theme.rangeGridPairTint
+        if (row < col)
+            return Theme.rangeGridSuitedTint
+        return Theme.rangeGridOffsuitTint
+    }
+
+    function cellRegionName(row, col) {
+        if (row === col)
+            return qsTr("Pair")
+        if (row < col)
+            return qsTr("Suited")
+        return qsTr("Offsuit")
+    }
+
+    function rankIndexToSvgRank(i) {
+        const m = ["ace", "king", "queen", "jack", "10", "9", "8", "7", "6", "5", "4", "3", "2"]
+        return m[i]
+    }
+
+    function cardFileName(rankIdx, suit) {
+        return suit + "_" + rankIndexToSvgRank(rankIdx) + ".svg"
+    }
+
+    /// Two `qrc:/assets/cards/*.svg` names for the hovered cell (spades+hearts pairs; spades suited; spades+hearts offsuit).
+    function cardFileNamesForCell(row, col) {
+        if (row === col)
+            return [cardFileName(row, "spades"), cardFileName(row, "hearts")]
+        if (row < col)
+            return [cardFileName(row, "spades"), cardFileName(col, "spades")]
+        return [cardFileName(col, "spades"), cardFileName(row, "hearts")]
+    }
+
+    /// Hover card popup (single instance); `tipAnchor` is the hovered cell `Item`.
+    property int tipRow: -1
+    property int tipCol: -1
+    property Item tipAnchor: null
+    property real tipPopupX: 0
+    property real tipPopupY: 0
+
+    function cellTipPopupX(anchor, popup) {
+        if (!anchor || !popup)
+            return 0
+        const target = popup.parent
+        if (!target)
+            return 0
+        const p = anchor.mapToItem(target, 0, 0)
+        const w = popup.width > 2 ? popup.width : Math.max(popup.implicitWidth, 200)
+        const cx = p.x + anchor.width / 2 - w / 2
+        return Math.min(target.width - w - 12, Math.max(12, cx))
+    }
+
+    function cellTipPopupY(anchor, popup) {
+        if (!anchor || !popup)
+            return 0
+        const target = popup.parent
+        if (!target)
+            return 0
+        const p = anchor.mapToItem(target, 0, 0)
+        const h = popup.height > 2 ? popup.height : Math.max(popup.implicitHeight, 120)
+        return Math.max(12, p.y - h - 10)
+    }
+
+    function syncTipPopupPos() {
+        if (!tipAnchor)
+            return
+        tipPopupX = cellTipPopupX(tipAnchor, rangeCellTip)
+        tipPopupY = cellTipPopupY(tipAnchor, rangeCellTip)
     }
 
     function refreshFromGame() {
@@ -101,6 +205,8 @@ Item {
 
     ColumnLayout {
         id: body
+        anchors.left: parent.left
+        anchors.right: parent.right
         spacing: 2
 
         RowLayout {
@@ -119,8 +225,8 @@ Item {
                         height: 10
                         radius: 2
                         color: modelData.c
-                        border.width: root.editLayer === index ? 2 : 0
-                        border.color: Theme.focusGold
+                        border.width: root.editLayer === index ? 1 : 0
+                        border.color: Qt.alpha(Theme.chromeLineGold, 0.75)
                     }
                     Label {
                         text: modelData.label
@@ -133,21 +239,30 @@ Item {
             }
         }
 
+        Label {
+            visible: root.composite
+            font.family: Theme.fontFamilyUi
+            font.pixelSize: Theme.uiRangeGridLegendPx
+            color: Theme.textMuted
+            opacity: 0.9
+            text: qsTr("Above diagonal: suited · on diagonal: pairs · below: offsuit")
+        }
+
         RowLayout {
-            spacing: 2
+            spacing: gridGap
             Item {
-                Layout.preferredWidth: Theme.uiRangeGridCornerW
-                Layout.preferredHeight: Theme.uiRangeGridCornerH
+                Layout.preferredWidth: labelColW
+                Layout.preferredHeight: cornerH
             }
             Repeater {
                 model: 13
                 Label {
                     text: rankLabels[index]
                     horizontalAlignment: Text.AlignHCenter
-                    Layout.preferredWidth: Theme.uiRangeGridCellW
+                    Layout.preferredWidth: cellW
                     font.family: Theme.fontFamilyUi
                     font.bold: true
-                    font.pixelSize: Theme.uiRangeGridAxisPx
+                    font.pixelSize: axisPx
                 }
             }
         }
@@ -157,41 +272,50 @@ Item {
             RowLayout {
                 id: rowItem
                 property int row: index
-                spacing: 2
+                spacing: gridGap
                 Label {
                     text: rankLabels[rowItem.row]
-                    Layout.preferredWidth: Theme.uiRangeGridRowHeaderW
+                    Layout.preferredWidth: labelColW
                     font.family: Theme.fontFamilyUi
                     font.bold: true
-                    font.pixelSize: Theme.uiRangeGridAxisPx
+                    font.pixelSize: axisPx
                 }
                 Repeater {
                     model: 13
                     Item {
-                        Layout.preferredWidth: Theme.uiRangeGridCellW
-                        Layout.preferredHeight: Theme.uiRangeGridCellH
+                        id: cellItem
+                        Layout.preferredWidth: cellW
+                        Layout.preferredHeight: cellH
                         property int col: index
                         property int idx: rowItem.row * 13 + col
 
                         Rectangle {
                             anchors.fill: parent
                             visible: !root.composite
-                            color: root.cellColor(root.cellWeight(idx))
-                            border.color: Theme.panelBorderMuted
+                            color: root.cellRegionColor(rowItem.row, col)
+                            border.color: Qt.alpha(Theme.chromeLine, 0.35)
                             border.width: 1
                         }
 
                         Rectangle {
                             anchors.fill: parent
+                            visible: !root.composite
+                            color: root.cellColor(root.cellWeight(idx))
+                            opacity: 0.9
+                            border.width: 0
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
                             visible: root.composite
-                            color: Theme.panel
-                            border.color: Theme.panelBorderMuted
+                            color: root.cellRegionColor(rowItem.row, col)
+                            border.color: Qt.alpha(Theme.chromeLine, 0.35)
                             border.width: 1
 
                             Column {
                                 id: stackCol
                                 anchors.fill: parent
-                                anchors.margins: 1
+                                anchors.margins: 2
                                 spacing: 0
                                 property real c: {
                                     const v = (root.wCall.length > idx) ? root.wCall[idx] : 0
@@ -214,7 +338,7 @@ Item {
                                     visible: height > 0.2
                                     color: root.layerCallColor
                                     border.width: (root.editLayer === 0) ? 1 : 0
-                                    border.color: Theme.focusGold
+                                    border.color: Qt.alpha(Theme.focusGold, 0.45)
                                 }
                                 Rectangle {
                                     width: parent.width
@@ -222,7 +346,7 @@ Item {
                                     visible: height > 0.2
                                     color: root.layerRaiseColor
                                     border.width: (root.editLayer === 1) ? 1 : 0
-                                    border.color: Theme.focusGold
+                                    border.color: Qt.alpha(Theme.focusGold, 0.45)
                                 }
                                 Rectangle {
                                     width: parent.width
@@ -230,7 +354,7 @@ Item {
                                     visible: height > 0.2
                                     color: root.layerBetColor
                                     border.width: (root.editLayer === 2) ? 1 : 0
-                                    border.color: Theme.focusGold
+                                    border.color: Qt.alpha(Theme.focusGold, 0.45)
                                 }
                             }
                         }
@@ -238,8 +362,8 @@ Item {
                         Rectangle {
                             anchors.fill: parent
                             z: 1
-                            visible: !root.readOnly && cellMa.containsMouse
-                            color: Qt.rgba(1, 1, 1, 0.1)
+                            visible: cellMa.containsMouse
+                            color: Qt.rgba(1, 1, 1, 0.06)
                         }
 
                         MouseArea {
@@ -247,10 +371,204 @@ Item {
                             z: 2
                             anchors.fill: parent
                             hoverEnabled: true
-                            enabled: !root.readOnly
                             cursorShape: root.readOnly ? Qt.ArrowCursor : Qt.PointingHandCursor
-                            onClicked: root.cycleWeight(rowItem.row, col)
+                            onClicked: function (mouse) {
+                                if (!root.readOnly)
+                                    root.cycleWeight(rowItem.row, col)
+                            }
                         }
+
+                        Connections {
+                            target: cellMa
+                            function onContainsMouseChanged() {
+                                if (cellMa.containsMouse) {
+                                    root.tipRow = rowItem.row
+                                    root.tipCol = col
+                                    root.tipAnchor = cellItem
+                                    tipShowTimer.restart()
+                                } else if (root.tipAnchor === cellItem) {
+                                    tipShowTimer.stop()
+                                    rangeCellTip.close()
+                                    root.tipRow = -1
+                                    root.tipCol = -1
+                                    root.tipAnchor = null
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: tipShowTimer
+        interval: 280
+        repeat: false
+        onTriggered: {
+            if (root.tipRow >= 0 && root.tipAnchor) {
+                rangeCellTip.parent = Overlay.overlay || root
+                rangeCellTip.open()
+                Qt.callLater(root.syncTipPopupPos)
+            }
+        }
+    }
+
+    /// Keeps the overlay popup aligned while scrolling (scene position changes without `tipAnchor.x` changing).
+    Timer {
+        id: tipFollowTimer
+        interval: 32
+        repeat: true
+        running: false
+        onTriggered: root.syncTipPopupPos()
+    }
+
+    Popup {
+        id: rangeCellTip
+        parent: root
+        modal: false
+        focus: false
+        padding: 12
+        closePolicy: Popup.NoAutoClose
+
+        x: root.tipPopupX
+        y: root.tipPopupY
+
+        onOpened: {
+            Qt.callLater(root.syncTipPopupPos)
+            tipFollowTimer.start()
+        }
+        onClosed: tipFollowTimer.stop()
+
+        background: Rectangle {
+            color: Theme.panelElevated
+            border.color: Theme.panelBorder
+            border.width: 1
+            radius: 8
+        }
+
+        contentItem: Column {
+            id: tipColumn
+            spacing: 8
+            width: Math.min(300, Math.max(160, root.width - 24))
+
+            Row {
+                spacing: 8
+                Repeater {
+                    model: root.tipRow >= 0 ? root.cardFileNamesForCell(root.tipRow, root.tipCol) : []
+                    Image {
+                        required property var modelData
+                        width: 56
+                        height: 80
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                        source: "qrc:/assets/cards/" + modelData
+                    }
+                }
+            }
+
+            Label {
+                visible: root.tipRow >= 0
+                text: root.tipRow >= 0 ? root.handNotation(root.tipRow, root.tipCol) : ""
+                font.family: Theme.fontFamilyUi
+                font.bold: true
+                font.pixelSize: Math.max(Theme.uiRangeGridAxisPx, 14)
+                color: Theme.textPrimary
+            }
+
+            Label {
+                visible: root.tipRow >= 0
+                text: root.tipRow >= 0 ? root.cellRegionName(root.tipRow, root.tipCol) : ""
+                font.pixelSize: Theme.uiRangeGridLegendPx
+                color: Theme.textMuted
+            }
+
+            Label {
+                visible: root.tipRow >= 0 && !root.composite
+                text: {
+                    if (root.tipRow < 0)
+                        return ""
+                    const idx = root.tipRow * 13 + root.tipCol
+                    const w = root.cellWeight(idx)
+                    return qsTr("Weight %1").arg(Number(w).toFixed(2))
+                }
+                font.family: Theme.fontFamilyUi
+                font.pixelSize: Theme.uiRangeGridLegendPx
+                color: Theme.textSecondary
+            }
+
+            Column {
+                visible: root.tipRow >= 0 && root.composite
+                spacing: 4
+                width: parent.width
+
+                RowLayout {
+                    spacing: 6
+                    width: parent.width
+                    Rectangle {
+                        width: 8
+                        height: 8
+                        radius: 2
+                        color: root.layerCallColor
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: {
+                            if (root.tipRow < 0)
+                                return ""
+                            const idx = root.tipRow * 13 + root.tipCol
+                            const c = (root.wCall.length > idx) ? root.wCall[idx] : 0
+                            return qsTr("Call %1").arg(Number(c).toFixed(2))
+                        }
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.uiRangeGridLegendPx
+                        color: Theme.textSecondary
+                    }
+                }
+                RowLayout {
+                    spacing: 6
+                    width: parent.width
+                    Rectangle {
+                        width: 8
+                        height: 8
+                        radius: 2
+                        color: root.layerRaiseColor
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: {
+                            if (root.tipRow < 0)
+                                return ""
+                            const idx = root.tipRow * 13 + root.tipCol
+                            const r = (root.wRaise.length > idx) ? root.wRaise[idx] : 0
+                            return qsTr("Raise %1").arg(Number(r).toFixed(2))
+                        }
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.uiRangeGridLegendPx
+                        color: Theme.textSecondary
+                    }
+                }
+                RowLayout {
+                    spacing: 6
+                    width: parent.width
+                    Rectangle {
+                        width: 8
+                        height: 8
+                        radius: 2
+                        color: root.layerBetColor
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: {
+                            if (root.tipRow < 0)
+                                return ""
+                            const idx = root.tipRow * 13 + root.tipCol
+                            const b = (root.wBet.length > idx) ? root.wBet[idx] : 0
+                            return qsTr("Open %1").arg(Number(b).toFixed(2))
+                        }
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.uiRangeGridLegendPx
+                        color: Theme.textSecondary
                     }
                 }
             }

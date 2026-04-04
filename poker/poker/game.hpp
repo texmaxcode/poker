@@ -177,7 +177,8 @@ public:
     /// When false, skips the fixed delay after each bot action (default true; set false in unit tests).
     Q_INVOKABLE void setBotActionDelayEnabled(bool enabled);
     Q_INVOKABLE bool botActionDelayEnabled() const { return bot_action_delay_enabled_; }
-    /// When false (e.g. unit tests), seat 0 auto-acts without UI/timer.
+    /// When false, seat 0 uses the same strategy/range bot logic as seats 1–5 (no on-felt decision UI).
+    /// When true (default), the human acts through the HUD. Unit tests may disable for scripted runs.
     Q_INVOKABLE void setInteractiveHuman(bool enabled);
     Q_INVOKABLE bool interactiveHuman() const { return interactive_human_; }
     /// When true, seat 0 skips upcoming hands (watch bots). Enabling while you must act folds/checks

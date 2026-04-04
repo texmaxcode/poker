@@ -8,6 +8,10 @@ import PokerUi 1.0
 /// Root window — pages live under `screens/`; shared UI in `components/` (`PokerUi` module).
 ApplicationWindow {
     id: win
+    /// Open maximized immediately. `showMaximized()` in `Component.onCompleted` ran *after* the first
+    /// paint at `width`/`height`, which caused a visible resize jump on startup.
+    visibility: Window.Maximized
+    /// Show immediately — avoids a frame at implicit size before `visibility` applies on some platforms.
     visible: true
 
     function syncTrainerClocksOnResume() {
@@ -62,8 +66,6 @@ ApplicationWindow {
 
     font.family: Theme.fontFamilyUi
     font.pointSize: Theme.uiBasePt
-
-    Component.onCompleted: showMaximized()
 
     header: ToolBar {
         visible: stack.currentIndex > 0
@@ -123,7 +125,7 @@ ApplicationWindow {
         case 3:
             return qsTr("Solver & equity")
         case 4:
-            return qsTr("Bankroll & stats")
+            return qsTr("Stats")
         case 5:
             return qsTr("Training")
         case 6:

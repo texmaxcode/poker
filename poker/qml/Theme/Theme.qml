@@ -214,12 +214,22 @@ QtObject {
     /// 13×13 range editor: heatmap and composite layers (gold / fire / burgundy — matches logo banner & type).
     readonly property color rangeHeatLo: panel
     readonly property color rangeHeatHi: gold
+    /// Muted heat top — blends into `panel` for a quieter single-layer heatmap.
+    readonly property color rangeHeatHiSubdued: Qt.tint(panel, Qt.alpha(gold, 0.55))
     /// Call layer — warm gold (passive / continue).
     readonly property color rangeLayerCall: "#d4b84a"
     /// Raise layer — fire orange (aggression).
     readonly property color rangeLayerRaise: fire
     /// Open / lead layer — burgundy rose (distinct from raise, readable on dark felt).
     readonly property color rangeLayerOpen: "#a85868"
+    /// Composite strips: tinted into `panel` so the grid reads quieter than full accent fills.
+    readonly property color rangeLayerCallSubdued: Qt.tint(panel, Qt.alpha(rangeLayerCall, 0.56))
+    readonly property color rangeLayerRaiseSubdued: Qt.tint(panel, Qt.alpha(rangeLayerRaise, 0.52))
+    readonly property color rangeLayerOpenSubdued: Qt.tint(panel, Qt.alpha(rangeLayerOpen, 0.54))
+    /// Region underlays: upper triangle = suited, lower = offsuit, diagonal = pairs.
+    readonly property color rangeGridPairTint: Qt.rgba(1, 1, 1, 0.08)
+    readonly property color rangeGridSuitedTint: Qt.rgba(0.42, 0.58, 0.75, 0.16)
+    readonly property color rangeGridOffsuitTint: Qt.rgba(0.68, 0.52, 0.42, 0.14)
 
     /// Text color for labels on accent-colored buttons (gold, green, etc.).
     readonly property color onAccentText: "#ffffff"

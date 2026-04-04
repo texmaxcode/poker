@@ -31,7 +31,18 @@ Page {
         Item {
             id: lobbyScrollContent
             width: lobbyScroll.availableWidth
-            height: Math.max(lobbyScroll.availableHeight, mainCol.implicitHeight)
+            /// `ScrollView.availableHeight` is often 0 before the first layout pass; using it alone makes
+            /// `height` jump when it becomes real. Prefer the page height, then scroll viewport.
+            readonly property real lobbyViewportH: {
+                const av = lobbyScroll.availableHeight
+                const ph = lobbyPage.height
+                if (ph > 1)
+                    return ph
+                if (av > 1)
+                    return av
+                return Math.max(av, ph, 400)
+            }
+            height: Math.max(lobbyViewportH, mainCol.implicitHeight)
 
             RowLayout {
                 anchors.fill: parent
@@ -119,7 +130,7 @@ Page {
                                 onClicked: lobbyPage.go(5)
                             }
                             LobbyNavTile {
-                                title: qsTr("Bankroll & stats")
+                                title: qsTr("Stats")
                                 sub: qsTr("Ranks & charts")
                                 detailTip: qsTr(
                                     "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "

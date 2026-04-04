@@ -931,7 +931,7 @@ void game::requestMoreTime()
 
 void game::schedule_next_hand_if_idle()
 {
-    if (!auto_hand_loop_ || !interactive_human_)
+    if (!auto_hand_loop_)
         return;
     QTimer::singleShot(1800, this, [this]() {
         if (!m_root)
@@ -1005,22 +1005,9 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
 
     const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
 
-    if (seat == kHumanSeat)
+    /// Seat 0: only open the on-felt decision UI when interactive; otherwise use the same bot logic as seats 1–5.
+    if (seat == kHumanSeat && interactive_human_ && m_root)
     {
-        if (!interactive_human_ || !m_root)
-        {
-            const int stack_before = table[si].stack;
-            const int taken = table[si].take_from_stack(need);
-            add_chips_to_pot(seat, taken);
-            street_contrib_[si] += taken;
-            if (taken >= stack_before)
-                set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(taken));
-            else
-                set_seat_street_action(seat, QStringLiteral("Call $%1").arg(taken));
-            emit pot_changed();
-            return true;
-        }
-
         /// No chips behind — already all-in for this street; do not open the human action UI.
         if (table[si].stack <= 0)
             return true;
@@ -1221,10 +1208,8 @@ bool game::handle_postflop_check_or_bet(Street st)
         /// No check/bet turn when already all-in for this hand — action skips to players with chips behind.
         if (table[static_cast<size_t>(seat)].stack <= 0)
             continue;
-        if (seat == kHumanSeat)
+        if (seat == kHumanSeat && interactive_human_ && m_root)
         {
-            if (!interactive_human_ || !m_root)
-                continue;
             if (wait_for_human_check_or_bet(st))
                 return true;
             continue;
@@ -1289,10 +1274,8 @@ bool game::handle_bb_preflop_option()
     if (bb < 0 || bb >= n || !in_hand_[static_cast<size_t>(bb)])
         return false;
 
-    if (bb == kHumanSeat)
+    if (bb == kHumanSeat && interactive_human_ && m_root)
     {
-        if (!interactive_human_ || !m_root)
-            return false;
         if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
             return false;
         return wait_for_human_bb_preflop();
@@ -2057,6 +2040,7 @@ void game::loadPersistedSettings()
     }
 
     setHumanSitOut(store.value(QStringLiteral("humanSitOut"), false).toBool());
+    setInteractiveHuman(store.value(QStringLiteral("interactiveHuman"), true).toBool());
     setBotSlowActions(store.value(QStringLiteral("botSlowActions"), false).toBool());
     for (int s = 1; s < kMaxPlayers; ++s)
     {
@@ -2075,6 +2059,7 @@ void game::savePersistedSettings() const
     store.setValue(QStringLiteral("streetBet"), street_bet_);
     store.setValue(QStringLiteral("startStack"), starting_stack_);
     store.setValue(QStringLiteral("humanSitOut"), human_sitting_out_);
+    store.setValue(QStringLiteral("interactiveHuman"), interactive_human_);
     store.setValue(QStringLiteral("botSlowActions"), bot_slow_actions_);
     for (int s = 1; s < kMaxPlayers; ++s)
         store.setValue(QStringLiteral("seat%1/participating").arg(s), seat_participating_[static_cast<size_t>(s)]);

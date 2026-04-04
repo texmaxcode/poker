@@ -4,6 +4,16 @@ import Theme 1.0
 /// Dark charcoal + burgundy wash, vignette, and fine grain (logo-adjacent mood).
 Item {
     id: root
+
+    function scheduleGrainPaint() {
+        grainPaintDebounce.restart()
+    }
+    Timer {
+        id: grainPaintDebounce
+        interval: 48
+        repeat: false
+        onTriggered: grain.requestPaint()
+    }
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
@@ -69,8 +79,8 @@ Item {
                 ctx.fillRect(x2, y2, 2, 2)
             }
         }
-        onWidthChanged: Qt.callLater(requestPaint)
-        onHeightChanged: Qt.callLater(requestPaint)
+        onWidthChanged: root.scheduleGrainPaint()
+        onHeightChanged: root.scheduleGrainPaint()
         Component.onCompleted: Qt.callLater(requestPaint)
     }
 }

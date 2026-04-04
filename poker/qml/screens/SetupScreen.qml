@@ -19,6 +19,8 @@ Page {
 
     property string strategyPopupTitle: ""
     property string strategyPopupBody: ""
+    /// Collapsed: “Range text…” only; expanded: compact row (textarea + Apply/Full), then hide after apply.
+    property bool rangeTextEditorOpen: false
 
     function openStrategyLogPopup(title, body) {
         strategyPopupTitle = title
@@ -95,7 +97,11 @@ Page {
     }
 
     readonly property int selectedSeat: seatTabBar.currentIndex
-    readonly property bool showFullRangeEditor: selectedSeat > 0 || humanRangeAdvanced.checked
+    readonly property bool humanSeatAutoplay: selectedSeat === 0 && playAsBotCheck.checked
+    /// Seat 0: show 13×13 + text when a named bot tab is selected, “Full range editor” is on, or “Play as bot” is on.
+    readonly property bool showFullRangeEditor: selectedSeat > 0 || humanSeatAutoplay
+    /// Seat 0: engine parameter fields apply when autoplaying as a bot.
+    readonly property bool canEditHumanEngineParams: humanSeatAutoplay
 
     readonly property var strategyNames: [
         "Always call (test)",
@@ -116,7 +122,7 @@ Page {
     }
 
     function loadParamFields() {
-        if (setup.selectedSeat < 1)
+        if (setup.selectedSeat < 1 && !setup.canEditHumanEngineParams)
             return
         var m = pokerGame.seatStrategyParams(setup.selectedSeat)
         strat_pf_pre.text = formatParamNum(m.preflopExponent)
@@ -130,7 +136,7 @@ Page {
     }
 
     function applyParamFields() {
-        if (setup.selectedSeat < 1)
+        if (setup.selectedSeat < 1 && !setup.canEditHumanEngineParams)
             return
         var m = {}
         function put(key, v) {
@@ -171,6 +177,7 @@ Page {
         textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
         refreshRangeGrids()
         loadParamFields()
+        rangeTextEditorOpen = false
     }
 
     function reloadAllGrids() {
@@ -185,6 +192,7 @@ Page {
         bbSpin.value = pokerGame.configuredBigBlind()
         streetSpin.value = pokerGame.configuredStreetBet()
         slowBotsCheck.checked = pokerGame.botSlowActions()
+        syncPlayAsBotCheckboxFromEngine()
         Qt.callLater(reloadSeatEditor)
     }
 
@@ -192,7 +200,12 @@ Page {
         if (visible) {
             totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
+            syncPlayAsBotCheckboxFromEngine()
         }
+    }
+
+    function syncPlayAsBotCheckboxFromEngine() {
+        playAsBotCheck.checked = !pokerGame.interactiveHuman()
     }
 
     Connections {
@@ -230,15 +243,15 @@ Page {
                 wrapMode: Text.WordWrap
                 text: qsTr(
                     "Turn bots on or off by name, pick a tab to edit that player’s settings, then play from the table. "
-                    + "On the “You” tab, the 13×13 range grid is hidden until you enable “Full range editor” below; "
-                    + "until then the archetype preset is applied without cell editing. Bot tabs always show the full grid.")
+                    + "On the “You” tab, use “Play as bot” to show the range grid and autoplay with your strategy; "
+                    + "leave it off to play hands yourself. Bot tabs always show the full grid.")
                 font.pixelSize: Theme.trainerBodyPx
                 lineHeight: 1.25
                 color: Theme.textSecondary
             }
 
             ThemedPanel {
-                panelTitle: qsTr("Bots at table")
+                panelTitle: qsTr("Bots and pricing")
                 Layout.fillWidth: true
 
                 ColumnLayout {
@@ -281,66 +294,15 @@ Page {
                             }
                         }
                     }
-                }
-            }
 
-            TabBar {
-                id: seatTabBar
-                Layout.fillWidth: true
-                font.pixelSize: Theme.trainerCaptionPx
-
-                TabButton {
-                    text: qsTr("You")
-                    font.bold: true
-                    topPadding: 10
-                    bottomPadding: 10
-                    leftPadding: 14
-                    rightPadding: 14
-                    contentItem: Label {
-                        text: parent.text
-                        font: parent.font
-                        color: Theme.colorForSeat(0)
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                    }
-                }
-                Repeater {
-                    model: 5
-                    TabButton {
-                        required property int index
-                        text: botNames.displayName(index + 1)
+                    Label {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 4
+                        text: qsTr("Game settings")
                         font.bold: true
-                        topPadding: 10
-                        bottomPadding: 10
-                        leftPadding: 14
-                        rightPadding: 14
-                        contentItem: Label {
-                            text: parent.text
-                            font: parent.font
-                            color: Theme.colorForSeat(index + 1)
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                        }
+                        font.pixelSize: Theme.trainerCaptionPx
+                        color: Theme.textPrimary
                     }
-                }
-            }
-
-            Connections {
-                target: seatTabBar
-                function onCurrentIndexChanged() {
-                    setup.reloadSeatEditor()
-                }
-            }
-
-            ThemedPanel {
-                panelTitle: qsTr("Table stakes & pacing")
-                Layout.fillWidth: true
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -425,13 +387,63 @@ Page {
                 }
             }
 
+            TabBar {
+                id: seatTabBar
+                Layout.fillWidth: true
+                font.pixelSize: Theme.trainerCaptionPx
+
+                TabButton {
+                    text: qsTr("You")
+                    font.bold: true
+                    topPadding: 10
+                    bottomPadding: 10
+                    leftPadding: 14
+                    rightPadding: 14
+                    contentItem: Label {
+                        text: parent.text
+                        font: parent.font
+                        color: Theme.colorForSeat(0)
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+                }
+                Repeater {
+                    model: 5
+                    TabButton {
+                        required property int index
+                        text: botNames.displayName(index + 1)
+                        font.bold: true
+                        topPadding: 10
+                        bottomPadding: 10
+                        leftPadding: 14
+                        rightPadding: 14
+                        contentItem: Label {
+                            text: parent.text
+                            font: parent.font
+                            color: Theme.colorForSeat(index + 1)
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+            }
+
+            Connections {
+                target: seatTabBar
+                function onCurrentIndexChanged() {
+                    setup.reloadSeatEditor()
+                }
+            }
+
             ThemedPanel {
                 Layout.fillWidth: true
                 panelTitle: ""
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: 6
 
                     Label {
                         Layout.fillWidth: true
@@ -568,6 +580,7 @@ Page {
                         }
                     }
                     Label {
+                        visible: selectedSeat !== 0
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                         text: qsTr(
@@ -582,25 +595,13 @@ Page {
                     }
 
                     Label {
-                        visible: selectedSeat === 0
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        text: qsTr(
-                            "Archetype below loads that strategy’s default chart into the engine. "
-                            + "To edit cells, paste range text, or see the 13×13 grid, check “Full range editor” at the bottom of this section.")
-                        font.pixelSize: Theme.trainerBodyPx
-                        lineHeight: 1.25
-                        color: Theme.textSecondary
-                    }
-
-                    Label {
-                        text: qsTr("Archetype")
+                        text: qsTr("Strategy selection")
                         font.bold: true
                         font.pixelSize: Theme.trainerSectionPx
                     }
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: 4
 
                         ComboBox {
                             id: stratCombo
@@ -621,16 +622,32 @@ Page {
                             formFlat: true
                             text: qsTr("?")
                             formBold: true
-                            formFontPixelSize: Theme.trainerSectionPx
+                            formFontPixelSize: Theme.trainerCaptionPx
                             textColor: Theme.textPrimary
-                            horizontalPadding: 8
+                            padH: 10
+                            overrideHeight: 30
                             onClicked: setup.openStrategyLogPopup(
                                     qsTr("%1 — strategy").arg(setup.strategyNames[stratCombo.currentIndex]),
                                     pokerGame.getStrategySummary(stratCombo.currentIndex))
                         }
                     }
 
+                    ThemedCheckBox {
+                        id: playAsBotCheck
+                        visible: selectedSeat === 0
+                        Layout.fillWidth: true
+                        text: qsTr("Play as bot (autoplay my seat with the strategy above)")
+                        /// User-driven only — programmatic `checked` sync does not emit `clicked`.
+                        onClicked: {
+                            pokerGame.setInteractiveHuman(!playAsBotCheck.checked)
+                            pokerGame.savePersistedSettings()
+                            setup.refreshRangeGrids()
+                            setup.loadParamFields()
+                        }
+                    }
+
                     Label {
+                        visible: selectedSeat !== 0
                         Layout.fillWidth: true
                         Layout.maximumHeight: 120
                         wrapMode: Text.WordWrap
@@ -643,8 +660,8 @@ Page {
                     }
 
                     ThemedPanel {
-                        panelTitle: qsTr("Engine parameters (bots)")
-                        visible: selectedSeat >= 1
+                        panelTitle: qsTr("Engine parameters")
+                        visible: selectedSeat >= 1 || setup.humanSeatAutoplay
                         Layout.fillWidth: true
 
                         ColumnLayout {
@@ -652,6 +669,7 @@ Page {
                             spacing: Theme.uiGroupInnerSpacing
 
                             Label {
+                                visible: selectedSeat !== 0
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
                                 font.pixelSize: Theme.trainerBodyPx
@@ -759,7 +777,7 @@ Page {
                                     onClicked: setup.applyParamFields()
                                 }
                                 Button {
-                                    text: qsTr("Reset to archetype")
+                                    text: qsTr("Reset to preset")
                                     font.pixelSize: Theme.trainerCaptionPx
                                     flat: true
                                     onClicked: {
@@ -771,16 +789,6 @@ Page {
                                     }
                                 }
                             }
-                        }
-                    }
-
-                    ThemedCheckBox {
-                        id: humanRangeAdvanced
-                        visible: selectedSeat === 0
-                        text: qsTr("Full range editor (13×13 grid & text)")
-                        onToggled: {
-                            if (checked)
-                                setup.refreshRangeGrids()
                         }
                     }
 
@@ -803,17 +811,6 @@ Page {
                         }
                     }
 
-                    Label {
-                        visible: showFullRangeEditor
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: Theme.trainerBodyPx
-                        lineHeight: 1.25
-                        color: Theme.textSecondary
-                        text: qsTr(
-                            "Stacked colors: gold = call, fire = raise, burgundy = open / lead. "
-                            + "Pick a tab to edit that layer (click cells to cycle weights).")
-                    }
-
                     Connections {
                         target: rangeLayerTab
                         function onCurrentIndexChanged() {
@@ -824,53 +821,6 @@ Page {
                         }
                     }
 
-                    Label {
-                        visible: showFullRangeEditor
-                        text: qsTr("Range text")
-                        font.pixelSize: Theme.trainerSectionPx
-                        font.bold: true
-                    }
-                    TextArea {
-                        id: textArea
-                        visible: showFullRangeEditor
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 88
-                        wrapMode: TextArea.Wrap
-                        font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.trainerBodyPx
-                        color: Theme.textPrimary
-                        placeholderText: "AA,AKs,AKo,TT+"
-                        placeholderTextColor: Theme.textSecondary
-                        onEditingFinished: setup.applyRangeTextFromField()
-                    }
-                    RowLayout {
-                        visible: showFullRangeEditor
-                        spacing: 14
-                        Layout.topMargin: 6
-                        RangeActionButton {
-                            text: qsTr("Apply")
-                            fillCol: Qt.tint(Theme.panelElevated, "#42c9a227")
-                            borderCol: Theme.goldMuted
-                            onClicked: setup.applyRangeTextFromField()
-                        }
-                        RangeActionButton {
-                            text: qsTr("Export")
-                            fillCol: Qt.tint(Theme.panelElevated, "#2a7eb8e8")
-                            borderCol: Theme.accentBlue
-                            onClicked: textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
-                        }
-                        RangeActionButton {
-                            text: qsTr("Full")
-                            fillCol: Qt.tint(Theme.panelElevated, "#38dc2626")
-                            borderCol: Theme.ember
-                            onClicked: {
-                                pokerGame.resetSeatRangeFull(setup.selectedSeat)
-                                pokerGame.savePersistedSettings()
-                                setup.refreshRangeGrids()
-                                textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
-                            }
-                        }
-                    }
                     RangeGrid {
                         id: rng
                         visible: showFullRangeEditor
@@ -878,7 +828,80 @@ Page {
                         composite: true
                         editLayer: rangeLayerTab.currentIndex
                         Layout.fillWidth: true
-                        Layout.topMargin: 0
+                        Layout.topMargin: 2
+                    }
+
+                    RangeActionButton {
+                        visible: showFullRangeEditor && !setup.rangeTextEditorOpen
+                        Layout.topMargin: 4
+                        compact: true
+                        text: qsTr("Range text…")
+                        fillCol: Qt.tint(Theme.panelElevated, "#32c9a21a")
+                        borderCol: Theme.goldMuted
+                        onClicked: setup.rangeTextEditorOpen = true
+                    }
+
+                    Item {
+                        id: rangeTextExpandHost
+                        visible: showFullRangeEditor
+                        Layout.fillWidth: true
+                        implicitHeight: setup.rangeTextEditorOpen ? rangeTextEditRow.implicitHeight : 0
+                        clip: true
+
+                        Behavior on implicitHeight {
+                            NumberAnimation {
+                                duration: 220
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        RowLayout {
+                            id: rangeTextEditRow
+                            width: parent.width
+                            spacing: 6
+
+                            TextArea {
+                                id: textArea
+                                Layout.fillWidth: true
+                                Layout.minimumHeight: 72
+                                Layout.maximumHeight: 112
+                                Layout.preferredHeight: 88
+                                wrapMode: TextArea.Wrap
+                                font.family: Theme.fontFamilyUi
+                                font.pixelSize: Theme.trainerCaptionPx
+                                color: Theme.textPrimary
+                                placeholderText: "AA,AKs,AKo,TT+"
+                                placeholderTextColor: Theme.textSecondary
+                                onEditingFinished: setup.applyRangeTextFromField()
+                            }
+                            ColumnLayout {
+                                spacing: 4
+                                Layout.alignment: Qt.AlignTop
+                                RangeActionButton {
+                                    compact: true
+                                    text: qsTr("Apply")
+                                    fillCol: Qt.tint(Theme.panelElevated, "#42c9a227")
+                                    borderCol: Theme.goldMuted
+                                    onClicked: {
+                                        setup.applyRangeTextFromField()
+                                        setup.rangeTextEditorOpen = false
+                                    }
+                                }
+                                RangeActionButton {
+                                    compact: true
+                                    text: qsTr("Full")
+                                    fillCol: Qt.tint(Theme.panelElevated, "#38dc2626")
+                                    borderCol: Theme.ember
+                                    onClicked: {
+                                        pokerGame.resetSeatRangeFull(setup.selectedSeat)
+                                        pokerGame.savePersistedSettings()
+                                        setup.refreshRangeGrids()
+                                        textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
+                                        setup.rangeTextEditorOpen = false
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -898,25 +921,26 @@ Page {
         }
     }
 
-    /// Range text row: larger hit targets and chrome vs flat panel background.
+    /// Setup action chips (Apply / Full / Range text…).
     component RangeActionButton: Button {
         id: rangeActBtn
         property color fillCol: Theme.panelElevated
         property color borderCol: Theme.chromeLineGold
+        property bool compact: false
 
         flat: false
         focusPolicy: Qt.NoFocus
-        font.pixelSize: Theme.trainerButtonLabelPx
+        font.pixelSize: compact ? Theme.trainerCaptionPx : Theme.trainerButtonLabelPx
         font.bold: true
-        leftPadding: 22
-        rightPadding: 22
-        topPadding: 12
-        bottomPadding: 12
+        leftPadding: compact ? 14 : 22
+        rightPadding: compact ? 14 : 22
+        topPadding: compact ? 6 : 12
+        bottomPadding: compact ? 6 : 12
 
         background: Rectangle {
             implicitWidth: rangeActBtn.contentItem.implicitWidth + rangeActBtn.leftPadding + rangeActBtn.rightPadding
             implicitHeight: rangeActBtn.contentItem.implicitHeight + rangeActBtn.topPadding + rangeActBtn.bottomPadding
-            radius: 9
+            radius: rangeActBtn.compact ? 7 : 9
             color: rangeActBtn.pressed ? Qt.darker(rangeActBtn.fillCol, 1.14)
                     : (rangeActBtn.hovered ? Qt.lighter(rangeActBtn.fillCol, 1.06) : rangeActBtn.fillCol)
             border.width: 1
