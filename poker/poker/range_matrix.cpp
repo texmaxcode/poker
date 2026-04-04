@@ -250,7 +250,8 @@ std::string RangeMatrix::export_text() const
         for (int j = 0; j < 13; ++j)
         {
             const double v = w_[static_cast<size_t>(i)][static_cast<size_t>(j)];
-            if (v < 0.5)
+            /// Match grid click weights (0 / 0.33 / 0.66 / 1.0); a 0.5 cutoff hid sub‑half weights in the text field.
+            if (v <= 0.0)
                 continue;
             if (!first)
                 o << ',';

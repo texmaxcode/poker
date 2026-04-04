@@ -172,9 +172,11 @@ Page {
         if (!setup.showFullRangeEditor)
             return
         const t = textArea.text.trim()
-        pokerGame.applySeatRangeText(setup.selectedSeat, t, rangeLayerTab.currentIndex)
+        const ok = pokerGame.applySeatRangeText(setup.selectedSeat, t, rangeLayerTab.currentIndex)
         pokerGame.savePersistedSettings()
         setup.refreshRangeGrids()
+        if (ok)
+            textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
     }
 
     function reloadSeatEditor() {
@@ -229,6 +231,16 @@ Page {
         function onSessionStatsChanged() {
             totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
+        }
+    }
+
+    Connections {
+        target: pokerGame
+        function onRangeRevisionChanged() {
+            if (!setup.showFullRangeEditor)
+                return
+            /// Grid edits emit this; keep the text field in sync (export lists any cell with weight > 0).
+            textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
         }
     }
 
