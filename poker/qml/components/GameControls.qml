@@ -10,10 +10,20 @@ Item {
     width: game_controls.embeddedMode
           ? (game_controls.panelWidth > 0 ? game_controls.panelWidth : implicitWidth)
           : (parent ? parent.width : implicitWidth)
-    height: mainCol.height + 12
+    /// Panel chrome: top inset (`mainColTopMargin`) + column + bottom inset (`barBottomPad`).
+    height: mainCol.height + mainColTopMargin + barBottomPad
 
     /// When true, use compact timer row instead of full-width status row.
     property bool embeddedMode: false
+    readonly property int barBottomPad: embeddedMode ? 8 : 12
+    /// Inset below the panel top border — timer / “Act” row (embedded HUD was flush to the edge at 1px).
+    readonly property int mainColTopMargin: embeddedMode ? 14 : 10
+    readonly property int mainColSpacing: embeddedMode ? 6 : 12
+    /// Horizontal gap between FOLD / CALL / RAISE (and similar action rows).
+    readonly property int actionRowSpacing: embeddedMode ? 14 : 16
+    readonly property int embeddedTimerRowMinH: 14
+    /// Uniform inset inside the HUD panel so rows/columns line up (avoid mixing `x: 8` with ad‑hoc widths).
+    readonly property int hudSideMargin: 11
     /// Used when `embeddedMode` is true; set from `GameScreen` so the panel does not span the table width.
     property real panelWidth: 0
 
@@ -76,6 +86,9 @@ Item {
         }
     }
 
+    /// Seat 0 is played by engine bots (vs interactive human actions).
+    readonly property bool playingAsBot: pokerGame !== null && !engineHumanInteractive
+
     readonly property bool humanDecisionActive: trainerMode
             ? (!trainerInputLocked && decisionSecondsLeft > 0)
             : (decisionSecondsLeft > 0 && humanStackChips > 0)
@@ -90,19 +103,23 @@ Item {
     readonly property bool canOpenRaise: checkOrRaiseSized && humanHasChips && openRaiseMinChips > 0
             && openRaiseMaxChips >= openRaiseMinChips
 
+    /// False while sitting out — disables action buttons; do not use alone to collapse the whole HUD.
     readonly property bool showHumanActions: !humanSitOut
+    /// Timer / progress strip: show while playing or watching so the panel height stays stable.
+    readonly property bool showTableDecisionChrome: !trainerMode && (showWagerUi || humanSitOut)
 
-    /// Table: hand strength is shown in the dedicated row above; banner is status / showdown only.
+    /// Table: hand strength is shown in the dedicated row above; banner is status / showdown (+ watching when sitting out).
     readonly property string statusFullDisplay: {
-        if (humanSitOut)
-            return (statusText.length > 0) ? statusText : qsTr("Watching — next hand you skip.")
-        var base = statusText.length > 0 ? statusText : qsTr("Ready.")
         if (trainerMode) {
             var hand = humanHandText.length > 0 ? humanHandText : ""
+            var base = statusText.length > 0 ? statusText : qsTr("Ready.")
             if (hand.length > 0 && base.length > 0)
                 return hand + "\n" + base
             return hand.length > 0 ? hand : base
         }
+        if (humanSitOut)
+            return (statusText.length > 0) ? statusText : qsTr("Watching — next hand you skip.")
+        var base = statusText.length > 0 ? statusText : qsTr("Ready.")
         return base
     }
 
@@ -224,7 +241,7 @@ Item {
         id: bar
         anchors.left: parent.left
         anchors.right: parent.right
-        height: mainCol.height + 12
+        height: mainCol.height + mainColTopMargin + barBottomPad
         radius: 10
         color: Theme.headerBg
         border.width: 1
@@ -244,15 +261,16 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.topMargin: 6
-            spacing: 10
+            anchors.leftMargin: game_controls.hudSideMargin
+            anchors.rightMargin: game_controls.hudSideMargin
+            anchors.topMargin: game_controls.mainColTopMargin
+            spacing: game_controls.mainColSpacing
 
             Text {
                 id: trainerMessageLine
                 visible: game_controls.trainerMode && game_controls.showHumanActions
                         && game_controls.showWagerUi
-                width: parent.width - 16
-                x: 8
+                width: parent.width
                 text: game_controls.statusText.length > 0 ? game_controls.statusText : qsTr("Ready.")
                 color: Theme.textPrimary
                 font.family: Theme.fontFamilyUi
@@ -263,18 +281,26 @@ Item {
 
             Column {
                 id: decisionChrome
-                width: parent.width - 16
-                x: 8
-                spacing: 8
-                visible: game_controls.showHumanActions && game_controls.showWagerUi
-                        && (!game_controls.embeddedMode || game_controls.humanDecisionActive
-                            || (game_controls.trainerMode && game_controls.statusSubText.length > 0))
+                width: parent.width
+                spacing: game_controls.embeddedMode ? 6 : 10
+                /// Table + interactive human: keep timer strip so the panel height stays stable. Table + play-as-bot:
+                /// omit the empty strip (Sit out is not shown while bot plays — same as before).
+                visible: game_controls.showTableDecisionChrome
+                        && (!game_controls.embeddedMode || game_controls.engineHumanInteractive
+                            || game_controls.trainerMode)
 
-                RowLayout {
+                Item {
                     width: parent.width
-                    spacing: game_controls.embeddedMode ? 12 : 8
+                    height: game_controls.embeddedMode
+                            ? Math.max(game_controls.embeddedTimerRowMinH, timerRow.implicitHeight)
+                            : timerRow.implicitHeight
+                    RowLayout {
+                        id: timerRow
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width
+                        spacing: game_controls.embeddedMode ? 14 : 10
 
-                    Text {
+                        Text {
                         visible: game_controls.humanDecisionActive
                         text: qsTr("Act")
                         color: Theme.hudActionLabel
@@ -326,16 +352,41 @@ Item {
                         elide: Text.ElideLeft
                         Layout.maximumWidth: Math.min(200, parent.width * 0.55)
                     }
+
+                    ThemedCheckBox {
+                        id: sitOutCheck
+                        visible: !game_controls.trainerMode && !game_controls.playingAsBot
+                        Layout.alignment: Qt.AlignVCenter
+                        text: qsTr("Sit out")
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.uiMicroPx
+                        topPadding: game_controls.embeddedMode ? 8 : 14
+                        bottomPadding: game_controls.embeddedMode ? 8 : 14
+                        leftPadding: game_controls.embeddedMode ? 8 : 12
+                        rightPadding: game_controls.embeddedMode ? 8 : 12
+                        checked: game_controls.humanSitOut
+                        onToggled: {
+                            if (pokerGame) {
+                                pokerGame.setHumanSitOut(sitOutCheck.checked)
+                                Qt.callLater(function () {
+                                    if (pokerGame)
+                                        pokerGame.savePersistedSettings()
+                                })
+                            }
+                        }
+                    }
+                    }
                 }
 
                 ProgressBar {
                     id: embeddedDecisionBar
-                    visible: game_controls.embeddedMode
-                            && (game_controls.humanDecisionActive
-                                || (game_controls.trainerMode && game_controls.statusSubText.length > 0))
+                    /// Keep the bar’s vertical space on the table HUD even between decisions (timer at 0).
+                    visible: game_controls.embeddedMode && game_controls.showTableDecisionChrome
                     width: parent.width
                     height: 6
                     padding: 2
+                    opacity: (game_controls.humanDecisionActive
+                            || (game_controls.trainerMode && game_controls.statusSubText.length > 0)) ? 1.0 : 0.35
                     from: 0
                     to: 1
                     value: Math.max(0, Math.min(1,
@@ -366,7 +417,8 @@ Item {
                         && game_controls.raiseSizingExpanded
                         && !(game_controls.trainerMode && game_controls.trainerFlopStreet)
                 width: parent.width
-                height: visible ? raiseSizerCol.implicitHeight + 16 : 0
+                height: visible
+                        ? raiseSizerCol.implicitHeight + 2 * Theme.sizingRaisePanelPadV : 0
                 color: Theme.panelElevated
                 border.color: Theme.inputBorder
                 border.width: 1
@@ -374,15 +426,15 @@ Item {
 
                 Column {
                     id: raiseSizerCol
-                    width: parent.width - 16
+                    width: parent.width - 2 * Theme.sizingRaisePanelPadH
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: 10
-                    spacing: 8
+                    anchors.topMargin: Theme.sizingRaisePanelPadV
+                    spacing: Theme.sizingRaiseSliderToPresetGap
 
                     RowLayout {
                         width: parent.width
-                        spacing: 8
+                        spacing: 10
                         Slider {
                             id: raiseSlider
                             Layout.fillWidth: true
@@ -446,9 +498,8 @@ Item {
             Row {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
                         && game_controls.facingRaise
-                width: parent.width - 16
-                x: 8
-                spacing: 12
+                width: parent.width
+                spacing: game_controls.actionRowSpacing
 
                 GameButton {
                     visible: !game_controls.trainerMode || !game_controls.trainerFlopStreet
@@ -575,7 +626,8 @@ Item {
                         && game_controls.bbPreflopSizingExpanded
                         && game_controls.bbPreflopMaxChips >= game_controls.bbPreflopMinChips
                 width: parent.width
-                height: visible ? bbPreflopSizerCol.implicitHeight + 16 : 0
+                height: visible
+                        ? bbPreflopSizerCol.implicitHeight + 2 * Theme.sizingRaisePanelPadV : 0
                 color: Theme.panelElevated
                 border.color: Theme.inputBorder
                 border.width: 1
@@ -583,15 +635,15 @@ Item {
 
                 Column {
                     id: bbPreflopSizerCol
-                    width: parent.width - 16
+                    width: parent.width - 2 * Theme.sizingRaisePanelPadH
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: 10
-                    spacing: 8
+                    anchors.topMargin: Theme.sizingRaisePanelPadV
+                    spacing: Theme.sizingRaiseSliderToPresetGap
 
                     RowLayout {
                         width: parent.width
-                        spacing: 8
+                        spacing: 10
                         Slider {
                             id: bbPreflopSlider
                             Layout.fillWidth: true
@@ -659,9 +711,8 @@ Item {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
                         && game_controls.humanDecisionActive
                         && game_controls.humanBbPreflopOption
-                width: parent.width - 16
-                x: 8
-                spacing: 12
+                width: parent.width
+                spacing: game_controls.actionRowSpacing
 
                 GameButton {
                     text: qsTr("CHECK")
@@ -698,7 +749,8 @@ Item {
                         && game_controls.canOpenRaise
                         && game_controls.openRaiseSizingExpanded
                 width: parent.width
-                height: visible ? openRaiseSizerCol.implicitHeight + 16 : 0
+                height: visible
+                        ? openRaiseSizerCol.implicitHeight + 2 * Theme.sizingRaisePanelPadV : 0
                 color: Theme.panelElevated
                 border.color: Theme.inputBorder
                 border.width: 1
@@ -706,15 +758,15 @@ Item {
 
                 Column {
                     id: openRaiseSizerCol
-                    width: parent.width - 16
+                    width: parent.width - 2 * Theme.sizingRaisePanelPadH
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: 10
-                    spacing: 8
+                    anchors.topMargin: Theme.sizingRaisePanelPadV
+                    spacing: Theme.sizingRaiseSliderToPresetGap
 
                     RowLayout {
                         width: parent.width
-                        spacing: 8
+                        spacing: 10
                         Slider {
                             id: openRaiseSlider
                             Layout.fillWidth: true
@@ -778,9 +830,8 @@ Item {
             Row {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
                         && game_controls.checkOrRaiseSized
-                width: parent.width - 16
-                x: 8
-                spacing: 12
+                width: parent.width
+                spacing: game_controls.actionRowSpacing
 
                 GameButton {
                     text: qsTr("CHECK")
@@ -823,52 +874,12 @@ Item {
             }
 
             RowLayout {
-                id: sitOutRow
-                visible: !game_controls.trainerMode
-                width: parent.width - 16
-                x: 8
-                spacing: 10
-
-                readonly property bool playingAsBot: game_controls.pokerGame !== null
-                        && !game_controls.engineHumanInteractive
-
-                ThemedCheckBox {
-                    id: sitOutCheck
-                    visible: !sitOutRow.playingAsBot
-                    text: qsTr("Sit out")
-                    font.family: Theme.fontFamilyUi
-                    font.pixelSize: Theme.uiMicroPx
-                    padding: 2
-                    checked: game_controls.humanSitOut
-                    onToggled: {
-                        if (pokerGame) {
-                            pokerGame.setHumanSitOut(sitOutCheck.checked)
-                            pokerGame.savePersistedSettings()
-                        }
-                    }
-                }
-
-                Label {
-                    visible: sitOutRow.playingAsBot
-                    text: qsTr("Bot playing")
-                    font.family: Theme.fontFamilyUi
-                    font.pixelSize: Theme.uiMicroPx
-                    color: Theme.textSecondary
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                    height: 1
-                }
-            }
-
-            RowLayout {
                 id: buyBackRow
                 visible: !game_controls.trainerMode && game_controls.embeddedMode
-                        && game_controls.humanCanBuyBackIn && game_controls.showHumanActions
-                width: parent.width - 16
-                x: 8
-                spacing: 10
+                        && game_controls.humanCanBuyBackIn
+                        && (game_controls.showHumanActions || game_controls.humanSitOut)
+                width: parent.width
+                spacing: 12
 
                 GameButton {
                     text: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
@@ -891,41 +902,16 @@ Item {
                 }
             }
 
-            Rectangle {
-                visible: !game_controls.trainerMode && game_controls.humanHandText.length > 0
-                        && game_controls.showHumanActions && !game_controls.humanSitOut
-                width: parent.width - 16
-                x: 8
-                implicitHeight: Math.max(40, yourHandLabel.contentHeight + 14)
-                radius: 6
-                color: Theme.panelElevated
-                border.width: 1
-                border.color: Qt.alpha(Theme.gold, 0.42)
-                clip: true
-
-                Text {
-                    id: yourHandLabel
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    wrapMode: Text.WordWrap
-                    text: game_controls.humanHandText
-                    color: Theme.focusGold
-                    font.family: Theme.fontFamilyUi
-                    font.pixelSize: Theme.uiBodyPx
-                    font.bold: true
-                    lineHeight: 1.2
-                }
-            }
-
+            /// Status / showdown **above** the hole-card line so the system message sits higher in the panel.
             Rectangle {
                 id: statusBanner
                 /// Showdown: one line per winner (`Name wins $N holding … on … with hand name`).
                 /// Hide while your decision timer runs: last-hand showdown text/cards would otherwise sit on top of actions.
                 visible: !game_controls.trainerMode
                         && !(game_controls.embeddedMode && game_controls.humanDecisionActive)
-                width: parent.width - 16
-                x: 8
-                implicitHeight: statusTableColumn.implicitHeight + 12
+                width: parent.width
+                readonly property int statusBannerInnerTopPad: 6
+                implicitHeight: statusTableColumn.implicitHeight + 8 + statusBannerInnerTopPad
                 radius: 6
                 color: Theme.inputBg
                 border.color: Theme.inputBorder
@@ -938,8 +924,8 @@ Item {
                     width: parent.width - 12
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
-                    anchors.topMargin: 6
-                    spacing: 8
+                    anchors.topMargin: parent.statusBannerInnerTopPad
+                    spacing: 6
 
                     Row {
                         id: winHandVizRow
@@ -972,9 +958,89 @@ Item {
                 }
             }
 
+            Rectangle {
+                /// Same chrome as the hole-card row: show while sitting out (status + icon), as bot, or when dealt hole cards.
+                visible: !game_controls.trainerMode
+                        && (game_controls.humanSitOut || game_controls.playingAsBot
+                            || game_controls.humanHandText.length > 0)
+                width: parent.width
+                implicitHeight: Math.max(44, handRowLayout.implicitHeight + 16)
+                radius: 6
+                color: Theme.panelElevated
+                border.width: 1
+                border.color: Qt.alpha(Theme.gold, 0.42)
+                clip: true
+
+                RowLayout {
+                    id: handRowLayout
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 10
+
+                    Image {
+                        visible: game_controls.humanSitOut
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        fillMode: Image.PreserveAspectFit
+                        source: "qrc:/assets/icons/table.svg"
+                    }
+
+                    Text {
+                        visible: game_controls.humanSitOut
+                        Layout.alignment: Qt.AlignVCenter
+                        text: qsTr("Sitting out")
+                        color: Theme.textSecondary
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.uiMicroPx
+                    }
+
+                    Image {
+                        visible: game_controls.playingAsBot && !game_controls.humanSitOut
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        fillMode: Image.PreserveAspectFit
+                        source: "qrc:/assets/icons/bots.svg"
+                    }
+
+                    Text {
+                        visible: game_controls.playingAsBot && !game_controls.humanSitOut
+                        Layout.alignment: Qt.AlignVCenter
+                        text: qsTr("Bot playing")
+                        color: Theme.textSecondary
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.uiMicroPx
+                    }
+
+                    Text {
+                        id: yourHandLabel
+                        /// Only stretch when showing hole cards; otherwise a trailing spacer keeps sit/bot copy left-aligned.
+                        Layout.fillWidth: visible
+                        Layout.minimumWidth: 0
+                        Layout.alignment: Qt.AlignVCenter
+                        visible: !game_controls.humanSitOut && game_controls.humanHandText.length > 0
+                        text: game_controls.humanHandText
+                        color: Theme.focusGold
+                        font.family: Theme.fontFamilyUi
+                        font.pixelSize: Theme.uiBodyPx
+                        font.bold: true
+                        wrapMode: Text.NoWrap
+                        elide: Text.ElideRight
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.preferredHeight: 1
+                        visible: !yourHandLabel.visible
+                    }
+                }
+            }
+
             Item {
                 width: 1
-                height: 4
+                height: 2
             }
         }
     }

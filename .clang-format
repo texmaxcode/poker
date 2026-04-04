@@ -1,0 +1,33 @@
+# LLVM base, tuned to match project conventions (4-space indent, 120 cols, Allman for
+# type-level braces, K&R-style braces on control statements, sorted includes).
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++17
+ColumnLimit: 120
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+SortIncludes: true
+IncludeBlocks: Regroup
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: Never
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: false
+  BeforeElse: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+
+NamespaceIndentation: None
+IndentAccessModifiers: false

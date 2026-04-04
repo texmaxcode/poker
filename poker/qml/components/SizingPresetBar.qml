@@ -5,7 +5,7 @@ import Theme 1.0
 /// Shared Min / ⅓ / ½ / ⅔ / Pot / All chips for raise (facing) vs open-raise sliders.
 Row {
     id: root
-    spacing: 5
+    spacing: Theme.sizingPresetBarSpacing
 
     required property var hud
     required property Slider slider
@@ -112,32 +112,32 @@ Row {
         model: [
             {
                 label: qsTr("Min"),
-                w: 40,
+                w: 44,
                 kind: "min"
             },
             {
                 label: qsTr("⅓"),
-                w: 34,
+                w: 38,
                 kind: "third"
             },
             {
                 label: qsTr("½"),
-                w: 34,
+                w: 38,
                 kind: "half"
             },
             {
                 label: qsTr("⅔"),
-                w: 34,
+                w: 38,
                 kind: "twothirds"
             },
             {
                 label: qsTr("Pot"),
-                w: 40,
+                w: 44,
                 kind: "pot"
             },
             {
                 label: qsTr("All"),
-                w: 40,
+                w: 44,
                 kind: "all"
             }
         ]
@@ -145,10 +145,11 @@ Row {
         delegate: Item {
             required property var modelData
             width: modelData.w
-            height: 36
+            height: Theme.sizingPresetButtonHeight
 
             Rectangle {
                 anchors.fill: parent
+                anchors.margins: 1
                 radius: 6
                 color: Theme.hudActionPanel
                 opacity: presetMa.pressed ? 0.72 : (presetMa.containsMouse ? 0.88 : 1)

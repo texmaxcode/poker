@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QVariantMap>
 
-/// Persists solver / equity screen fields (same QSettings file as `game` table config).
+/// Persists solver / equity screen fields in the app SQLite store (`AppStateSqlite`).
 class SessionStore : public QObject
 {
     Q_OBJECT

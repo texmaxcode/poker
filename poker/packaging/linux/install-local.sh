@@ -4,8 +4,11 @@
 # Default prefix: $HOME/poker-gym
 #   bin/texas-holdem-gym   — launcher (add to PATH or symlink from ~/bin)
 #   libexec/Poker          — binary
-#   lib/                   — copied shared libraries
-#   lib/qt6/plugins/       — platform + image format plugins
+#   lib/                   — copied shared libraries (incl. libsqlite3; Qt sqldrivers in lib/qt6/plugins)
+#   lib/qt6/plugins/       — platform, imageformats, sqldrivers (SQLite), …
+#
+# App data (SQLite): ~/.local/share/TexasHoldemGym/Texas Hold'em Gym/texas-holdem-gym.sqlite
+#   Override: export TEXAS_HOLDEM_GYM_SQLITE=/path/to/file.sqlite
 #
 # Usage:
 #   ./install-local.sh              # build + install
@@ -131,6 +134,7 @@ fi
 
 echo ""
 echo "Install complete."
+echo "  Settings DB: \${HOME}/.local/share/TexasHoldemGym/Texas Hold'em Gym/texas-holdem-gym.sqlite (or TEXAS_HOLDEM_GYM_SQLITE)"
 echo "  Run:    ${LAUNCHER}"
 echo "  Or add to PATH:  export PATH=\"${PREFIX}/bin:\$PATH\""
 if [[ "${LINK_HOME_BIN}" -eq 0 ]]; then

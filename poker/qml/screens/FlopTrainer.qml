@@ -26,6 +26,7 @@ Page {
     property int seatVisualEpoch: 0
     property bool _returningFromHidden: false
     property bool _drillSurfaceShown: false
+    property bool assetLoadFailed: false
     readonly property real flopSpotPotBb: 5.5
     /// $2 BB → chip pot for display (matches ~5.5 bb spot).
     readonly property int trainerPotChips: Math.round(page.flopSpotPotBb * 2)
@@ -158,6 +159,8 @@ Page {
     }
 
     function restartDrillAfterReturn() {
+        if (page.assetLoadFailed)
+            return
         trainer.startFlopDrill("srp_btn_bb")
         next()
     }
@@ -191,11 +194,12 @@ Page {
         delaySecSpin.value = Math.round(trainingStore.trainerAutoAdvanceMs / 1000)
         timeLimitSpin.value = trainingStore.trainerDecisionSeconds
         const ok = trainer.loadFlopSpots("qrc:/assets/training/spots_v1.json")
-        trainer.startFlopDrill("srp_btn_bb")
+        page.assetLoadFailed = !ok
         if (!ok) {
             statusLine = qsTr("Could not load flop spots.")
             return
         }
+        trainer.startFlopDrill("srp_btn_bb")
         next()
     }
 
@@ -264,6 +268,16 @@ Page {
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
                 spacing: Theme.trainerColumnSpacing
 
+                Text {
+                    Layout.fillWidth: true
+                    visible: page.assetLoadFailed
+                    wrapMode: Text.WordWrap
+                    text: qsTr("Flop spots failed to load. The bundled JSON asset may be missing or invalid.")
+                    color: Theme.dangerText
+                    font.pixelSize: Theme.trainerBodyPx
+                    lineHeight: 1.25
+                }
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 10
@@ -305,6 +319,7 @@ Page {
                         from: 1
                         to: 120
                         editable: true
+                        enabled: !page.assetLoadFailed
                         stepSize: 1
                         textFromValue: function (v) { return v + qsTr(" s") }
                         valueFromText: function (t) { return parseInt(t, 10) }
@@ -323,6 +338,7 @@ Page {
                         from: 5
                         to: 120
                         editable: true
+                        enabled: !page.assetLoadFailed
                         stepSize: 1
                         textFromValue: function (v) { return v + qsTr(" s") }
                         valueFromText: function (t) { return parseInt(t, 10) }
@@ -375,7 +391,7 @@ Page {
 
                             Column {
                                 Layout.alignment: Qt.AlignHCenter
-                                Layout.topMargin: 6
+                                Layout.topMargin: 0
                                 spacing: 8
                                 width: drillArea.flopBoardStripWidth
 
@@ -506,7 +522,7 @@ Page {
                                 var ideal = pos.y + hs.height - flopExerciseHud.height
                                 return Math.min(Math.max(6, ideal), drillArea.height - flopExerciseHud.height - 6)
                             }
-                            trainerInputLocked: page.inputLocked
+                            trainerInputLocked: page.inputLocked || page.assetLoadFailed
                             humanSitOut: false
                             statusText: page.statusLine
                             statusSubText: page.secLeft > 0

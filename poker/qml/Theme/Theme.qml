@@ -184,14 +184,23 @@ QtObject {
     readonly property int uiMicroPx: 11
     readonly property int uiMonoPx: 13
     readonly property int uiLobbyTitlePt: 19
-    /// Lobby framed panel heading (“Choose a screen”).
+    /// Lobby framed panel heading (“What would you like to do?”).
     readonly property int uiLobbyPanelTitlePx: 22
-    /// Nav tiles: title line (two lines max).
-    readonly property int uiLobbyNavTileTitlePt: 17
-    readonly property int uiLobbyNavSubPx: 17
-    readonly property int uiLobbyNavTilePadding: 11
-    readonly property int uiLobbyNavTileMinHeight: 136
-    readonly property int uiLobbyNavIconPx: 32
+    /// Nav tiles: title + sub use `pixelSize`; two-line caps; fixed block heights keep every tile aligned.
+    readonly property int uiLobbyNavTileTitlePx: 15
+    readonly property int uiLobbyNavSubPx: 14
+    readonly property real uiLobbyNavTileTitleLineHeight: 1.2
+    readonly property real uiLobbyNavTileSubLineHeight: 1.2
+    /// Fixed content height for title block (two lines at `titlePx` × line height).
+    readonly property int uiLobbyNavTitleBlockH: 36
+    readonly property int uiLobbyNavSubBlockH: 34
+    readonly property int uiLobbyNavTilePadding: 17
+    /// Space between icon / title / sub stacks inside a tile.
+    readonly property int uiLobbyNavTileStackSpacing: 8
+    /// Gap between lobby nav tiles (lobby nav row).
+    readonly property int uiLobbyNavRowSpacing: 20
+    readonly property int uiLobbyNavTileMinHeight: 168
+    readonly property int uiLobbyNavIconPx: 40
     readonly property int uiPotMainPt: 22
     readonly property int uiPotSepPt: 18
     readonly property int uiPotCallPt: 18
@@ -214,6 +223,15 @@ QtObject {
     readonly property int uiRangeGridCornerW: 22
     readonly property int uiRangeGridCornerH: 24
     readonly property int uiSizingPresetPt: 11
+    /// `SizingPresetBar`: gap between Min / ⅓ / … chips (table + training `GameControls`).
+    readonly property int sizingPresetBarSpacing: 10
+    /// Tap height for preset chips — room for label + vertical padding.
+    readonly property int sizingPresetButtonHeight: 40
+    /// Inset inside the grey raise panel (slider + presets) above/below and left/right.
+    readonly property int sizingRaisePanelPadV: 14
+    readonly property int sizingRaisePanelPadH: 12
+    /// Space between the amount slider row and the preset button row.
+    readonly property int sizingRaiseSliderToPresetGap: 12
 
     /// 13×13 range editor: heatmap and composite layers (gold / fire / burgundy — matches logo banner & type).
     readonly property color rangeHeatLo: panel

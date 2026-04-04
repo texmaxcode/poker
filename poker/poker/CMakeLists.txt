@@ -9,7 +9,12 @@ qt_add_library(poker
   cards.cpp
   player.cpp
   holdem_side_pot.cpp
+  bankroll_tracker.cpp
   game.cpp
+  game_persistence.cpp
+  seat_manager.cpp
+  seat_manager.cpp
+  human_decision_controller.cpp
   game_ui_sync.cpp
   hand_eval.cpp
   range_matrix.cpp
@@ -20,11 +25,13 @@ qt_add_library(poker
   training_store.cpp
   training_controller.cpp
   session_store.cpp
+  persist_sqlite.cpp
 )
 
 target_link_libraries(poker PRIVATE
   Qt${QT_VERSION_MAJOR}::Core
   Qt${QT_VERSION_MAJOR}::Qml
+  SQLite::SQLite3
 )
 target_include_directories(poker INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 

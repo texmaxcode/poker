@@ -35,6 +35,7 @@ Page {
     property int uiRevision: 0
     /// Bound to C++ `statsSeq` so leaderboard / chart refresh when bankroll snapshots update (not only on restart).
     property int statsSeq: pokerGame.statsSeq
+    property bool statsDataError: false
     /// Same height as the “Blinds” line in Stakes & buy-ins so the three table header rows line up.
     readonly property int statsTablePx: 22
     readonly property int statsTableHeaderPx: 23
@@ -60,11 +61,24 @@ Page {
     }
 
     function refreshSeatBankrollTables() {
+        statsPage.statsDataError = false
         var list = pokerGame.seatRankings()
+        if (!list || list.length === undefined) {
+            statsPage.statsDataError = true
+            rankRepeater.model = []
+            seatBankrollDetail = []
+            pendingApplyBuyIns = false
+            uiRevision = (uiRevision + 1) % 2000000000
+            return
+        }
         rankRepeater.model = list
         var map = {}
-        for (var i = 0; i < list.length; i++)
-            map[list[i].seat] = list[i]
+        for (var i = 0; i < list.length; i++) {
+            var row = list[i]
+            if (!row || row.seat === undefined)
+                continue
+            map[row.seat] = row
+        }
         var out = []
         for (var s = 0; s < 6; s++) {
             if (map[s] !== undefined)
@@ -157,6 +171,16 @@ Page {
                 Layout.minimumWidth: 320
                 spacing: Theme.trainerColumnSpacing
 
+                Text {
+                    Layout.fillWidth: true
+                    visible: statsPage.statsDataError
+                    wrapMode: Text.WordWrap
+                    text: qsTr("Could not load bankroll stats. Try leaving this screen and opening it again.")
+                    color: Theme.dangerText
+                    font.pixelSize: Theme.trainerBodyPx
+                    lineHeight: 1.25
+                }
+
             /// Plain row (no nested ScrollView): a horizontal ScrollView was stealing vertical wheel from the page scroll.
             RowLayout {
                 id: statsTablesRow
@@ -204,7 +228,7 @@ Page {
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
-                                    text: qsTr("Off")
+                                    text: qsTr("Wallet")
                                     font.bold: true
                                     font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
@@ -223,6 +247,15 @@ Page {
                                 }
                             }
 
+                            Text {
+                                Layout.fillWidth: true
+                                visible: !statsPage.statsDataError && statsPage.seatBankrollDetail.length < 1
+                                wrapMode: Text.WordWrap
+                                text: qsTr("No seat bankroll rows yet.")
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.trainerBodyPx
+                            }
+
                             Repeater {
                                 model: statsPage.seatBankrollDetail
 
@@ -232,16 +265,16 @@ Page {
                                     spacing: statsPage.statsTableColSpacing
 
                                     Label {
-                                        text: botNames.displayName(modelData.seat)
+                                        text: botNames.displayName(modelData.seat !== undefined ? modelData.seat : 0)
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 88
-                                        color: Theme.colorForSeat(modelData.seat)
+                                        color: Theme.colorForSeat(modelData.seat !== undefined ? modelData.seat : 0)
                                         font.pixelSize: statsPage.statsTablePx
                                         font.weight: Font.Black
                                         elide: Text.ElideRight
                                     }
                                     Label {
-                                        text: "$" + modelData.stack
+                                        text: modelData.stack !== undefined ? ("$" + modelData.stack) : "—"
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 56
                                         color: Theme.textSecondary
@@ -249,7 +282,7 @@ Page {
                                         horizontalAlignment: Text.AlignRight
                                     }
                                     Label {
-                                        text: "$" + modelData.wallet
+                                        text: modelData.wallet !== undefined ? ("$" + modelData.wallet) : "—"
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 56
                                         color: Theme.textSecondary
@@ -257,7 +290,7 @@ Page {
                                         horizontalAlignment: Text.AlignRight
                                     }
                                     Label {
-                                        text: "$" + modelData.total
+                                        text: modelData.total !== undefined ? ("$" + modelData.total) : "—"
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 56
                                         color: Theme.gold
@@ -310,7 +343,7 @@ Page {
                                     Layout.minimumWidth: 88
                                 }
                                 Label {
-                                    text: qsTr("Buy-in")
+                                    text: qsTr("On the table")
                                     font.bold: true
                                     font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
@@ -429,6 +462,15 @@ Page {
                                 }
                             }
 
+                            Text {
+                                Layout.fillWidth: true
+                                visible: rankRepeater.count < 1 && !statsPage.statsDataError
+                                wrapMode: Text.WordWrap
+                                text: qsTr("No leaderboard data yet.")
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.trainerBodyPx
+                            }
+
                             Repeater {
                                 id: rankRepeater
                                 model: []
@@ -439,23 +481,26 @@ Page {
                                     spacing: statsPage.statsTableColSpacing
 
                                     Label {
-                                        text: "#" + modelData.rank
+                                        text: modelData.rank !== undefined ? ("#" + modelData.rank) : "—"
                                         Layout.preferredWidth: 40
                                         color: Theme.gold
                                         font.bold: true
                                         font.pixelSize: statsPage.statsTablePx
                                     }
                                     Label {
-                                        text: botNames.displayName(modelData.seat)
+                                        text: botNames.displayName(modelData.seat !== undefined ? modelData.seat : 0)
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 88
-                                        color: Theme.colorForSeat(modelData.seat)
+                                        color: Theme.colorForSeat(modelData.seat !== undefined ? modelData.seat : 0)
                                         font.pixelSize: statsPage.statsTablePx
                                         font.weight: Font.Black
                                         elide: Text.ElideRight
                                     }
                                     Label {
-                                        text: "$" + (modelData.total !== undefined ? modelData.total : modelData.stack)
+                                        text: (function () {
+                                            var t = modelData.total !== undefined ? modelData.total : modelData.stack
+                                            return t !== undefined ? ("$" + t) : "—"
+                                        })()
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 64
                                         color: Theme.textSecondary
@@ -463,9 +508,17 @@ Page {
                                         horizontalAlignment: Text.AlignRight
                                     }
                                     Label {
-                                        text: (modelData.profit >= 0 ? "+" : "") + modelData.profit
+                                        text: (function () {
+                                            var p = modelData.profit
+                                            if (p === undefined || isNaN(Number(p)))
+                                                return "—"
+                                            p = Number(p)
+                                            return (p >= 0 ? "+" : "") + p
+                                        })()
                                         Layout.preferredWidth: 56
-                                        color: modelData.profit >= 0 ? Theme.profitUp : Theme.profitDown
+                                        color: modelData.profit === undefined || isNaN(Number(modelData.profit))
+                                                ? Theme.textMuted
+                                                : (Number(modelData.profit) >= 0 ? Theme.profitUp : Theme.profitDown)
                                         font.pixelSize: statsPage.statsTablePx
                                         horizontalAlignment: Text.AlignRight
                                     }
@@ -543,18 +596,37 @@ Page {
                                     if (nSnap < 1)
                                         return
 
-                                    var maxY = 0
+                                    var minY = Number.POSITIVE_INFINITY
+                                    var maxY = Number.NEGATIVE_INFINITY
                                     var s
                                     for (s = 0; s < 6; s++) {
                                         var ser = pokerGame.bankrollSeries(s)
                                         for (var j = 0; j < ser.length; j++) {
-                                            var v = ser[j]
+                                            var v = Number(ser[j])
+                                            if (v < minY)
+                                                minY = v
                                             if (v > maxY)
                                                 maxY = v
                                         }
                                     }
-                                    if (maxY < 1)
-                                        maxY = 1
+                                    if (!isFinite(minY) || !isFinite(maxY))
+                                        return
+                                    var span0 = maxY - minY
+                                    if (span0 <= 0) {
+                                        minY -= 1
+                                        maxY += 1
+                                    } else {
+                                        var yPad = span0 * 0.08
+                                        minY -= yPad
+                                        maxY += yPad
+                                    }
+                                    var ySpan = maxY - minY
+                                    if (ySpan < 1e-6) {
+                                        var mid = (minY + maxY) * 0.5
+                                        minY = mid - 0.5
+                                        maxY = mid + 0.5
+                                        ySpan = maxY - minY
+                                    }
 
                                     var padL = statsPage.chartPadL
                                     var padR = statsPage.chartPadR
@@ -571,7 +643,7 @@ Page {
                                         return padL + i * plotW / (nSnap - 1)
                                     }
                                     function yAt(stack) {
-                                        return padT + plotH - stack / maxY * plotH
+                                        return padT + plotH - (stack - minY) / ySpan * plotH
                                     }
 
                                     ctx.strokeStyle = Theme.chartGridLine
@@ -593,8 +665,8 @@ Page {
 
                                     ctx.fillStyle = Theme.chartAxisText
                                     ctx.font = (Theme.uiChartCanvasPx + 3) + "px \"" + Theme.fontFamilyUi + "\""
-                                    ctx.fillText("0", 4, padT + plotH + 4)
-                                    ctx.fillText(String(maxY), 4, padT + 10)
+                                    ctx.fillText(String(Math.round(minY)), 4, padT + plotH + 4)
+                                    ctx.fillText(String(Math.round(maxY)), 4, padT + 10)
 
                                     var times = statsPage.snapTimes
                                     var nticks = Math.min(5, nSnap)

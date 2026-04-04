@@ -10,6 +10,7 @@
 #include <QTimer>
 
 #include "game.hpp"
+#include "persist_sqlite.hpp"
 #include "poker_solver.hpp"
 #include "session_store.hpp"
 #include "toy_nash_solver.hpp"
@@ -28,7 +29,12 @@ int main(int argc, char *argv[])
             qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("wayland"));
     }
 
+    /// Allows QML `XMLHttpRequest` to load `qrc:` / local training JSON in RangeViewer and similar (Qt 6 default is restrictive).
+    if (qEnvironmentVariableIsEmpty("QML_XHR_ALLOW_FILE_READ"))
+        qputenv("QML_XHR_ALLOW_FILE_READ", QByteArrayLiteral("1"));
+
     QGuiApplication app(argc, argv);
+    AppStateSqlite::init();
     const QIcon appIcon(QStringLiteral(":/assets/images/logo.png"));
     app.setWindowIcon(appIcon);
     // Matches `texas-holdem-gym.desktop` so shells resolve the taskbar/dock icon (Wayland uses app_id).
@@ -53,6 +59,10 @@ int main(int argc, char *argv[])
 
     game poker_game;
     poker_game.loadPersistedSettings();
+    /// Only insert missing keys — never a full `savePersistedSettings()` here: if `v1/smallBlind` was
+    /// absent we may not have loaded strategies/ranges into memory, and a full save would clobber valid rows.
+    if (AppStateSqlite::isOpen() && !AppStateSqlite::contains(QStringLiteral("v1/smallBlind")))
+        poker_game.seedMissingPersistedSettings();
     PokerSolver poker_solver;
     ToyNashSolver toy_nash_solver;
     TrainingStore training_store;

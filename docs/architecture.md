@@ -2,7 +2,7 @@
 
 ## High-level picture
 
-Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drives a **C++** game engine (`game`), optional **bot** and **range** configuration, **hand evaluation** and **equity** utilities, a **preflop solver** façade (`pokerSolver`), a **toy Nash** study helper (`toyNashSolver`), and **training** drills (`TrainingController` + `TrainingStore`). There is **no SQL database**; table state is in memory, while **QSettings** (and small JSON assets) persist configuration and progress on disk.
+Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drives a **C++** game engine (`game`), optional **bot** and **range** configuration, **hand evaluation** and **equity** utilities, a **preflop solver** façade (`pokerSolver`), a **toy Nash** study helper (`toyNashSolver`), and **training** drills (`TrainingController` + `TrainingStore`). **Table state** stays in memory; **configuration and progress** persist via **`AppStateSqlite`** (SQLite with a **QSettings** INI fallback), plus small JSON assets under `qrc`.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -14,15 +14,32 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 │       ├── cards, player, hand_eval, bot, range_matrix           │
 │       ├── equity_engine, poker_solver (may use threads)        │
 │       ├── training_store, training_controller, toy_nash_solver │
-│       └── session_store (solver UI fields)                       │
+│       ├── session_store (solver UI fields)                       │
+│       └── persist_sqlite (AppStateSqlite KV backend)             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Application shell
 
-- **`poker/main.cpp`** sets `QCoreApplication` organization/name for **`QSettings`**, creates **`game`**, calls **`loadPersistedSettings()`**, instantiates **`PokerSolver`**, **`ToyNashSolver`**, **`SessionStore`**, **`TrainingStore`**, **`TrainingController`**, and exposes **`pokerGame`**, **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`**, **`trainingStore`**, **`trainer`**, and **`appFontFamily`** to QML. **`aboutToQuit`** saves table-related settings.
+- **`poker/main.cpp`** sets `QCoreApplication` organization/name (used by the INI fallback), calls **`AppStateSqlite::init()`**, creates **`game`**, **`loadPersistedSettings()`**, optionally **`seedMissingPersistedSettings()`** when the store is open but core keys are absent, then **`PokerSolver`**, **`ToyNashSolver`**, **`TrainingStore`**, **`TrainingController`**, **`SessionStore`**, and exposes **`pokerGame`**, **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`**, **`trainingStore`**, **`trainer`**, and **`appFontFamily`** to QML. **`aboutToQuit`** calls **`savePersistedSettings()`** on the game.
 - The UI entry is **`qrc:/Main.qml`**: an `ApplicationWindow` with a **stack** of pages (lobby, table, bot/range setup, solver/equity, bankroll/stats, training hub, preflop trainer, flop trainer). Fonts and the header/toolbar live on the window.
 - After **`QQmlApplicationEngine::load()`**, a short **`QTimer::singleShot`** finds the table **`Page`** by **`objectName: "game_screen"`**, calls **`game::setRootObject()`** on it, then **`beginNewHand()`** so the first hand starts only when the table is ready. The engine does **not** use `Game.qml` as the root object.
+
+## Persistence
+
+- **`AppStateSqlite`** (`persist_sqlite.*`) is the shared key–value store. The default database file is **`AppLocalDataLocation/texas-holdem-gym.sqlite`**.
+- Set **`TEXAS_HOLDEM_GYM_SQLITE`** to an absolute path to override the database location (tests and debugging).
+- **Logical keys** use a versioned prefix, e.g. **`v1/smallBlind`**, **`v1/seat0/strategy`**, **`v1/training/…`**. Bulk deletes use prefix removal (e.g. `v1/training/`).
+- **Values** are stored as **JSON** (compact): objects and arrays as JSON documents; scalars are encoded so reads round-trip reliably (including a shim for bare primitives when needed).
+- If SQLite cannot be opened, the code falls back to **`QSettings`** in **INI** form under the usual **`~/.config/TexasHoldemGym/`** layout. On first open, an **empty** SQLite database may **migrate** legacy **`v1/*`** data from native QSettings into the DB.
+
+## Data flow (startup → first hand)
+
+1. **`AppStateSqlite::init()`** — open SQLite (or INI fallback), schema, optional migration.
+2. **`game::loadPersistedSettings()`** — read **`v1/*`** keys into table state, bankroll, strategies, etc.
+3. **`seedMissingPersistedSettings()`** (conditional) — fill only missing keys so a first run does not clobber partial data with a full save.
+4. **QML** — build context properties, **`engine.load(Main.qml)`**, window/scene ready.
+5. **First hand** — deferred **`setRootObject(game_screen)`** then **`beginNewHand()`** after the table **`Page`** exists.
 
 ## Game ↔ QML
 
@@ -35,14 +52,16 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 | Module | Responsibility |
 |--------|----------------|
+| **`persist_sqlite.*`** | **`AppStateSqlite`**: SQLite KV (JSON values), INI fallback, migration from legacy QSettings |
 | **`cards.*`** | Ranks, suits, deck; compact string form + **`card_to_qml_asset_path`** for SVG resource names |
 | **`player.*`** | Hole cards, stack, **`pay`** / **`take_from_stack`** (clamped) |
 | **`hand_eval.*`** | Best 5 of 7, comparison, human-readable descriptions (order-invariant best-of-seven) |
-| **`holdem_side_pot.*`** | Table-stakes **main + side pot** slices (`nlhe_build_side_pot_slices`, `NlheSidePotSlice`) — `do_payouts` |
+| **`holdem_side_pot.*`** | Table-stakes **main + side pot** slices — `do_payouts` |
 | **`holdem_rules_facade.hpp`** | Optional `Holdem::HandEvaluator` / `Holdem::SidePot` aliases over existing modules |
-| **`game.*` / `game_ui_sync.cpp`** | Table vector, button, blinds, streets, **`in_hand`**, betting loop, bots, persistence, QML API; **`sync_ui`** / **`flush_ui`** in **`game_ui_sync.cpp`** |
-| **`session_store.*`** | **`QSettings`** load/save for solver screen fields |
-| **`training_store.*`** / **`training_controller.*`** | Persisted training progress; prefop/flop drill generation and scoring |
+| **`game.*` / `game_ui_sync.cpp`** | Table vector, button, blinds, streets, **`in_hand`**, betting loop, bots, persistence via **`AppStateSqlite`**, QML API; **`sync_ui`** / **`flush_ui`** |
+| **`session_store.*`** | Load/save solver screen fields through **`AppStateSqlite`** |
+| **`training_store.*`** | Persisted training progress; drill-related data |
+| **`training_controller.*`** | Preflop/flop drill generation and scoring |
 | **`bot.*`** | Bot strategy enums and decision hooks used from **`game`** |
 | **`range_matrix.*`** | Parsing and weights for opening ranges |
 | **`equity_engine.*`** | Monte Carlo equity helpers for the solver UI |
@@ -72,7 +91,7 @@ Blinds (including **heads-up**), **clockwise** button rotation and action/deal o
 
 ## Tests
 
-- **`poker/poker/tests/test.cpp`** — **Boost.Test** smoke tests: includes **`game.hpp`** (plus hand eval / range / equity headers); covers **`collect_blinds`**, **`deal_*`**, **`take_bets_for_testing`**, **`decide_the_payout`**, etc.
+- **`poker/poker/tests/test_*.cpp`** — **Boost.Test** (`Test_poker`): split by area (`test_smoke_game_engine`, `test_hand_evaluation`, `test_persistence_sqlite`, etc.); see `poker/poker/tests/CMakeLists.txt` and the Tests section in the repo **`README.md`**.
 - **`poker/poker/tests/CMakeLists.txt`** registers **`poker.smoke`** via **`add_test`** when **`BUILD_TESTING`** is on.
 
 The **`poker`** library links **Qt::Qml** so MOC’d types used from tests stay consistent with the app’s Qt linkage.

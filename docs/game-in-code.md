@@ -96,4 +96,4 @@ The **table HUD** shows one **combined** pot during the hand (and resets after t
 
 ## Tests
 
-- `poker/poker/tests/test.cpp` — Boost.Test smoke tests (cards, hand comparison, side-pot breakdown helper, samples for equity/range code paths). Build with `BUILD_TESTING=ON`, run `Test_poker` or `ctest`.
+- `poker/poker/tests/test_*.cpp` — Boost.Test (`Test_poker`): cards/deck, game smoke, hand eval, equity, range matrix, side pots, bots, SQLite persistence. Build with `BUILD_TESTING=ON`; run `ctest -R poker.unit -V` or `./build/poker/poker/tests/Test_poker --log_level=test_suite`.

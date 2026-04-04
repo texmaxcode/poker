@@ -94,7 +94,8 @@ Item {
 
     function rankIndexToSvgRank(i) {
         const m = ["ace", "king", "queen", "jack", "10", "9", "8", "7", "6", "5", "4", "3", "2"]
-        return m[i]
+        const idx = Math.max(0, Math.min(12, Math.floor(i)))
+        return m[idx]
     }
 
     function cardFileName(rankIdx, suit) {
@@ -103,11 +104,13 @@ Item {
 
     /// Two `qrc:/assets/cards/*.svg` names for the hovered cell (spades+hearts pairs; spades suited; spades+hearts offsuit).
     function cardFileNamesForCell(row, col) {
-        if (row === col)
-            return [cardFileName(row, "spades"), cardFileName(row, "hearts")]
-        if (row < col)
-            return [cardFileName(row, "spades"), cardFileName(col, "spades")]
-        return [cardFileName(col, "spades"), cardFileName(row, "hearts")]
+        const r = Math.max(0, Math.min(12, Math.floor(row)))
+        const c = Math.max(0, Math.min(12, Math.floor(col)))
+        if (r === c)
+            return [cardFileName(r, "spades"), cardFileName(r, "hearts")]
+        if (r < c)
+            return [cardFileName(r, "spades"), cardFileName(c, "spades")]
+        return [cardFileName(c, "spades"), cardFileName(r, "hearts")]
     }
 
     /// Hover card popup (single instance); `tipAnchor` is the hovered cell `Item`.
@@ -461,7 +464,9 @@ Item {
                         required property var modelData
                         width: 56
                         height: 80
-                        fillMode: Image.PreserveAspectFit
+                        fillMode: Image.Stretch
+                        sourceSize.width: 56
+                        sourceSize.height: 80
                         asynchronous: true
                         source: "qrc:/assets/cards/" + modelData
                     }

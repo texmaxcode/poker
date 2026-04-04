@@ -16,6 +16,9 @@ Page {
     property string summaryText: qsTr("Run a simulation for a brief summary. Open Full log for the complete output.")
     property string nashSummaryText: qsTr("Pick a toy game and run CFR+ to compute an approximate Nash equilibrium.")
     property string nashDetailText: ""
+    /// True when equity run reported an error or returned unusable numbers (crash-safe fallback).
+    property bool equitySummaryIsError: false
+    property bool nashResultIsError: false
 
     readonly property int solverFieldFontPx: Theme.trainerCaptionPx - 2
     readonly property int solverFieldPadH: 13
@@ -146,24 +149,38 @@ Page {
         target: pokerSolver
         function onEquityComputationFinished(m) {
             solverPage.simRunning = false
+            solverPage.equitySummaryIsError = false
             if (m["error"] !== undefined && String(m["error"]).length > 0) {
                 const err = String(m["error"])
                 solverPage.lastFullLog = err
                 solverPage.summaryText = err
+                solverPage.equitySummaryIsError = true
+                return
+            }
+            const eq = Number(m.equityPct)
+            const se = Number(m.stdErrPct)
+            const it = Number(m.iterations)
+            if (!isFinite(eq) || !isFinite(se) || !isFinite(it)) {
+                const msg = qsTr("Equity computation finished without valid results. Try different cards, range, or iterations.")
+                solverPage.lastFullLog = msg
+                solverPage.summaryText = msg
+                solverPage.equitySummaryIsError = true
                 return
             }
             let t = ""
-            t += qsTr("Equity: ") + m.equityPct.toFixed(2) + " %"
-            t += "  (± ~" + m.stdErrPct.toFixed(2) + " % 1σ)\n"
-            t += qsTr("Iterations: ") + m.iterations + "\n"
-            if (m.breakEvenPct !== undefined) {
-                t += qsTr("Break-even equity to call: ") + m.breakEvenPct.toFixed(2) + " %\n"
-                t += qsTr("EV of call: ") + m.evCall.toFixed(3) + "\n"
+            t += qsTr("Equity: ") + eq.toFixed(2) + " %"
+            t += "  (± ~" + se.toFixed(2) + " % 1σ)\n"
+            t += qsTr("Iterations: ") + it + "\n"
+            if (m.breakEvenPct !== undefined && isFinite(Number(m.breakEvenPct))
+                    && m.evCall !== undefined && isFinite(Number(m.evCall))
+                    && m.recommendation !== undefined) {
+                t += qsTr("Break-even equity to call: ") + Number(m.breakEvenPct).toFixed(2) + " %\n"
+                t += qsTr("EV of call: ") + Number(m.evCall).toFixed(3) + "\n"
                 t += qsTr("Suggestion: ") + m.recommendation + "\n"
             }
-            if (m.mdfPct !== undefined)
-                t += qsTr("MDF heuristic (~defense freq vs this raise): ") + m.mdfPct.toFixed(1) + " %\n"
-            t += "\n" + m.detailText
+            if (m.mdfPct !== undefined && isFinite(Number(m.mdfPct)))
+                t += qsTr("MDF heuristic (~defense freq vs this raise): ") + Number(m.mdfPct).toFixed(1) + " %\n"
+            t += "\n" + (m.detailText !== undefined ? m.detailText : "")
             solverPage.lastFullLog = t
 
             let s = ""
@@ -171,14 +188,16 @@ Page {
             if (brd.text.trim().length > 0)
                 s += " · " + brd.text.trim()
             s += "\n"
-            s += qsTr("Equity ") + m.equityPct.toFixed(2) + "% (±" + m.stdErrPct.toFixed(2) + "%) · "
-                    + m.iterations + " " + qsTr("iters")
-            if (m.breakEvenPct !== undefined) {
-                s += "\n" + qsTr("BE ") + m.breakEvenPct.toFixed(1) + "% · EV " + m.evCall.toFixed(3)
+            s += qsTr("Equity ") + eq.toFixed(2) + "% (±" + se.toFixed(2) + "%) · "
+                    + it + " " + qsTr("iters")
+            if (m.breakEvenPct !== undefined && isFinite(Number(m.breakEvenPct))
+                    && m.evCall !== undefined && isFinite(Number(m.evCall))
+                    && m.recommendation !== undefined) {
+                s += "\n" + qsTr("BE ") + Number(m.breakEvenPct).toFixed(1) + "% · EV " + Number(m.evCall).toFixed(3)
                         + " · " + m.recommendation
             }
-            if (m.mdfPct !== undefined)
-                s += "\n" + qsTr("MDF ~") + m.mdfPct.toFixed(1) + "%"
+            if (m.mdfPct !== undefined && isFinite(Number(m.mdfPct)))
+                s += "\n" + qsTr("MDF ~") + Number(m.mdfPct).toFixed(1) + "%"
             solverPage.summaryText = s
         }
     }
@@ -187,10 +206,12 @@ Page {
         target: toyNashSolver
         function onSolveFinished(m) {
             solverPage.simRunning = false
+            solverPage.nashResultIsError = false
             if (m["error"] !== undefined && String(m["error"]).length > 0) {
                 const err = String(m["error"])
                 solverPage.nashSummaryText = err
-                solverPage.nashDetailText = err
+                solverPage.nashDetailText = ""
+                solverPage.nashResultIsError = true
                 return
             }
             solverPage.nashSummaryText = String(m.summaryText !== undefined ? m.summaryText : "")
@@ -421,6 +442,7 @@ Page {
                         enabled: !solverPage.simRunning
                         onClicked: {
                             solverPage.simRunning = true
+                            solverPage.equitySummaryIsError = false
                             solverPage.summaryText = qsTr("Running simulation on a background thread…")
                             solverPage.lastFullLog = ""
                             pokerSolver.computeEquityAsync(
@@ -469,7 +491,7 @@ Page {
                             Layout.fillWidth: true
                             text: solverPage.summaryText
                             wrapMode: Text.Wrap
-                            color: Theme.textSecondary
+                            color: solverPage.equitySummaryIsError ? Theme.dangerText : Theme.textSecondary
                             font.family: Theme.fontFamilyUi
                             font.pixelSize: Theme.trainerBodyPx
                             lineHeight: 1.25
@@ -556,6 +578,7 @@ Page {
                                 enabled: !solverPage.simRunning && !toyNashSolver.solveRunning()
                                 onClicked: {
                                     solverPage.simRunning = true
+                                    solverPage.nashResultIsError = false
                                     solverPage.nashSummaryText = qsTr("Solving…")
                                     solverPage.nashDetailText = ""
                                     if (nashGame.currentIndex === 0)
@@ -582,7 +605,7 @@ Page {
                             wrapMode: TextArea.Wrap
                             font.family: "monospace"
                             font.pixelSize: Theme.uiMonoPx
-                            color: Theme.textPrimary
+                            color: solverPage.nashResultIsError ? Theme.dangerText : Theme.textPrimary
                             text: solverPage.nashSummaryText + "\n\n" + solverPage.nashDetailText
                             background: Rectangle {
                                 color: Theme.bgGradientMid

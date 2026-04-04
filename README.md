@@ -65,7 +65,7 @@ The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, *
 
 ### Saved configuration
 
-Table stakes, per-seat bot strategy and range text (exported form), per-seat **buy-in** and related bankroll fields, **sit out**, **solver & equity** field values, **trainer** auto-advance / decision time, and **training progress** are stored with **`QSettings`** under organization **`TexasHoldemGym`** / application **`Texas Hold'em Gym`** (e.g. `~/.config/TexasHoldemGym/` on Linux). They load at startup and save on quit and when you apply stakes, change a bot strategy, apply range text, reset a seat to full range, toggle sit out, close the window (solver tab), or when training/session stores persist.
+Table stakes, per-seat bot strategy and range text (exported form), per-seat **buy-in** and related bankroll fields, **sit out**, **solver & equity** field values, **trainer** auto-advance / decision time, and **training progress** are persisted. The primary store is a **SQLite** database at **`~/.local/share/TexasHoldemGym/Texas Hold'em Gym/texas-holdem-gym.sqlite`** (override the path with the **`TEXAS_HOLDEM_GYM_SQLITE`** environment variable). If SQLite cannot be opened, the app falls back to **`QSettings`** INI files under **`~/.config/TexasHoldemGym/`**. On first run, legacy **QSettings** data is migrated into SQLite automatically. Values load at startup and save on quit and when you apply stakes, change a bot strategy, apply range text, reset a seat to full range, toggle sit out, close the window (solver tab), or when training/session stores persist.
 
 ## Documentation
 
@@ -82,4 +82,16 @@ Table stakes, per-seat bot strategy and range text (exported form), per-seat **b
 ctest --test-dir build --output-on-failure
 ```
 
-When `BUILD_TESTING` is on, the suite is the **Boost.Test** smoke binary `Test_poker` (`poker/poker/tests/test.cpp`).
+Verbose output (each suite and case, timings):
+
+```bash
+ctest --test-dir build -R poker.unit -V
+```
+
+Or run the binary directly:
+
+```bash
+./build/poker/poker/tests/Test_poker --log_level=test_suite --report_level=detailed
+```
+
+When `BUILD_TESTING` is on, **Boost.Test** builds `Test_poker` from several translation units under `poker/poker/tests/`: `test_main.cpp` (module entry only), `test_smoke_cards_deck_player.cpp`, `test_smoke_game_engine.cpp`, `test_hand_evaluation.cpp`, `test_equity_engine.cpp`, `test_range_matrix.cpp`, `test_side_pots.cpp`, `test_bot_decisions.cpp`, `test_persistence_sqlite.cpp`.

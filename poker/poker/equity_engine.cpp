@@ -21,6 +21,8 @@ std::vector<card> make_full_deck()
     return d;
 }
 
+// TODO(perf): building the full deck then erase-remove is O(52 * |dead|); a 52-bit mask or
+// fixed array would avoid repeated scans and heap churn when this is hot.
 std::vector<card> available_cards(const std::vector<card> &dead)
 {
     auto d = make_full_deck();
@@ -125,6 +127,8 @@ bool suite_char_valid(char ch)
     }
 }
 
+// TODO(perf): each iteration allocates `avail` and scans the deck; consider drawing without
+// rebuilding the full remaining deck each time (e.g. reservoir-style or in-place mask).
 std::vector<card> complete_board_random(std::vector<card> board, const std::vector<card> &dead_in,
                                          std::mt19937 &rng)
 {
@@ -134,6 +138,8 @@ std::vector<card> complete_board_random(std::vector<card> board, const std::vect
         auto avail = available_cards(dead);
         if (avail.empty())
             break;
+        // Uniform index into `avail` is equivalent to one Fisher-Yates step on a fresh shuffle;
+        // TODO(perf): avoid materializing `avail` when using index sampling (see `available_cards`).
         std::uniform_int_distribution<size_t> dist(0, avail.size() - 1);
         const card pick = avail[dist(rng)];
         board.push_back(pick);
@@ -222,6 +228,8 @@ static bool sample_villain_hole(const RangeMatrix &rm, std::vector<card> dead, c
         auto avail = available_cards(dead);
         if (avail.size() < 2)
             return false;
+        // std::shuffle is O(n) Fisher–Yates; TODO(perf): only two random picks are needed—use
+        // partial shuffle, two uniform indices without full permutation, or weighted sampling over combos.
         std::shuffle(avail.begin(), avail.end(), rng);
         a = avail[0];
         b = avail[1];
@@ -262,6 +270,7 @@ EquityResult monte_carlo_equity_vs_range(const card &hero1, const card &hero2,
 
     double sum = 0;
     int n = 0;
+    // TODO(perf): reuse `dead2`, `board`, `h7`, `y7` buffers across iterations to avoid heap allocations.
     for (int i = 0; i < iterations; ++i)
     {
         card v1, v2;
@@ -316,6 +325,7 @@ EquityResult monte_carlo_equity_vs_hand(const card &hero1, const card &hero2,
 
     double sum = 0;
     int n = 0;
+    // TODO(perf): reuse `board`, `h7`, `y7` across iterations to avoid per-iteration allocations.
     for (int i = 0; i < iterations; ++i)
     {
         std::vector<card> board = board_in;

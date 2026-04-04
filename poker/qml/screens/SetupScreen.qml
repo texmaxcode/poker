@@ -21,10 +21,22 @@ Page {
     property string strategyPopupBody: ""
     /// True while `playAsBotCheck.checked` is assigned from the engine — `toggled` must not write back.
     property bool _syncingPlayAsBot: false
+    /// True while `slowBotsCheck.checked` is assigned from `pokerGame.botSlowActions` — avoid spurious writes.
+    /// Must start **true**: `StackLayout` builds Setup before `Component.onCompleted`, and the checkbox defaults
+    /// to `checked: false`; an early `checkedChanged` would otherwise call `setBotSlowActions(false)` and wipe
+    /// the value restored by `loadPersistedSettings()` (main runs load **before** QML loads).
+    property bool _syncingSlowBots: true
     /// False until first frame after sync so `onCheckedChanged` does not overwrite `interactiveHuman` on startup.
     property bool playAsBotUserInputEnabled: false
     /// Collapsed: “Range text…” only; expanded: compact row (textarea + Apply/Full), then hide after apply.
     property bool rangeTextEditorOpen: false
+
+    function persistSave() {
+        pokerGame.savePersistedSettings()
+        const w = ApplicationWindow.window
+        if (w && typeof w.showAppToast === "function")
+            w.showAppToast(qsTr("Settings saved."))
+    }
 
     function openStrategyLogPopup(title, body) {
         strategyPopupTitle = title
@@ -108,17 +120,7 @@ Page {
     /// Seat 0: engine parameter fields apply when autoplaying as a bot.
     readonly property bool canEditHumanEngineParams: humanSeatAutoplay
 
-    readonly property var strategyNames: [
-        "Always call (test)",
-        "Rock",
-        "Nit",
-        "Tight–aggressive",
-        "Loose–passive",
-        "Loose–aggressive",
-        "Balanced",
-        "Maniac",
-        "GTO (heuristic)"
-    ]
+    readonly property var strategyNames: pokerGame.strategyDisplayNames()
 
     function formatParamNum(x) {
         if (x === undefined || x === null || isNaN(x))
@@ -160,7 +162,7 @@ Page {
         if (Object.keys(m).length < 1)
             return
         pokerGame.setSeatStrategyParams(setup.selectedSeat, m)
-        pokerGame.savePersistedSettings()
+        setup.persistSave()
         loadParamFields()
     }
 
@@ -173,7 +175,7 @@ Page {
             return
         const t = textArea.text.trim()
         const ok = pokerGame.applySeatRangeText(setup.selectedSeat, t, rangeLayerTab.currentIndex)
-        pokerGame.savePersistedSettings()
+        setup.persistSave()
         setup.refreshRangeGrids()
         if (ok)
             textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
@@ -200,7 +202,9 @@ Page {
         sbSpin.value = pokerGame.configuredSmallBlind()
         bbSpin.value = pokerGame.configuredBigBlind()
         streetSpin.value = pokerGame.configuredStreetBet()
-        slowBotsCheck.checked = pokerGame.botSlowActions()
+        setup._syncingSlowBots = true
+        slowBotsCheck.checked = pokerGame.botSlowActions
+        setup._syncingSlowBots = false
         syncPlayAsBotCheckboxFromEngine()
         /// After sync’s deferred `_syncing` clear; avoids `toggled` applying stale engine state on startup.
         Qt.callLater(function () {
@@ -211,9 +215,17 @@ Page {
 
     onVisibleChanged: {
         if (visible) {
+            /// Re-read stakes from the engine whenever Setup is shown (persisted values load before QML binds).
+            sbSpin.value = pokerGame.configuredSmallBlind()
+            bbSpin.value = pokerGame.configuredBigBlind()
+            streetSpin.value = pokerGame.configuredStreetBet()
+            setup._syncingSlowBots = true
+            slowBotsCheck.checked = pokerGame.botSlowActions
+            setup._syncingSlowBots = false
             totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
             syncPlayAsBotCheckboxFromEngine()
+            reloadSeatEditor()
         }
     }
 
@@ -314,7 +326,7 @@ Page {
                                     checked: pokerGame.seatParticipating(index + 1)
                                     onToggled: {
                                         pokerGame.setSeatParticipating(index + 1, checked)
-                                        pokerGame.savePersistedSettings()
+                                        setup.persistSave()
                                     }
                                 }
                             }
@@ -397,7 +409,7 @@ Page {
                             onClicked: {
                                 pokerGame.configure(sbSpin.value, bbSpin.value, streetSpin.value,
                                         pokerGame.configuredStartStack())
-                                pokerGame.savePersistedSettings()
+                                setup.persistSave()
                                 reloadAllGrids()
                             }
                         }
@@ -406,9 +418,14 @@ Page {
                     ThemedCheckBox {
                         id: slowBotsCheck
                         text: qsTr("Slow down bot actions (longer pauses between bot decisions)")
-                        onToggled: {
-                            pokerGame.setBotSlowActions(checked)
-                            pokerGame.savePersistedSettings()
+                        /// Use `onCheckedChanged` (fires after `checked` updates). `toggled` / stale `checked`
+                        /// in `onToggled` can race and write the wrong value; early emissions before sync must
+                        /// be ignored via `_syncingSlowBots` (defaults true until `Component.onCompleted`).
+                        onCheckedChanged: {
+                            if (setup._syncingSlowBots)
+                                return
+                            pokerGame.setBotSlowActions(slowBotsCheck.checked)
+                            setup.persistSave()
                         }
                     }
                 }
@@ -488,7 +505,7 @@ Page {
                         Layout.fillWidth: true
                         spacing: 6
                         Label {
-                            text: qsTr("Total bankroll")
+                            text: qsTr("Wallet")
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                         }
@@ -534,7 +551,7 @@ Page {
                             }
                         }
                         Label {
-                            text: qsTr("Table buy-in")
+                            text: qsTr("On the table")
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                             Layout.leftMargin: 8
@@ -564,9 +581,9 @@ Page {
                                 pokerGame.setSeatBuyIn(setup.selectedSeat, value)
                                 if (!pokerGame.gameInProgress()) {
                                     pokerGame.applySeatBuyInsToStacks()
-                                    pokerGame.savePersistedSettings()
+                                    setup.persistSave()
                                 } else {
-                                    pokerGame.savePersistedSettings()
+                                    setup.persistSave()
                                 }
                             }
 
@@ -665,7 +682,7 @@ Page {
                                 return
                             const playAsBotOn = (checked !== undefined) ? checked : playAsBotCheck.checked
                             pokerGame.setInteractiveHuman(!playAsBotOn)
-                            pokerGame.savePersistedSettings()
+                            setup.persistSave()
                             setup.refreshRangeGrids()
                             setup.loadParamFields()
                         }
@@ -911,7 +928,7 @@ Page {
                                     borderCol: Theme.ember
                                     onClicked: {
                                         pokerGame.resetSeatRangeFull(setup.selectedSeat)
-                                        pokerGame.savePersistedSettings()
+                                        setup.persistSave()
                                         setup.refreshRangeGrids()
                                         textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
                                         setup.rangeTextEditorOpen = false

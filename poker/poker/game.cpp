@@ -5,6 +5,7 @@
 
 #include "hand_eval.hpp"
 #include "holdem_side_pot.hpp"
+#include "human_decision_controller.hpp"
 
 #include "cards.hpp"
 
@@ -19,7 +20,8 @@
 #include <QDateTime>
 #include <QElapsedTimer>
 #include <QEventLoop>
-#include <QSettings>
+#include <QThread>
+#include "game_persistence.hpp"
 #include <QString>
 #include <QStringList>
 #include <QTimer>
@@ -28,10 +30,6 @@
 #include <QVariantMap>
 
 namespace {
-
-constexpr int kDecisionSeconds = 20;
-constexpr int kMoreTimeExtraSeconds = 20;
-constexpr int kMaxDecisionSecondsCap = 120;
 
 BotParams clamp_bot_params(BotParams p)
 {
@@ -105,26 +103,6 @@ QString seat_display_name(int seat)
 }
 
 } // namespace
-
-void game::arm_decision_timers(std::function<void()> on_deadline)
-{
-    human_decision_tick_.disconnect();
-    human_decision_deadline_.disconnect();
-    human_decision_tick_.setInterval(1000);
-    human_decision_tick_.setSingleShot(false);
-    human_decision_deadline_.setSingleShot(true);
-    human_decision_deadline_.setInterval(kDecisionSeconds * 1000);
-
-    QObject::connect(&human_decision_tick_, &QTimer::timeout, this, [this]() {
-        if (decision_seconds_left_ > 0)
-        {
-            --decision_seconds_left_;
-            sync_ui();
-        }
-    });
-    QObject::connect(&human_decision_deadline_, &QTimer::timeout, this,
-                     [fn = std::move(on_deadline)]() mutable { fn(); });
-}
 
 int game::min_raise_increment_chips(int big_blind, int last_raise_increment)
 {
@@ -511,284 +489,24 @@ void game::reset_postflop_street_contrib()
     last_raise_increment_ = big_blind;
 }
 
-void game::wait_for_human_need(int need_chips, Street st, int raise_increment_chips)
-{
-    (void)st;
-
-    if (!m_root)
-        return;
-    if (need_chips <= 0)
-        return;
-
-    const size_t hi = static_cast<size_t>(kHumanSeat);
-    if (table[hi].stack <= 0)
-    {
-        /// Defensive: should be handled in `handle_forced_response` — resolve as call for 0 chips.
-        human_facing_action_ = 1;
-        human_facing_raise_chips_ = 0;
-        pending_human_need_ = 0;
-        pending_human_raise_inc_ = raise_increment_chips;
-        sync_ui();
-        return;
-    }
-
-    /// Effective call (short stacks all-in for less than full `need_chips`).
-    pending_human_need_ =
-        std::min(need_chips, std::max(0, table[static_cast<size_t>(kHumanSeat)].stack));
-    pending_human_raise_inc_ = raise_increment_chips;
-    waiting_for_human_ = true;
-    human_facing_action_ = -1;
-    human_facing_raise_chips_ = 0;
-    human_more_time_available_ = true;
-    decision_seconds_left_ = kDecisionSeconds;
-
-    arm_decision_timers([this]() { submitFacingAction(0, 0); });
-    sync_ui();
-
-    if (human_sitting_out_)
-    {
-        submitFacingAction(0, 0);
-        return;
-    }
-
-    human_decision_tick_.start();
-    human_decision_deadline_.start();
-    sync_ui();
-
-    QEventLoop loop;
-    QMetaObject::Connection conn = connect(this, &game::humanDecisionFinished, &loop, &QEventLoop::quit);
-    loop.exec();
-    QObject::disconnect(conn);
-
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-}
-
 void game::submitFacingAction(int action, int raiseChips)
 {
-    if (!waiting_for_human_)
-        return;
-    human_facing_action_ = action;
-    human_facing_raise_chips_ = std::max(0, raiseChips);
-    waiting_for_human_ = false;
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-    emit humanDecisionFinished();
+    human_decision_ctrl_->submitFacingAction(action, raiseChips);
 }
 
 void game::submitCheckOrBet(bool check, int betChips)
 {
-    finish_human_check(check, betChips);
+    human_decision_ctrl_->submitCheckOrBet(check, betChips);
 }
 
 void game::submitFoldFromCheck()
 {
-    if (!waiting_for_human_check_)
-        return;
-    waiting_for_human_check_ = false;
-    human_opened_bet_from_check_ = false;
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-    set_seat_street_action(kHumanSeat, QStringLiteral("Fold"));
-    push_human_action_status(QStringLiteral("Fold"));
-    in_hand_[static_cast<size_t>(kHumanSeat)] = false;
-    emit humanCheckFinished();
-}
-
-bool game::wait_for_human_check_or_bet(Street st)
-{
-    (void)st;
-    if (!m_root)
-        return false;
-
-    if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
-        return false;
-
-    waiting_for_human_check_ = true;
-    human_opened_bet_from_check_ = false;
-    human_more_time_available_ = true;
-    decision_seconds_left_ = kDecisionSeconds;
-
-    arm_decision_timers([this]() {
-        if (waiting_for_human_check_)
-            submitFoldFromCheck();
-    });
-
-    acting_seat_ = kHumanSeat;
-    sync_ui();
-
-    if (human_sitting_out_)
-    {
-        submitFoldFromCheck();
-        acting_seat_ = -1;
-        decision_seconds_left_ = 0;
-        sync_ui();
-        return false;
-    }
-
-    human_decision_tick_.start();
-    human_decision_deadline_.start();
-    sync_ui();
-
-    QEventLoop loop;
-    QMetaObject::Connection conn = connect(this, &game::humanCheckFinished, &loop, &QEventLoop::quit);
-    loop.exec();
-    QObject::disconnect(conn);
-
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-
-    acting_seat_ = -1;
-    decision_seconds_left_ = 0;
-    waiting_for_human_check_ = false;
-    sync_ui();
-
-    return human_opened_bet_from_check_;
-}
-
-void game::finish_human_check(bool check, int bet_chips)
-{
-    if (!waiting_for_human_check_)
-        return;
-    waiting_for_human_check_ = false;
-    human_opened_bet_from_check_ = false;
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-    if (!check)
-    {
-        const size_t hi = static_cast<size_t>(kHumanSeat);
-        /// NL: allow any open size from 1 chip up to stack (bots still use `street_bet_` as default open).
-        const int min_open = 1;
-        const int chips = std::clamp(bet_chips, min_open, table[hi].stack);
-        if (chips < min_open)
-        {
-            emit humanCheckFinished();
-            return;
-        }
-        const int taken = table[hi].take_from_stack(chips);
-        add_chips_to_pot(kHumanSeat, taken);
-        street_contrib_[hi] += taken;
-        last_raise_increment_ = chips;
-        human_opened_bet_from_check_ = true;
-        note_river_aggressor(street, kHumanSeat);
-        {
-            const QString lbl = (table[hi].stack <= 0 && taken > 0)
-                                      ? QStringLiteral("All-in $%1").arg(taken)
-                                      : QStringLiteral("Raise $%1").arg(taken);
-            set_seat_street_action(kHumanSeat, lbl);
-            push_human_action_status(lbl);
-        }
-        emit pot_changed();
-    }
-    else
-    {
-        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
-        push_human_action_status(QStringLiteral("Check"));
-    }
-    emit humanCheckFinished();
-}
-
-bool game::wait_for_human_bb_preflop()
-{
-    if (!m_root)
-        return false;
-
-    waiting_for_human_bb_preflop_ = true;
-    human_bb_preflop_raised_ = false;
-    human_more_time_available_ = true;
-    decision_seconds_left_ = kDecisionSeconds;
-
-    arm_decision_timers([this]() { finish_human_bb_preflop(false); });
-
-    acting_seat_ = kHumanSeat;
-    sync_ui();
-
-    if (human_sitting_out_)
-    {
-        finish_human_bb_preflop(false);
-        acting_seat_ = -1;
-        decision_seconds_left_ = 0;
-        sync_ui();
-        return false;
-    }
-
-    human_decision_tick_.start();
-    human_decision_deadline_.start();
-    sync_ui();
-
-    QEventLoop loop;
-    QMetaObject::Connection conn = connect(this, &game::humanBbPreflopFinished, &loop, &QEventLoop::quit);
-    loop.exec();
-    QObject::disconnect(conn);
-
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-
-    acting_seat_ = -1;
-    decision_seconds_left_ = 0;
-    waiting_for_human_bb_preflop_ = false;
-    sync_ui();
-
-    return human_bb_preflop_raised_;
-}
-
-void game::finish_human_bb_preflop(bool raise)
-{
-    if (!waiting_for_human_bb_preflop_)
-        return;
-    if (raise)
-        return;
-    waiting_for_human_bb_preflop_ = false;
-    human_bb_preflop_raised_ = false;
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-    set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
-    push_human_action_status(QStringLiteral("Check"));
-    emit humanBbPreflopFinished();
+    human_decision_ctrl_->submitFoldFromCheck();
 }
 
 void game::submitBbPreflopRaise(int chips_to_add)
 {
-    if (!waiting_for_human_bb_preflop_)
-        return;
-    waiting_for_human_bb_preflop_ = false;
-    human_bb_preflop_raised_ = false;
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
-
-    const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
-    const size_t bi = static_cast<size_t>(kHumanSeat);
-    if (inc <= 0 || max_street_contrib() != big_blind || table[bi].stack <= 0)
-    {
-        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
-        push_human_action_status(QStringLiteral("Check"));
-        emit humanBbPreflopFinished();
-        return;
-    }
-    const int c = std::clamp(chips_to_add, inc, table[bi].stack);
-    if (c < inc)
-    {
-        set_seat_street_action(kHumanSeat, QStringLiteral("Check"));
-        push_human_action_status(QStringLiteral("Check"));
-        emit humanBbPreflopFinished();
-        return;
-    }
-    const int taken = table[bi].take_from_stack(c);
-    add_chips_to_pot(kHumanSeat, taken);
-    street_contrib_[bi] += taken;
-    last_raise_increment_ = taken;
-    human_bb_preflop_raised_ = true;
-    bb_preflop_option_open_ = false;
-    {
-        const QString lbl =
-            (table[bi].stack <= 0 && taken > 0)
-                ? QStringLiteral("All-in $%1").arg(taken)
-                : QStringLiteral("Raise to $%1").arg(static_cast<int>(street_contrib_[bi]));
-        set_seat_street_action(kHumanSeat, lbl);
-        push_human_action_status(lbl);
-    }
-    emit pot_changed();
-    emit humanBbPreflopFinished();
+    human_decision_ctrl_->submitBbPreflopRaise(chips_to_add);
 }
 
 void game::setInteractiveHuman(bool enabled)
@@ -809,12 +527,12 @@ void game::setHumanSitOut(bool enabled)
         m_root->setProperty("humanSittingOut", human_sitting_out_);
     if (enabled)
     {
-        if (waiting_for_human_)
-            submitFacingAction(0, 0);
-        else if (waiting_for_human_check_)
-            submitFoldFromCheck();
-        else if (waiting_for_human_bb_preflop_)
-            finish_human_bb_preflop(false);
+        if (human_decision_ctrl_->isWaitingForHuman())
+            human_decision_ctrl_->submitFacingAction(0, 0);
+        else if (human_decision_ctrl_->isWaitingForHumanCheck())
+            human_decision_ctrl_->submitFoldFromCheck();
+        else if (human_decision_ctrl_->isWaitingForHumanBbPreflop())
+            human_decision_ctrl_->finish_human_bb_preflop(false);
     }
     sync_ui();
 }
@@ -843,7 +561,7 @@ bool game::seat_eligible_for_positions(int seat) const
         return false;
     if (seat == kHumanSeat)
         return !human_sitting_out_;
-    return seat_participating_[static_cast<size_t>(seat)];
+    return seat_mgr_.seat_participating_[static_cast<size_t>(seat)];
 }
 
 int game::next_seat_in_position_pool(int from) const
@@ -919,77 +637,39 @@ void game::setAutoHandLoop(bool enabled)
     auto_hand_loop_ = enabled;
 }
 
-// Does not reset the 1 Hz tick; only reschedules the decision deadline (see `arm_decision_timers`).
-void game::requestMoreTime()
-{
-    if ((!waiting_for_human_ && !waiting_for_human_check_ && !waiting_for_human_bb_preflop_) || !m_root ||
-        !human_more_time_available_)
-        return;
-    human_more_time_available_ = false;
-    decision_seconds_left_ =
-        std::min(decision_seconds_left_ + kMoreTimeExtraSeconds, kMaxDecisionSecondsCap);
-    human_decision_deadline_.stop();
-    human_decision_deadline_.setSingleShot(true);
-    human_decision_deadline_.setInterval(decision_seconds_left_ * 1000);
-    human_decision_deadline_.start();
-    sync_ui();
-}
-
 void game::schedule_next_hand_if_idle()
 {
     if (!auto_hand_loop_)
         return;
-    QTimer::singleShot(1800, this, [this]() {
+    /// Pause so showdown / winner lines and mucked or shown hands stay readable before the next deal.
+    constexpr int kMsPauseAfterShowdown = 5000;
+    QTimer::singleShot(kMsPauseAfterShowdown, this, [this]() {
         if (!m_root)
             return;
         beginNewHand();
     });
 }
 
-bool game::apply_buy_back_in_internal(int seat)
-{
-    if (seat < 0 || seat >= players_count())
-        return false;
-    const size_t si = static_cast<size_t>(seat);
-    if (in_progress && in_hand_[si])
-        return false;
-    if (table[si].stack > 0)
-        return false;
-    const int cost = seat_buy_in_[si];
-    if (seat_wallet_[si] < cost)
-        return false;
-    table[si].stack += cost;
-    seat_wallet_[si] -= cost;
-    return true;
-}
-
-void game::try_auto_rebuys_for_busted_bots()
-{
-    const int n = players_count();
-    for (int s = 1; s < n; ++s)
-    {
-        if (!seat_participating_[static_cast<size_t>(s)])
-            continue;
-        const size_t si = static_cast<size_t>(s);
-        if (table[si].stack > 0)
-            continue;
-        // Bots get an off-table reserve when busted so they can keep playing (humans start wallet at 0 on apply).
-        if (seat_wallet_[si] < seat_buy_in_[si])
-            seat_wallet_[si] = seat_buy_in_[si];
-        if (seat_wallet_[si] >= seat_buy_in_[si])
-            apply_buy_back_in_internal(s);
-    }
-}
 
 void game::bot_action_pause()
 {
     if (!bot_action_delay_enabled_)
         return;
-    const int ms = bot_slow_actions_ ? 2600 : 550;
+    if (!bot_slow_actions_)
+        return;
+    /// `flush_ui()` already ran `processEvents`; one more pass so the acting-seat highlight is queued.
+    /// A plain `msleep` then blocked the GUI thread **without** processing events, so Qt Quick often
+    /// showed the whole hand as one instant jump. Pump the event loop so each bot action can render
+    /// before the next decision (~2.4s — shorter pauses were easy to miss visually).
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
     QElapsedTimer t;
     t.start();
-    while (t.elapsed() < ms)
+    constexpr int kMs = 2400;
+    while (t.elapsed() < kMs)
+    {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 16);
+        QThread::msleep(16);
+    }
 }
 
 void game::bot_record_postflop_check(int seat)
@@ -1019,15 +699,13 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             return true;
 
         acting_seat_ = seat;
-        decision_seconds_left_ = kDecisionSeconds;
         flush_ui();
 
-        wait_for_human_need(need, st, inc);
+        human_decision_ctrl_->wait_for_human_need(need, st, inc);
         acting_seat_ = -1;
-        decision_seconds_left_ = 0;
         sync_ui();
 
-        if (human_facing_action_ == 0)
+        if (human_decision_ctrl_->humanFacingAction() == 0)
         {
             set_seat_street_action(seat, QStringLiteral("Fold"));
             push_human_action_status(QStringLiteral("Fold"));
@@ -1035,9 +713,9 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             return true;
         }
 
-        if (human_facing_action_ == 2)
+        if (human_decision_ctrl_->humanFacingAction() == 2)
         {
-            int chips = human_facing_raise_chips_;
+            int chips = human_decision_ctrl_->humanFacingRaiseChips();
             if (chips <= 0)
                 chips = need + inc;
             chips = std::min(chips, table[si].stack);
@@ -1122,7 +800,6 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
     }
 
     acting_seat_ = seat;
-    decision_seconds_left_ = 0;
     flush_ui();
     bot_action_pause();
 
@@ -1216,7 +893,7 @@ bool game::handle_postflop_check_or_bet(Street st)
             continue;
         if (seat == kHumanSeat && interactive_human_ && m_root)
         {
-            if (wait_for_human_check_or_bet(st))
+            if (human_decision_ctrl_->wait_for_human_check_or_bet(st))
                 return true;
             continue;
         }
@@ -1284,7 +961,7 @@ bool game::handle_bb_preflop_option()
     {
         if (table[static_cast<size_t>(kHumanSeat)].stack <= 0)
             return false;
-        return wait_for_human_bb_preflop();
+        return human_decision_ctrl_->wait_for_human_bb_preflop();
     }
 
     const size_t bi = static_cast<size_t>(bb);
@@ -1645,7 +1322,7 @@ void game::start()
         in_hand_[static_cast<size_t>(kHumanSeat)] = false;
     for (int s = 1; s < n; ++s)
     {
-        if (!seat_participating_[static_cast<size_t>(s)])
+        if (!seat_mgr_.seat_participating_[static_cast<size_t>(s)])
             in_hand_[static_cast<size_t>(s)] = false;
     }
 
@@ -1653,7 +1330,7 @@ void game::start()
     {
         clear_for_new_hand();
         in_progress = false;
-        try_auto_rebuys_for_busted_bots();
+        seat_mgr_.try_auto_rebuys_for_busted_bots();
         if (m_root)
         {
             m_root->setProperty(
@@ -1739,11 +1416,10 @@ void game::start()
 
 void game::beginNewHand()
 {
-    if (pending_seat_buyins_apply_ && !in_progress)
+    if (seat_mgr_.pending_seat_buyins_apply_ && !in_progress)
     {
-        // Apply updated buy-ins right before the next hand begins.
-        apply_seat_buy_ins_to_table();
-        pending_seat_buyins_apply_ = false;
+        seat_mgr_.apply_seat_buy_ins_to_table();
+        seat_mgr_.pending_seat_buyins_apply_ = false;
         flush_ui();
     }
     start();
@@ -1834,14 +1510,9 @@ void game::clear_for_new_hand()
     flop.clear();
     deck = card_deck{};
     acting_seat_ = -1;
-    decision_seconds_left_ = 0;
-    waiting_for_human_ = false;
-    waiting_for_human_check_ = false;
-    waiting_for_human_bb_preflop_ = false;
     sb_seat_ = -1;
     bb_seat_ = -1;
-    human_decision_tick_.stop();
-    human_decision_deadline_.stop();
+    human_decision_ctrl_->reset();
     cards_dealt_ = false;
     river_last_aggressor_ = -1;
     river_had_bet_or_raise_ = false;
@@ -1849,109 +1520,63 @@ void game::clear_for_new_hand()
     emit pot_changed();
 }
 
-void game::apply_seat_buy_ins_to_table()
-{
-    const int cap = maxBuyInChips();
-    for (size_t i = 0; i < table.size(); ++i)
-    {
-        seat_buy_in_[i] = std::max(1, std::min(seat_buy_in_[i], cap));
-        const int bi = seat_buy_in_[i];
-        const int total_wealth = table[i].stack + seat_wallet_[i];
-        int on_table = std::min(bi, cap);
-        if (on_table > total_wealth)
-            on_table = total_wealth;
-        seat_wallet_[i] = total_wealth - on_table;
-        table[i].reset_stack(on_table);
-    }
-    init_bankroll_after_configure();
-}
-
 int game::maxBuyInChips() const
 {
-    return 100 * std::max(1, big_blind);
+    return seat_mgr_.maxBuyInChips();
 }
 
 int game::seatBankrollTotal(int seat) const
 {
-    if (seat < 0 || seat >= kMaxPlayers)
-        return 0;
-    const size_t si = static_cast<size_t>(seat);
-    if (pending_bankroll_total_[si] >= 0)
-        return pending_bankroll_total_[si];
-    return table[si].stack + seat_wallet_[si];
+    return seat_mgr_.seatBankrollTotal(seat);
 }
 
 bool game::pendingSeatBankrollApply() const
 {
-    for (int i = 0; i < kMaxPlayers; ++i)
-    {
-        if (pending_bankroll_total_[static_cast<size_t>(i)] >= 0)
-            return true;
-    }
-    return false;
+    return seat_mgr_.pendingSeatBankrollApply();
 }
 
 int game::seatBuyIn(int seat) const
 {
-    if (seat < 0 || seat >= kMaxPlayers)
-        return starting_stack_;
-    return seat_buy_in_[static_cast<size_t>(seat)];
+    return seat_mgr_.seatBuyIn(seat);
 }
 
 void game::setSeatBuyIn(int seat, int chips)
 {
-    if (seat < 0 || seat >= kMaxPlayers)
-        return;
-    const int cap = maxBuyInChips();
-    int capped = std::min(chips, cap);
-    capped = std::min(capped, 100000000);
-    seat_buy_in_[static_cast<size_t>(seat)] = std::max(1, capped);
-    // If a hand is currently running, wait until the next hand to re-apply stacks.
-    if (in_progress)
-        pending_seat_buyins_apply_ = true;
-    notifySessionStatsChanged();
+    seat_mgr_.setSeatBuyIn(seat, chips);
 }
 
 void game::applySeatBuyInsToStacks()
 {
-    if (in_progress)
-        return;
-    apply_seat_buy_ins_to_table();
-    pending_seat_buyins_apply_ = false;
-    flush_ui();
+    seat_mgr_.applySeatBuyInsToStacks();
 }
 
 void game::configure(int sb, int bb, int streetBet, int startStack)
 {
+    configureImpl(sb, bb, streetBet, startStack, true);
+}
+
+void game::configureImpl(int sb, int bb, int streetBet, int startStack, bool resetBankrollOnStackApply)
+{
     small_blind = sb;
     big_blind = bb;
     street_bet_ = streetBet;
-    const int cap = maxBuyInChips();
+    const int cap = seat_mgr_.maxBuyInChips();
     starting_stack_ = std::max(1, std::min(startStack, cap));
     for (int i = 0; i < kMaxPlayers; ++i)
     {
-        seat_buy_in_[static_cast<size_t>(i)] =
-            std::max(1, std::min(seat_buy_in_[static_cast<size_t>(i)], cap));
+        seat_mgr_.seat_buy_in_[static_cast<size_t>(i)] =
+            std::max(1, std::min(seat_mgr_.seat_buy_in_[static_cast<size_t>(i)], cap));
     }
-    /// Per-seat buy-ins are edited in setup; stakes apply only blinds and re-push existing `seat_buy_in_` to stacks.
-    apply_seat_buy_ins_to_table();
+    seat_mgr_.apply_seat_buy_ins_to_table(resetBankrollOnStackApply);
     if (m_root)
     {
         m_root->setProperty("smallBlind", small_blind);
         m_root->setProperty("bigBlind", big_blind);
     }
+    if (!suppress_persist_)
+        savePersistedSettings();
 }
 
-namespace {
-
-constexpr char kSettingsV1[] = "v1";
-
-int clamp_int(int v, int lo, int hi)
-{
-    return std::max(lo, std::min(hi, v));
-}
-
-} // namespace
 
 int game::seatStrategyIndex(int seat) const
 {
@@ -1962,142 +1587,17 @@ int game::seatStrategyIndex(int seat) const
 
 void game::loadPersistedSettings()
 {
-    QSettings store;
-    store.beginGroup(QString::fromLatin1(kSettingsV1));
-    if (!store.contains(QStringLiteral("smallBlind")))
-    {
-        store.endGroup();
-        return;
-    }
-
-    suppress_persist_ = true;
-
-    const int sb = clamp_int(store.value(QStringLiteral("smallBlind")).toInt(), 1, 500);
-    const int bb = clamp_int(store.value(QStringLiteral("bigBlind")).toInt(), 1, 500);
-    const int st = clamp_int(store.value(QStringLiteral("streetBet")).toInt(), 1, 100000);
-    const int stack = clamp_int(store.value(QStringLiteral("startStack")).toInt(), 20, 1000000);
-    configure(sb, bb, st, stack);
-
-    const int cap = maxBuyInChips();
-    for (int i = 0; i < kMaxPlayers; ++i)
-    {
-        const QString bik = QStringLiteral("seat%1/buyIn").arg(i);
-        if (store.contains(bik))
-            seat_buy_in_[static_cast<size_t>(i)] = clamp_int(store.value(bik).toInt(), 1, cap);
-        else
-            seat_buy_in_[static_cast<size_t>(i)] = std::min(stack, cap); // legacy: global startStack
-    }
-    apply_seat_buy_ins_to_table();
-
-    for (int i = 0; i < kMaxPlayers; ++i)
-    {
-        const QString wk = QStringLiteral("seat%1/wallet").arg(i);
-        if (store.contains(wk))
-            seat_wallet_[static_cast<size_t>(i)] = clamp_int(store.value(wk).toInt(), 0, 100000000);
-    }
-    {
-        const int n = players_count();
-        for (int i = 0; i < n; ++i)
-            session_baseline_[static_cast<size_t>(i)] =
-                table[static_cast<size_t>(i)].stack + seat_wallet_[static_cast<size_t>(i)];
-        bankroll_history_.clear();
-        bankroll_snapshot_times_ms_.clear();
-        record_bankroll_snapshot();
-    }
-
-    const int stratMax = static_cast<int>(BotStrategy::Count) - 1;
-    for (int i = 0; i < kMaxPlayers; ++i)
-    {
-        const int strat = clamp_int(store.value(QStringLiteral("seat%1/strategy").arg(i)).toInt(), 0, stratMax);
-        setSeatStrategy(i, strat);
-        const QString rt = store.value(QStringLiteral("seat%1/rangeText").arg(i)).toString();
-        if (!rt.isEmpty())
-            applySeatRangeText(i, rt, 0);
-        const QString rtr = store.value(QStringLiteral("seat%1/rangeTextRaise").arg(i)).toString();
-        const QString rtb = store.value(QStringLiteral("seat%1/rangeTextBet").arg(i)).toString();
-        SeatBot &sb = seat_cfg_[static_cast<size_t>(i)];
-        if (!rtr.isEmpty())
-            applySeatRangeText(i, rtr, 1);
-        else
-            sb.range_raise = sb.range_call;
-        if (!rtb.isEmpty())
-            applySeatRangeText(i, rtb, 2);
-        else
-            sb.range_bet = sb.range_call;
-
-        const QString pfx = QStringLiteral("seat%1/").arg(i);
-        QVariantMap pm;
-        if (store.contains(pfx + QStringLiteral("preflopExponent")))
-            pm.insert(QStringLiteral("preflopExponent"), store.value(pfx + QStringLiteral("preflopExponent")));
-        if (store.contains(pfx + QStringLiteral("postflopExponent")))
-            pm.insert(QStringLiteral("postflopExponent"), store.value(pfx + QStringLiteral("postflopExponent")));
-        if (store.contains(pfx + QStringLiteral("facingRaiseBonus")))
-            pm.insert(QStringLiteral("facingRaiseBonus"), store.value(pfx + QStringLiteral("facingRaiseBonus")));
-        if (store.contains(pfx + QStringLiteral("facingRaiseTightMul")))
-            pm.insert(QStringLiteral("facingRaiseTightMul"), store.value(pfx + QStringLiteral("facingRaiseTightMul")));
-        if (store.contains(pfx + QStringLiteral("openBetBonus")))
-            pm.insert(QStringLiteral("openBetBonus"), store.value(pfx + QStringLiteral("openBetBonus")));
-        if (store.contains(pfx + QStringLiteral("openBetTightMul")))
-            pm.insert(QStringLiteral("openBetTightMul"), store.value(pfx + QStringLiteral("openBetTightMul")));
-        if (store.contains(pfx + QStringLiteral("bbCheckraiseBonus")))
-            pm.insert(QStringLiteral("bbCheckraiseBonus"), store.value(pfx + QStringLiteral("bbCheckraiseBonus")));
-        if (store.contains(pfx + QStringLiteral("bbCheckraiseTightMul")))
-            pm.insert(QStringLiteral("bbCheckraiseTightMul"), store.value(pfx + QStringLiteral("bbCheckraiseTightMul")));
-        if (!pm.isEmpty())
-            setSeatStrategyParams(i, pm);
-    }
-
-    setHumanSitOut(store.value(QStringLiteral("humanSitOut"), false).toBool());
-    setInteractiveHuman(store.value(QStringLiteral("interactiveHuman"), true).toBool());
-    if (!interactive_human_)
-        setHumanSitOut(false);
-    setBotSlowActions(store.value(QStringLiteral("botSlowActions"), false).toBool());
-    for (int s = 1; s < kMaxPlayers; ++s)
-    {
-        const bool def = true;
-        setSeatParticipating(s, store.value(QStringLiteral("seat%1/participating").arg(s), def).toBool());
-    }
-    store.endGroup();
-    suppress_persist_ = false;
-    /// `setInteractiveHuman(true)` often no-ops without NOTIFY — QML must re-bind HUD “Bot playing” vs sit out.
-    emit interactiveHumanChanged();
+    persistence_->loadPersistedSettings();
 }
 
 void game::savePersistedSettings() const
 {
-    QSettings store;
-    store.beginGroup(QString::fromLatin1(kSettingsV1));
-    store.setValue(QStringLiteral("smallBlind"), small_blind);
-    store.setValue(QStringLiteral("bigBlind"), big_blind);
-    store.setValue(QStringLiteral("streetBet"), street_bet_);
-    store.setValue(QStringLiteral("startStack"), starting_stack_);
-    store.setValue(QStringLiteral("humanSitOut"), human_sitting_out_);
-    store.setValue(QStringLiteral("interactiveHuman"), interactive_human_);
-    store.setValue(QStringLiteral("botSlowActions"), bot_slow_actions_);
-    for (int s = 1; s < kMaxPlayers; ++s)
-        store.setValue(QStringLiteral("seat%1/participating").arg(s), seat_participating_[static_cast<size_t>(s)]);
+    persistence_->savePersistedSettings();
+}
 
-    for (int i = 0; i < kMaxPlayers; ++i)
-    {
-        store.setValue(QStringLiteral("seat%1/strategy").arg(i), seatStrategyIndex(i));
-        store.setValue(QStringLiteral("seat%1/rangeText").arg(i), exportSeatRangeText(i, 0));
-        store.setValue(QStringLiteral("seat%1/rangeTextRaise").arg(i), exportSeatRangeText(i, 1));
-        store.setValue(QStringLiteral("seat%1/rangeTextBet").arg(i), exportSeatRangeText(i, 2));
-        store.setValue(QStringLiteral("seat%1/buyIn").arg(i), seat_buy_in_[static_cast<size_t>(i)]);
-        store.setValue(QStringLiteral("seat%1/wallet").arg(i), seat_wallet_[static_cast<size_t>(i)]);
-        const BotParams &bp = seat_cfg_[static_cast<size_t>(i)].params;
-        const QString pfx = QStringLiteral("seat%1/").arg(i);
-        store.setValue(pfx + QStringLiteral("preflopExponent"), bp.preflop_exponent);
-        store.setValue(pfx + QStringLiteral("postflopExponent"), bp.postflop_exponent);
-        store.setValue(pfx + QStringLiteral("facingRaiseBonus"), bp.facing_raise_bonus);
-        store.setValue(pfx + QStringLiteral("facingRaiseTightMul"), bp.facing_raise_tight_mul);
-        store.setValue(pfx + QStringLiteral("openBetBonus"), bp.open_bet_bonus);
-        store.setValue(pfx + QStringLiteral("openBetTightMul"), bp.open_bet_tight_mul);
-        store.setValue(pfx + QStringLiteral("bbCheckraiseBonus"), bp.bb_checkraise_bonus);
-        store.setValue(pfx + QStringLiteral("bbCheckraiseTightMul"), bp.bb_checkraise_tight_mul);
-    }
-    store.endGroup();
-    store.sync();
+void game::seedMissingPersistedSettings() const
+{
+    persistence_->seedMissingPersistedSettings();
 }
 
 void game::setSeatStrategy(int seat, int strategyIndex)
@@ -2182,6 +1682,16 @@ QString game::getStrategySummary(int strategyIndex) const
     return QString::fromStdString(strategy_description(static_cast<BotStrategy>(strategyIndex)));
 }
 
+QStringList game::strategyDisplayNames() const
+{
+    QStringList out;
+    const int n = static_cast<int>(BotStrategy::Count);
+    out.reserve(n);
+    for (int i = 0; i < n; ++i)
+        out.append(QString::fromUtf8(bot_strategy_name(static_cast<BotStrategy>(i))));
+    return out;
+}
+
 bool game::applySeatRangeText(int seat, const QString &text, int layer)
 {
     if (seat < 0 || seat >= kMaxPlayers)
@@ -2224,21 +1734,22 @@ void game::resetSeatRangeFull(int seat)
 
 void game::setSeatParticipating(int seat, bool participating)
 {
-    if (seat < 1 || seat >= kMaxPlayers)
-        return;
-    seat_participating_[static_cast<size_t>(seat)] = participating;
+    seat_mgr_.setSeatParticipating(seat, participating);
 }
 
 bool game::seatParticipating(int seat) const
 {
-    if (seat < 0 || seat >= kMaxPlayers)
-        return true;
-    return seat_participating_[static_cast<size_t>(seat)];
+    return seat_mgr_.seatParticipating(seat);
 }
 
 void game::setBotSlowActions(bool enabled)
 {
+    if (bot_slow_actions_ == enabled)
+        return;
     bot_slow_actions_ = enabled;
+    emit botSlowActionsChanged();
+    if (persist_loaded_ && !suppress_persist_)
+        savePersistedSettings();
 }
 
 bool game::botSlowActions() const
@@ -2273,40 +1784,17 @@ QString game::exportSeatRangeText(int seat, int layer) const
 
 void game::notifySessionStatsChanged()
 {
-    ++stats_seq_;
-    emit sessionStatsChanged();
-}
-
-void game::record_bankroll_snapshot()
-{
-    std::array<int, kMaxPlayers> snap{};
-    const int n = players_count();
-    for (int i = 0; i < n; ++i)
-        snap[static_cast<size_t>(i)] = table[static_cast<size_t>(i)].stack
-                                        + seat_wallet_[static_cast<size_t>(i)];
-    bankroll_history_.push_back(snap);
-    bankroll_snapshot_times_ms_.push_back(QDateTime::currentMSecsSinceEpoch());
-    ++stats_seq_;
-    emit sessionStatsChanged();
-}
-
-void game::init_bankroll_after_configure()
-{
-    bankroll_history_.clear();
-    bankroll_snapshot_times_ms_.clear();
-    const int n = players_count();
-    for (int i = 0; i < n; ++i)
-        session_baseline_[static_cast<size_t>(i)] =
-            table[static_cast<size_t>(i)].stack + seat_wallet_[static_cast<size_t>(i)];
-    record_bankroll_snapshot();
+    bankroll_tracker_.notifySessionStatsChanged();
 }
 
 void game::complete_hand_idle()
 {
-    try_auto_rebuys_for_busted_bots();
-    flush_pending_bankroll_totals();
-    record_bankroll_snapshot();
-    sync_seat_buy_in_from_table_when_wallet_empty();
+    seat_mgr_.try_auto_rebuys_for_busted_bots();
+    seat_mgr_.flush_pending_bankroll_totals();
+    /// Normalize persisted buy-in vs wallet from stacks *before* snapshot so history and `v1/seat*/buyIn`
+    /// match chips won at the table (see `SeatManager::sync_seat_buy_in_from_table_when_wallet_empty`).
+    seat_mgr_.sync_seat_buy_in_from_table_when_wallet_empty();
+    bankroll_tracker_.record_bankroll_snapshot();
     savePersistedSettings();
     flush_ui();
     schedule_next_hand_if_idle();
@@ -2314,177 +1802,57 @@ void game::complete_hand_idle()
 
 int game::seatWallet(int seat) const
 {
-    if (seat < 0 || seat >= kMaxPlayers)
-        return 0;
-    return seat_wallet_[static_cast<size_t>(seat)];
+    return seat_mgr_.seatWallet(seat);
 }
 
 bool game::canBuyBackIn(int seat) const
 {
-    if (seat < 0 || seat >= players_count())
-        return false;
-    const size_t si = static_cast<size_t>(seat);
-    if (in_progress && in_hand_[si])
-        return false;
-    if (table[si].stack > 0)
-        return false;
-    return seat_wallet_[si] >= seat_buy_in_[si];
+    return seat_mgr_.canBuyBackIn(seat);
 }
 
 bool game::tryBuyBackIn(int seat)
 {
-    if (!apply_buy_back_in_internal(seat))
-        return false;
-    record_bankroll_snapshot();
-    savePersistedSettings();
-    flush_ui();
-    return true;
+    return seat_mgr_.tryBuyBackIn(seat);
 }
 
 QVariantList game::seatRankings() const
 {
-    struct Row
-    {
-        int seat;
-        int table_stack;
-        int wallet;
-        int total;
-    };
-    std::vector<Row> rows;
-    const int n = players_count();
-    rows.reserve(static_cast<size_t>(n));
-    for (int i = 0; i < n; ++i)
-    {
-        const int st = table[static_cast<size_t>(i)].stack;
-        const int w = seat_wallet_[static_cast<size_t>(i)];
-        rows.push_back({i, st, w, st + w});
-    }
-    std::sort(rows.begin(), rows.end(), [](const Row &a, const Row &b) { return a.total > b.total; });
-
-    QVariantList out;
-    int rank = 1;
-    for (size_t i = 0; i < rows.size(); ++i)
-    {
-        if (i > 0 && rows[i].total < rows[i - 1].total)
-            rank = static_cast<int>(i) + 1;
-        const int seat = rows[i].seat;
-        QVariantMap m;
-        m[QStringLiteral("seat")] = seat;
-        m[QStringLiteral("stack")] = rows[i].table_stack;
-        m[QStringLiteral("wallet")] = rows[i].wallet;
-        m[QStringLiteral("total")] = rows[i].total;
-        m[QStringLiteral("rank")] = rank;
-        m[QStringLiteral("profit")] = rows[i].total - session_baseline_[static_cast<size_t>(seat)];
-        out.append(m);
-    }
-    return out;
+    return bankroll_tracker_.seatRankings();
 }
 
 QVariantList game::bankrollSeries(int seat) const
 {
-    QVariantList out;
-    if (seat < 0 || seat >= kMaxPlayers)
-        return out;
-    const size_t si = static_cast<size_t>(seat);
-    for (const auto &snap : bankroll_history_)
-        out.append(snap[si]);
-    return out;
+    return bankroll_tracker_.bankrollSeries(seat);
 }
 
 int game::bankrollSnapshotCount() const
 {
-    return static_cast<int>(bankroll_history_.size());
+    return bankroll_tracker_.bankrollSnapshotCount();
 }
 
 QVariantList game::bankrollSnapshotTimesMs() const
 {
-    QVariantList out;
-    for (qint64 t : bankroll_snapshot_times_ms_)
-        out.append(static_cast<qlonglong>(t));
-    return out;
-}
-
-void game::sync_seat_buy_in_from_table_when_wallet_empty()
-{
-    if (in_progress)
-        return;
-    const int n = players_count();
-    const int cap = maxBuyInChips();
-    for (int i = 0; i < n; ++i)
-    {
-        const size_t si = static_cast<size_t>(i);
-        if (seat_wallet_[si] < 1 && table[si].stack > 0)
-            seat_buy_in_[si] = std::min(table[si].stack, cap);
-    }
-}
-
-void game::flush_pending_bankroll_totals()
-{
-    if (in_progress)
-        return;
-    for (int i = 0; i < kMaxPlayers; ++i)
-    {
-        const int pending = pending_bankroll_total_[static_cast<size_t>(i)];
-        if (pending >= 0)
-        {
-            apply_seat_bankroll_total_now(i, pending);
-            pending_bankroll_total_[static_cast<size_t>(i)] = -1;
-        }
-    }
+    return bankroll_tracker_.bankrollSnapshotTimesMs();
 }
 
 void game::applyPendingBankrollTotals()
 {
-    flush_pending_bankroll_totals();
-}
-
-void game::apply_seat_bankroll_total_now(int seat, int totalChips)
-{
-    if (seat < 0 || seat >= kMaxPlayers)
-        return;
-    const int t = std::max(1, std::min(100000000, totalChips));
-    const size_t si = static_cast<size_t>(seat);
-    const int cap = maxBuyInChips();
-    const int on_table = std::min(t, cap);
-    seat_buy_in_[si] = on_table;
-    table[si].reset_stack(on_table);
-    seat_wallet_[si] = t - on_table;
-    record_bankroll_snapshot();
-    savePersistedSettings();
-    flush_ui();
+    seat_mgr_.applyPendingBankrollTotals();
 }
 
 void game::setSeatBankrollTotal(int seat, int totalChips)
 {
-    if (seat < 0 || seat >= kMaxPlayers)
-        return;
-    const int t = std::max(1, std::min(100000000, totalChips));
-    if (in_progress)
-    {
-        pending_bankroll_total_[static_cast<size_t>(seat)] = t;
-        notifySessionStatsChanged();
-        return;
-    }
-    apply_seat_bankroll_total_now(seat, t);
-    pending_bankroll_total_[static_cast<size_t>(seat)] = -1;
+    seat_mgr_.setSeatBankrollTotal(seat, totalChips);
 }
 
 int game::sessionBaselineStack(int seat) const
 {
-    if (seat < 0 || seat >= kMaxPlayers)
-        return 0;
-    return session_baseline_[static_cast<size_t>(seat)];
+    return bankroll_tracker_.sessionBaselineStack(seat);
 }
 
 void game::resetBankrollSession()
 {
-    const int n = players_count();
-    for (int i = 0; i < n; ++i)
-        session_baseline_[static_cast<size_t>(i)] =
-            table[static_cast<size_t>(i)].stack + seat_wallet_[static_cast<size_t>(i)];
-    bankroll_history_.clear();
-    bankroll_snapshot_times_ms_.clear();
-    record_bankroll_snapshot();
+    bankroll_tracker_.resetBankrollSession();
 }
 
 QVariantMap game::bettingAnchors() const
@@ -2502,17 +1870,13 @@ QVariantMap game::bettingAnchors() const
 
 game::game(QObject *parent)
     : QObject(parent)
-    , human_decision_tick_(this)
-    , human_decision_deadline_(this)
+    , seat_mgr_(*this)
+    , bankroll_tracker_(*this, this)
 {
-    seat_participating_.fill(true);
-    seat_buy_in_.fill(starting_stack_);
-    seat_wallet_.fill(0);
-    pending_bankroll_total_.fill(-1);
     for (int s = 0; s < kMaxPlayers; ++s)
     {
         player p;
-        p.stack = seat_buy_in_[static_cast<size_t>(s)];
+        p.stack = seat_mgr_.seat_buy_in_[static_cast<size_t>(s)];
         p.first_card = card(Rank::TWO, Suite::CLUBS);
         p.second_card = card(Rank::THREE, Suite::CLUBS);
         join_table(p);
@@ -2525,13 +1889,15 @@ game::game(QObject *parent)
     }
 
     QObject::connect(this, &game::pot_changed, this, &game::on_pot_changed);
+    connect(&bankroll_tracker_, &BankrollTracker::sessionStatsChanged,
+            this, &game::sessionStatsChanged);
 
-    const int n = players_count();
-    for (int i = 0; i < n; ++i)
-        session_baseline_[static_cast<size_t>(i)] =
-            table[static_cast<size_t>(i)].stack + seat_wallet_[static_cast<size_t>(i)];
-    record_bankroll_snapshot();
+    bankroll_tracker_.init_bankroll_after_configure();
+    human_decision_ctrl_ = std::make_unique<HumanDecisionController>(*this, this);
+    persistence_ = std::make_unique<GamePersistence>(*this);
 }
+
+game::~game() = default;
 
 void game::buttonClicked(QString button)
 {
@@ -2539,29 +1905,29 @@ void game::buttonClicked(QString button)
         return;
     if (button == QStringLiteral("MORE_TIME"))
     {
-        requestMoreTime();
+        human_decision_ctrl_->requestMoreTime();
         return;
     }
-    if (waiting_for_human_bb_preflop_)
+    if (human_decision_ctrl_->isWaitingForHumanBbPreflop())
     {
         if (button == QStringLiteral("CHECK"))
-            finish_human_bb_preflop(false);
+            human_decision_ctrl_->submitBbPreflopRaise(0);
         return;
     }
-    if (waiting_for_human_check_)
+    if (human_decision_ctrl_->isWaitingForHumanCheck())
     {
         if (button == QStringLiteral("CHECK"))
-            submitCheckOrBet(true, 0);
+            human_decision_ctrl_->submitCheckOrBet(true, 0);
         else if (button == QStringLiteral("FOLD"))
-            submitFoldFromCheck();
+            human_decision_ctrl_->submitFoldFromCheck();
         return;
     }
-    if (waiting_for_human_)
+    if (human_decision_ctrl_->isWaitingForHuman())
     {
         if (button == QStringLiteral("FOLD"))
-            submitFacingAction(0, 0);
+            human_decision_ctrl_->submitFacingAction(0, 0);
         else if (button == QStringLiteral("CALL"))
-            submitFacingAction(1, 0);
+            human_decision_ctrl_->submitFacingAction(1, 0);
         return;
     }
     if (button == QStringLiteral("CALL") || button == QStringLiteral("RAISE"))

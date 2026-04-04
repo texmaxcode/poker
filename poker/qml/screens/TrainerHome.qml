@@ -15,7 +15,8 @@ Page {
     background: BrandedBackground { anchors.fill: parent }
 
     function refreshTraining() {
-        trainingProgress = trainingStore.loadProgress()
+        var p = trainingStore.loadProgress()
+        trainingProgress = (p && typeof p === "object") ? p : {}
     }
 
     Connections {
@@ -279,6 +280,33 @@ Page {
                             overrideHeight: 34
                             onClicked: page.go(7)
                         }
+                        GameButton {
+                            text: qsTr("Turn")
+                            pillWidth: 88
+                            buttonColor: Theme.successGreen
+                            textColor: Theme.onAccentText
+                            fontSize: Theme.uiHudButtonPt
+                            overrideHeight: 34
+                            onClicked: page.go(8)
+                        }
+                        GameButton {
+                            text: qsTr("River")
+                            pillWidth: 88
+                            buttonColor: Theme.successGreen
+                            textColor: Theme.onAccentText
+                            fontSize: Theme.uiHudButtonPt
+                            overrideHeight: 34
+                            onClicked: page.go(9)
+                        }
+                        GameButton {
+                            text: qsTr("Ranges")
+                            pillWidth: 96
+                            buttonColor: Theme.successGreen
+                            textColor: Theme.onAccentText
+                            fontSize: Theme.uiHudButtonPt
+                            overrideHeight: 34
+                            onClicked: page.go(10)
+                        }
                     }
                 }
 
@@ -310,8 +338,8 @@ Page {
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
                             text: qsTr(
-                                "Roadmap: more positions and sizings, turn/river spots, range viewer, and optional play vs a bot. "
-                                + "Current drills use bundled example strategies — replace the JSON to train your own charts.")
+                                "Roadmap: more positions and sizings, deeper solver-linked data, and optional play vs a bot. "
+                                + "Opening ranges (reference) live under Ranges. Current drills use bundled example strategies — replace the JSON to train your own charts.")
                             color: Theme.textSecondary
                             font.pixelSize: Theme.trainerBodyPx
                             lineHeight: 1.25

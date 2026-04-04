@@ -29,6 +29,7 @@ Page {
     property bool _returningFromHidden: false
     /// Avoid treating initial `visible: false` at startup as "left the page".
     property bool _drillSurfaceShown: false
+    property bool assetLoadFailed: false
     /// Matches HUD pot / sizing context ($2 BB training table).
     readonly property int trainerPotChips: 12
     /// Display chips (animates up on call / raise like the table HUD).
@@ -165,8 +166,22 @@ Page {
     }
 
     /// New question + clock after returning from another screen.
+    function refreshModeModelForPosition() {
+        const modes = trainer.preflopModesForPosition(page.position)
+        modePick.model = modes
+        let idx = modes.indexOf(page.mode)
+        if (idx < 0 && modes.length > 0) {
+            page.mode = String(modes[0])
+            idx = 0
+        }
+        modePick.currentIndex = idx >= 0 ? idx : 0
+    }
+
     function restartDrillAfterReturn() {
+        if (page.assetLoadFailed)
+            return
         statusLine = qsTr("Ready.")
+        refreshModeModelForPosition()
         trainer.startPreflopDrill(position, mode)
         nextQuestion()
     }
@@ -200,7 +215,11 @@ Page {
         delaySecSpin.value = Math.round(trainingStore.trainerAutoAdvanceMs / 1000)
         timeLimitSpin.value = trainingStore.trainerDecisionSeconds
         const ok = trainer.loadPreflopRanges("qrc:/assets/training/preflop_ranges_v1.json")
+        page.assetLoadFailed = !ok
         statusLine = ok ? qsTr("Ready.") : qsTr("Could not load ranges.")
+        if (!ok)
+            return
+        refreshModeModelForPosition()
         trainer.startPreflopDrill(position, mode)
         nextQuestion()
     }
@@ -214,6 +233,7 @@ Page {
         }
         position = String(q.position)
         mode = String(q.mode)
+        refreshModeModelForPosition()
         card1 = String(q.card1)
         card2 = String(q.card2)
         seatVisualEpoch++
@@ -267,6 +287,16 @@ Page {
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
                 spacing: Theme.trainerColumnSpacing
 
+                Text {
+                    Layout.fillWidth: true
+                    visible: page.assetLoadFailed
+                    wrapMode: Text.WordWrap
+                    text: qsTr("Training data failed to load. The bundled JSON asset may be missing or invalid.")
+                    color: Theme.dangerText
+                    font.pixelSize: Theme.trainerBodyPx
+                    lineHeight: 1.25
+                }
+
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 10
@@ -308,6 +338,7 @@ Page {
                         from: 1
                         to: 120
                         editable: true
+                        enabled: !page.assetLoadFailed
                         stepSize: 1
                         textFromValue: function (v) { return v + qsTr(" s") }
                         valueFromText: function (t) { return parseInt(t, 10) }
@@ -326,6 +357,7 @@ Page {
                         from: 5
                         to: 120
                         editable: true
+                        enabled: !page.assetLoadFailed
                         stepSize: 1
                         textFromValue: function (v) { return v + qsTr(" s") }
                         valueFromText: function (t) { return parseInt(t, 10) }
@@ -341,24 +373,36 @@ Page {
                         id: posPick
                         font.pixelSize: Theme.trainerCaptionPx
                         Layout.preferredWidth: 112
-                        enabled: !page.inputLocked
+                        enabled: !page.inputLocked && !page.assetLoadFailed
                         model: ["UTG", "CO", "BTN", "SB", "BB"]
                         currentIndex: model.indexOf(page.position)
                         onActivated: function (index) {
                             cancelPendingAdvance()
                             page.position = String(model[index])
+                            page.refreshModeModelForPosition()
                             trainer.startPreflopDrill(page.position, page.mode)
                             page.nextQuestion()
                         }
                     }
 
+                    Label {
+                        text: qsTr("Mode")
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.trainerCaptionPx
+                    }
                     ComboBox {
                         id: modePick
                         font.pixelSize: Theme.trainerCaptionPx
-                        Layout.preferredWidth: 104
+                        Layout.preferredWidth: 120
+                        enabled: !page.inputLocked && !page.assetLoadFailed
                         model: ["open"]
                         currentIndex: 0
-                        enabled: false
+                        onActivated: function (index) {
+                            cancelPendingAdvance()
+                            page.mode = String(model[index])
+                            trainer.startPreflopDrill(page.position, page.mode)
+                            page.nextQuestion()
+                        }
                     }
 
                     Item { Layout.fillWidth: true }
@@ -405,7 +449,7 @@ Page {
 
                             Rectangle {
                                 Layout.alignment: Qt.AlignHCenter
-                                Layout.topMargin: 6
+                                Layout.topMargin: 0
                                 width: trainerPotBanner.implicitWidth + 22
                                 height: trainerPotBanner.implicitHeight + 12
                                 radius: 8
@@ -500,7 +544,7 @@ Page {
                                 var ideal = pos.y + hs.height - exerciseHud.height
                                 return Math.min(Math.max(6, ideal), drillArea.height - exerciseHud.height - 6)
                             }
-                            trainerInputLocked: page.inputLocked
+                            trainerInputLocked: page.inputLocked || page.assetLoadFailed
                             humanSitOut: false
                             statusText: page.statusLine
                             statusSubText: page.secLeft > 0

@@ -39,6 +39,20 @@ install -d "${PREFIX}/libexec" "${PREFIX}/lib" \
 cp -f "${BINARY}" "${PREFIX}/libexec/Poker"
 chmod 755 "${PREFIX}/libexec/Poker"
 
+# Poker links SQLite::SQLite3 (persist_sqlite.cpp). Non-Qt deps under /usr/lib are normally left on the
+# system (is_system_lib); copy libsqlite3 so PREFIX is self-contained when LD_LIBRARY_PATH prefers
+# ${PREFIX}/lib (AppImage, air-gapped trees). Qt's libqsqlite.so also resolves against this copy.
+if sqlite_bundle_path="$(ldd "${PREFIX}/libexec/Poker" 2>/dev/null | awk '/libsqlite3\.so/ && $2 == "=>" && $3 ~ /^\// {print $3; exit}')"; then
+  if [[ -n "${sqlite_bundle_path}" && -f "${sqlite_bundle_path}" ]]; then
+    sqlite_real="$(readlink -f "${sqlite_bundle_path}")"
+    sqlite_bn="$(basename "${sqlite_real}")"
+    if [[ ! -f "${PREFIX}/lib/${sqlite_bn}" ]]; then
+      cp -f "${sqlite_real}" "${PREFIX}/lib/${sqlite_bn}"
+      echo "    bundled ${sqlite_bn} (SQLite3, linked by Poker)"
+    fi
+  fi
+fi
+
 declare -A SEEN
 queue=()
 enqueue() {
@@ -111,6 +125,7 @@ copy_plugin_tree() {
 }
 
 echo "==> Copying Qt plugins"
+copy_plugin_tree sqldrivers
 copy_plugin_tree platforms
 copy_plugin_tree imageformats
 copy_plugin_tree iconengines

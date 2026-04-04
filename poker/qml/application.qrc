@@ -32,6 +32,9 @@
         <file>screens/TrainerHome.qml</file>
         <file>screens/PreflopTrainer.qml</file>
         <file>screens/FlopTrainer.qml</file>
+        <file>screens/TurnTrainer.qml</file>
+        <file>screens/RiverTrainer.qml</file>
+        <file>screens/RangeViewer.qml</file>
 
         <file>assets/fonts/Oswald-Regular.ttf</file>
         <file>assets/fonts/Oswald-Bold.ttf</file>
@@ -46,6 +49,8 @@
 
         <file>assets/training/preflop_ranges_v1.json</file>
         <file>assets/training/spots_v1.json</file>
+        <file>assets/training/spots_turn_v1.json</file>
+        <file>assets/training/spots_river_v1.json</file>
 
         <file>assets/cards/blue2.svg</file>
         <file>assets/cards/clubs_ace.svg</file>

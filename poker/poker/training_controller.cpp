@@ -8,8 +8,10 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QStringList>
 
 #include <algorithm>
+#include <set>
 
 namespace {
 
@@ -80,10 +82,39 @@ bool TrainingController::loadPreflopRanges(const QString &qrcUrl)
     return !scenarios_.empty();
 }
 
-bool TrainingController::loadFlopSpots(const QString &qrcUrl)
+QStringList TrainingController::preflopModesForPosition(const QString &position) const
 {
-    flop_spots_.clear();
-    flop_idx_ = -1;
+    const QString p = position.trimmed().toUpper();
+    std::set<QString> seen;
+    for (const auto &kv : scenarios_)
+    {
+        const Scenario &sc = kv.second;
+        if (!sc.loaded)
+            continue;
+        if (sc.position.trimmed().toUpper() != p)
+            continue;
+        seen.insert(sc.mode);
+    }
+    static const QStringList kPreferredOrder = {QStringLiteral("open"), QStringLiteral("vs3bet"),
+                                                QStringLiteral("3bet")};
+    QStringList out;
+    for (const QString &m : kPreferredOrder)
+    {
+        if (seen.count(m))
+        {
+            out.push_back(m);
+            seen.erase(m);
+        }
+    }
+    for (const QString &m : seen)
+        out.push_back(m);
+    return out;
+}
+
+bool TrainingController::loadPostflopSpotsFromUrl(const QString &qrcUrl, int expected_board,
+                                                  std::vector<PostflopSpot> &out)
+{
+    out.clear();
 
     QFile f(qrc_to_colon(qrcUrl));
     if (!f.open(QIODevice::ReadOnly))
@@ -101,18 +132,18 @@ bool TrainingController::loadFlopSpots(const QString &qrcUrl)
         const QString id = o.value(QStringLiteral("id")).toString();
         const QJsonArray board = o.value(QStringLiteral("board")).toArray();
         const QJsonArray hero = o.value(QStringLiteral("heroCards")).toArray();
-        if (id.isEmpty() || board.size() != 3 || hero.size() != 2)
+        if (id.isEmpty() || board.size() != expected_board || hero.size() != 2)
             continue;
         const QJsonObject act = o.value(QStringLiteral("actions")).toObject();
         const QJsonObject a0 = act.value(QStringLiteral("check")).toObject();
         const QJsonObject a1 = act.value(QStringLiteral("bet33")).toObject();
         const QJsonObject a2 = act.value(QStringLiteral("bet75")).toObject();
 
-        FlopSpot s;
+        PostflopSpot s;
         s.id = id;
-        s.board0 = board[0].toString();
-        s.board1 = board[1].toString();
-        s.board2 = board[2].toString();
+        s.n_board = expected_board;
+        for (int i = 0; i < expected_board; ++i)
+            s.board[static_cast<size_t>(i)] = board[i].toString();
         s.hero1 = hero[0].toString();
         s.hero2 = hero[1].toString();
         s.freq_check = a0.value(QStringLiteral("freq")).toDouble();
@@ -121,9 +152,27 @@ bool TrainingController::loadFlopSpots(const QString &qrcUrl)
         s.ev_check = a0.value(QStringLiteral("evBb")).toDouble();
         s.ev_b33 = a1.value(QStringLiteral("evBb")).toDouble();
         s.ev_b75 = a2.value(QStringLiteral("evBb")).toDouble();
-        flop_spots_.push_back(s);
+        out.push_back(s);
     }
-    return !flop_spots_.empty();
+    return !out.empty();
+}
+
+bool TrainingController::loadFlopSpots(const QString &qrcUrl)
+{
+    flop_idx_ = -1;
+    return loadPostflopSpotsFromUrl(qrcUrl, 3, flop_spots_);
+}
+
+bool TrainingController::loadTurnSpots(const QString &qrcUrl)
+{
+    turn_idx_ = -1;
+    return loadPostflopSpotsFromUrl(qrcUrl, 4, turn_spots_);
+}
+
+bool TrainingController::loadRiverSpots(const QString &qrcUrl)
+{
+    river_idx_ = -1;
+    return loadPostflopSpotsFromUrl(qrcUrl, 5, river_spots_);
 }
 
 void TrainingController::startPreflopDrill(const QString &position, const QString &mode)
@@ -143,6 +192,22 @@ void TrainingController::startFlopDrill(const QString &matchup)
 {
     (void)matchup;
     flop_idx_ = -1;
+    last_feedback_.clear();
+    emit lastFeedbackChanged();
+}
+
+void TrainingController::startTurnDrill(const QString &matchup)
+{
+    (void)matchup;
+    turn_idx_ = -1;
+    last_feedback_.clear();
+    emit lastFeedbackChanged();
+}
+
+void TrainingController::startRiverDrill(const QString &matchup)
+{
+    (void)matchup;
+    river_idx_ = -1;
     last_feedback_.clear();
     emit lastFeedbackChanged();
 }
@@ -176,23 +241,38 @@ QVariantMap TrainingController::nextPreflopQuestion()
     return out;
 }
 
-QVariantMap TrainingController::nextFlopQuestion()
+QVariantMap TrainingController::nextPostflopQuestion(std::vector<PostflopSpot> &spots, int &idx,
+                                                    const QString &empty_err)
 {
     QVariantMap out;
-    if (flop_spots_.empty())
+    if (spots.empty())
     {
-        out.insert(QStringLiteral("error"), QStringLiteral("No flop spots loaded."));
+        out.insert(QStringLiteral("error"), empty_err);
         return out;
     }
-    flop_idx_ = (flop_idx_ + 1) % static_cast<int>(flop_spots_.size());
-    const FlopSpot &s = flop_spots_[static_cast<size_t>(flop_idx_)];
+    idx = (idx + 1) % static_cast<int>(spots.size());
+    const PostflopSpot &s = spots[static_cast<size_t>(idx)];
     out.insert(QStringLiteral("spotId"), s.id);
-    out.insert(QStringLiteral("board0"), s.board0);
-    out.insert(QStringLiteral("board1"), s.board1);
-    out.insert(QStringLiteral("board2"), s.board2);
+    for (int i = 0; i < s.n_board; ++i)
+        out.insert(QStringLiteral("board%1").arg(i), s.board[static_cast<size_t>(i)]);
     out.insert(QStringLiteral("hero1"), s.hero1);
     out.insert(QStringLiteral("hero2"), s.hero2);
     return out;
+}
+
+QVariantMap TrainingController::nextFlopQuestion()
+{
+    return nextPostflopQuestion(flop_spots_, flop_idx_, QStringLiteral("No flop spots loaded."));
+}
+
+QVariantMap TrainingController::nextTurnQuestion()
+{
+    return nextPostflopQuestion(turn_spots_, turn_idx_, QStringLiteral("No turn spots loaded."));
+}
+
+QVariantMap TrainingController::nextRiverQuestion()
+{
+    return nextPostflopQuestion(river_spots_, river_idx_, QStringLiteral("No river spots loaded."));
 }
 
 QVariantMap TrainingController::submitPreflopAnswer(const QString &action, int raiseSizeBb)
@@ -258,15 +338,19 @@ QVariantMap TrainingController::submitPreflopAnswer(const QString &action, int r
     return out;
 }
 
-QVariantMap TrainingController::submitFlopAnswer(const QString &action)
+QVariantMap TrainingController::submitPostflopAnswer(const QString &action, const std::vector<PostflopSpot> &spots,
+                                                     int idx, const QString &street)
 {
     QVariantMap out;
-    if (flop_spots_.empty() || flop_idx_ < 0 || flop_idx_ >= static_cast<int>(flop_spots_.size()))
+    if (spots.empty() || idx < 0 || idx >= static_cast<int>(spots.size()))
     {
-        out.insert(QStringLiteral("error"), QStringLiteral("No active flop question."));
+        out.insert(QStringLiteral("error"),
+                   street == QStringLiteral("flop") ? QStringLiteral("No active flop question.")
+                   : street == QStringLiteral("turn") ? QStringLiteral("No active turn question.")
+                                                    : QStringLiteral("No active river question."));
         return out;
     }
-    const FlopSpot &s = flop_spots_[static_cast<size_t>(flop_idx_)];
+    const PostflopSpot &s = spots[static_cast<size_t>(idx)];
     const QString a = action.trimmed().toLower();
 
     double freq = 0.0;
@@ -312,7 +396,7 @@ QVariantMap TrainingController::submitFlopAnswer(const QString &action)
     {
         QVariantMap evm;
         evm.insert(QStringLiteral("position"), QStringLiteral("BTN"));
-        evm.insert(QStringLiteral("street"), QStringLiteral("flop"));
+        evm.insert(QStringLiteral("street"), street);
         evm.insert(QStringLiteral("spotId"), s.id);
         evm.insert(QStringLiteral("correct"), correct);
         evm.insert(QStringLiteral("evLossBb"), ev_loss);
@@ -321,6 +405,21 @@ QVariantMap TrainingController::submitFlopAnswer(const QString &action)
 
     emit lastFeedbackChanged();
     return out;
+}
+
+QVariantMap TrainingController::submitFlopAnswer(const QString &action)
+{
+    return submitPostflopAnswer(action, flop_spots_, flop_idx_, QStringLiteral("flop"));
+}
+
+QVariantMap TrainingController::submitTurnAnswer(const QString &action)
+{
+    return submitPostflopAnswer(action, turn_spots_, turn_idx_, QStringLiteral("turn"));
+}
+
+QVariantMap TrainingController::submitRiverAnswer(const QString &action)
+{
+    return submitPostflopAnswer(action, river_spots_, river_idx_, QStringLiteral("river"));
 }
 
 int TrainingController::hand_index_from_cards(const card &a, const card &b)

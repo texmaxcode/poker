@@ -22,3 +22,6 @@ StatsScreen 1.0 ../screens/StatsScreen.qml
 TrainerHome 1.0 ../screens/TrainerHome.qml
 PreflopTrainer 1.0 ../screens/PreflopTrainer.qml
 FlopTrainer 1.0 ../screens/FlopTrainer.qml
+TurnTrainer 1.0 ../screens/TurnTrainer.qml
+RiverTrainer 1.0 ../screens/RiverTrainer.qml
+RangeViewer 1.0 ../screens/RangeViewer.qml

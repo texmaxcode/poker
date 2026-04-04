@@ -1,0 +1,32 @@
+# Stub Flatpak manifest — replace `dir` source with a git URL + tag (or tarball) before publishing.
+# org.kde.Sdk 6.8 ships CMake, Qt 6, Boost, and development files for SQLite3; enable tests with BUILD_TESTING=ON.
+#
+# Example:
+#   flatpak-builder --user --install-deps-from=flathub --force-clean build-dir io.github.texasholdemgym.yaml
+
+app-id: io.github.texasholdemgym
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+sdk-version: '6.8'
+command: Poker
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --device=input
+  - --filesystem=xdg-data/TexasHoldemGym:create
+  - --socket=pulseaudio
+
+modules:
+  - name: poker
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=ON
+    sources:
+      - type: dir
+        # packaging/linux/flatpak -> repository root (contains top-level CMakeLists.txt)
+        path: ../../../../

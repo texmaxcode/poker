@@ -74,7 +74,8 @@ Item {
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
     /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
     readonly property int seatInnerPad: Math.max(4, Math.round(11 * _s))
-    implicitHeight: Math.round(306 * _s)
+    /// cardRowH matches hole card height (no extra band); see `cardRowH` / `cardRow` anchors.
+    implicitHeight: Math.round(300 * _s)
     implicitWidth: Math.round((Theme.holePairTotalWidth + 22) * _s)
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
@@ -82,7 +83,7 @@ Item {
     readonly property int cardW: Math.round(Theme.holeCardWidth * _s)
     readonly property int cardH: Math.round(Theme.holeCardHeight * _s)
     readonly property int cardGap: Math.max(2, Math.round(Theme.holeCardGap * _s))
-    readonly property int cardRowH: Math.round((Theme.holeCardHeight + 6) * _s)
+    readonly property int cardRowH: Math.round(Theme.holeCardHeight * _s)
     readonly property int streetRowH: Math.max(18, Math.round(26 * _s))
     readonly property int nameRowH: Math.max(28, Math.round(40 * _s))
     readonly property int posBox: Math.max(28, Math.round(40 * _s))
@@ -161,7 +162,10 @@ Item {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: root.seatInnerPad
+            anchors.leftMargin: root.seatInnerPad
+            anchors.rightMargin: root.seatInnerPad
+            anchors.bottomMargin: root.seatInnerPad
+            anchors.topMargin: 0
             spacing: 2
 
             /// Same height for cards / folded / inactive so the seat does not shift between states.
@@ -181,7 +185,7 @@ Item {
 
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.top: parent.top
                         spacing: root.cardGap
 
                         Card {

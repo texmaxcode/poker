@@ -19,6 +19,10 @@ ApplicationWindow {
             preflopTrainerPage.syncTrainerClocks()
         if (flopTrainerPage.visible)
             flopTrainerPage.syncTrainerClocks()
+        if (turnTrainerPage.visible)
+            turnTrainerPage.syncTrainerClocks()
+        if (riverTrainerPage.visible)
+            riverTrainerPage.syncTrainerClocks()
     }
 
     onActiveChanged: function () {
@@ -120,10 +124,51 @@ ApplicationWindow {
         }
     }
 
+    /// Ephemeral toast (top-right). No reserved space when empty — only the bubble is shown.
+    property string appToastText: ""
+    function showAppToast(msg) {
+        win.appToastText = msg
+        appToastTimer.restart()
+    }
+
+    Timer {
+        id: appToastTimer
+        interval: 2600
+        repeat: false
+        onTriggered: win.appToastText = ""
+    }
+
+    /// Above page content, under the toolbar when it is visible.
+    Rectangle {
+        parent: win.contentItem
+        z: 10000
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.rightMargin: 10
+        anchors.topMargin: win.header.visible ? win.header.height + 2 : 6
+        width: 400
+        height: visible ? toastLabel.implicitHeight + 14 : 0
+        visible: win.appToastText.length > 0
+        radius: 8
+        color: Theme.panelElevated
+        border.width: 1
+        border.color: Theme.headerRule
+        Label {
+            id: toastLabel
+            anchors.centerIn: parent
+            width: 380
+            wrapMode: Text.WordWrap
+            text: win.appToastText
+            color: Theme.textPrimary
+            font.family: Theme.fontFamilyUi
+            font.pixelSize: Theme.trainerCaptionPx
+        }
+    }
+
     function headerTitleForIndex(idx) {
         switch (idx) {
         case 1:
-            return qsTr("Texas Hold'em Table")
+            return qsTr("Texas Hold'em")
         case 2:
             return qsTr("Bots & ranges")
         case 3:
@@ -136,6 +181,12 @@ ApplicationWindow {
             return qsTr("Preflop trainer")
         case 7:
             return qsTr("Flop trainer")
+        case 8:
+            return qsTr("Turn trainer")
+        case 9:
+            return qsTr("River trainer")
+        case 10:
+            return qsTr("Opening ranges")
         default:
             return ""
         }
@@ -172,6 +223,15 @@ ApplicationWindow {
                         break
                     case 7:
                         flopTrainerPage.scrollMainToTop()
+                        break
+                    case 8:
+                        turnTrainerPage.scrollMainToTop()
+                        break
+                    case 9:
+                        riverTrainerPage.scrollMainToTop()
+                        break
+                    case 10:
+                        rangeViewerPage.scrollMainToTop()
                         break
                     }
                 })
@@ -213,6 +273,21 @@ ApplicationWindow {
 
         FlopTrainer {
             id: flopTrainerPage
+            stackLayout: stack
+        }
+
+        TurnTrainer {
+            id: turnTrainerPage
+            stackLayout: stack
+        }
+
+        RiverTrainer {
+            id: riverTrainerPage
+            stackLayout: stack
+        }
+
+        RangeViewer {
+            id: rangeViewerPage
             stackLayout: stack
         }
     }

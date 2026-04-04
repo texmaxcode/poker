@@ -2,18 +2,19 @@
 #define TEXAS_HOLDEM_GYM_GAME_H
 
 #include <array>
-#include <functional>
 #include <random>
+#include <memory>
 #include <vector>
 
 #include <QObject>
 #include <QtGlobal>
 #include <QString>
 #include <QStringList>
-#include <QTimer>
 #include <QVariant>
 #include <QVariantMap>
 
+#include "bankroll_tracker.hpp"
+#include "seat_manager.hpp"
 #include "bot.hpp"
 #include "cards.hpp"
 #include "player.hpp"
@@ -38,11 +39,22 @@ struct SeatBot
     BotParams params{};
 };
 
+class GamePersistence;
+class HumanDecisionController;
+
 /// No-limit Texas Hold'em: two hole cards, flop–turn–river, blinds and betting rounds per street.
 class game : public QObject
 {
     Q_OBJECT
+    friend class GamePersistence;
+    friend class BankrollTracker;
+    friend class HumanDecisionController;
+    friend class SeatManager;
+
+public:
     static constexpr int kMaxPlayers = 6;
+
+private:
     static constexpr int kHumanSeat = 0; // seat 0 = human; 1–5 = bots
 
     int small_blind = 1;
@@ -53,8 +65,6 @@ class game : public QObject
     Street street = Street::PRE_FLOP;
     card_deck deck;
     int starting_stack_ = 100;
-    /// Per-seat default stack / off-table bankroll and rebuy unit (see `configure` / Bankroll UI).
-    std::array<int, kMaxPlayers> seat_buy_in_{};
     bool ui_showdown_ = false;
     /// True after `deal_hold_cards()`; false after `clear_for_new_hand()`.
     /// Prevents `sync_ui()` from sending stale card paths (which kept QML flipped-state stuck).
@@ -102,7 +112,7 @@ class game : public QObject
 
 public:
     explicit game(QObject *parent = nullptr);
-    ~game() override = default;
+    ~game() override;
 
     Q_INVOKABLE void setRootObject(QObject *root);
 
@@ -145,13 +155,15 @@ public:
     /// Push `seat_buy_in_` to table stacks + off-table bankroll (no-op if a hand is in progress).
     Q_INVOKABLE void applySeatBuyInsToStacks();
     /// True when buy-ins were edited during a hand; call `applySeatBuyInsToStacks()` when idle.
-    Q_INVOKABLE bool pendingSeatBuyInsApply() const { return pending_seat_buyins_apply_; }
+    Q_INVOKABLE bool pendingSeatBuyInsApply() const { return seat_mgr_.pendingSeatBuyInsApply(); }
     /// True when total bankroll was set during a hand; applied at the next `beginNewHand()`.
     Q_INVOKABLE bool pendingSeatBankrollApply() const;
     Q_INVOKABLE bool gameInProgress() const { return in_progress; }
     Q_INVOKABLE int seatStrategyIndex(int seat) const;
     Q_INVOKABLE void loadPersistedSettings();
     Q_INVOKABLE void savePersistedSettings() const;
+    /// Fills only keys missing from the store (startup seed). Does **not** overwrite existing values — unlike `savePersistedSettings`.
+    void seedMissingPersistedSettings() const;
 
     Q_INVOKABLE void setSeatStrategy(int seat, int strategyIndex);
     /// Current strategy parameters for `seat` (exponents + aggression bonuses / tight multipliers).
@@ -161,6 +173,8 @@ public:
     Q_INVOKABLE QVariantList getPresetRangeGrid(int strategyIndex, int layer = 0) const;
     /// Full strategy text: exponents, default chart, aggression notes.
     Q_INVOKABLE QString getStrategySummary(int strategyIndex) const;
+    /// Short labels for setup UI, one per `BotStrategy` in enum order (`bot_strategy_name`).
+    Q_INVOKABLE QStringList strategyDisplayNames() const;
     /// Parse range text into layer 0=call, 1=raise, 2=bet (open/lead).
     Q_INVOKABLE bool applySeatRangeText(int seat, const QString &text, int layer = 0);
     Q_INVOKABLE void setRangeCell(int seat, int row, int col, double w, int layer = 0);
@@ -171,9 +185,10 @@ public:
     /// Seats 1–5 only: when false, that bot sits out (not dealt in) until re-enabled.
     Q_INVOKABLE void setSeatParticipating(int seat, bool participating);
     Q_INVOKABLE bool seatParticipating(int seat) const;
-    /// Longer pause between bot actions (UI pacing).
+    /// Longer pause between bot actions (UI pacing). Exposed as a QML property (`botSlowActions`, not `botSlowActions()`).
+    Q_PROPERTY(bool botSlowActions READ botSlowActions WRITE setBotSlowActions NOTIFY botSlowActionsChanged)
     Q_INVOKABLE void setBotSlowActions(bool enabled);
-    Q_INVOKABLE bool botSlowActions() const;
+    bool botSlowActions() const;
     /// When false, skips the fixed delay after each bot action (default true; set false in unit tests).
     Q_INVOKABLE void setBotActionDelayEnabled(bool enabled);
     Q_INVOKABLE bool botActionDelayEnabled() const { return bot_action_delay_enabled_; }
@@ -200,7 +215,7 @@ public:
 
     /// Increments on bankroll snapshots and on `notifySessionStatsChanged()` — binds QML to refresh invokables.
     Q_PROPERTY(int statsSeq READ statsSeq NOTIFY sessionStatsChanged)
-    int statsSeq() const { return stats_seq_; }
+    int statsSeq() const { return bankroll_tracker_.statsSeq(); }
     /// Bumped when any seat range matrix changes so QML range grids can refresh (`getRangeGrid` has no NOTIFY).
     Q_PROPERTY(int rangeRevision READ rangeRevision NOTIFY rangeRevisionChanged)
     int rangeRevision() const { return range_revision_; }
@@ -239,9 +254,7 @@ signals:
     void sessionStatsChanged();
     void rangeRevisionChanged();
     void interactiveHumanChanged();
-    void humanDecisionFinished();
-    void humanCheckFinished();
-    void humanBbPreflopFinished();
+    void botSlowActionsChanged();
 
 public slots:
     void buttonClicked(QString button);
@@ -256,72 +269,30 @@ private:
     int sb_seat_ = -1;
     int bb_seat_ = -1;
     int acting_seat_ = -1;
-    int decision_seconds_left_ = 0;
-    bool waiting_for_human_ = false;
-    bool waiting_for_human_check_ = false;
-    /// While facing a bet: 0 = fold, 1 = call, 2 = raise (amount in human_facing_raise_chips_).
-    int human_facing_action_ = -1;
-    int human_facing_raise_chips_ = 0;
-    bool human_opened_bet_from_check_ = false;
-    bool waiting_for_human_bb_preflop_ = false;
-    bool human_bb_preflop_raised_ = false;
-    bool human_more_time_available_ = false;
     bool auto_hand_loop_ = true;
-    /// Bot seats 1–5: must be true to be dealt into the next hand (seat 0 is always true).
-    std::array<bool, kMaxPlayers> seat_participating_{};
     bool bot_slow_actions_ = false;
     /// When false, `bot_action_pause` is a no-op (keeps CI fast; UI keeps default true).
     bool bot_action_delay_enabled_ = true;
-    /// Bumped in `record_bankroll_snapshot()` so QML can refresh stats tied to `sessionStatsChanged`.
-    int stats_seq_ = 0;
     /// Bumped when call/raise/bet range weights change (text parse, cell edit, reset full).
     int range_revision_ = 0;
     /// While `loadPersistedSettings()` runs, skip auto-save in mutators (order matters: strategy then range text).
     bool suppress_persist_ = false;
-    /// Per-hand stack traces (after each completed hand) for bankroll charts.
-    std::vector<std::array<int, kMaxPlayers>> bankroll_history_{};
-    /// Parallel to `bankroll_history_`: snapshot timestamp (ms since epoch).
-    std::vector<qint64> bankroll_snapshot_times_ms_{};
-    std::array<int, kMaxPlayers> session_baseline_{};
-    /// Chips not on the table; used to buy back in after busting (`starting_stack_` per rebuy).
-    std::array<int, kMaxPlayers> seat_wallet_{};
-    int pending_human_need_ = 0;
-    int pending_human_raise_inc_ = 0;
+    /// Set true only after `loadPersistedSettings()` finishes applying DB state — blocks saves until then.
+    bool persist_loaded_ = false;
     /// QML `statusText`: last pot result; kept visible until the next hand awards the pot.
     QString last_hand_result_message_{};
     /// QML `resultBannerCardAssets`: best 5-card combination (`qrc:/assets/cards/` filenames).
     QStringList last_hand_result_card_assets_{};
-    /// If `setSeatBuyIn()` is called while a hand is running, we defer applying the stacks
-    /// until the next hand starts (so the current pot / contributions stay consistent).
-    bool pending_seat_buyins_apply_ = false;
-    /// `-1` = none; else total chips to apply for that seat (`setSeatBankrollTotal` while `in_progress`).
-    std::array<int, kMaxPlayers> pending_bankroll_total_{};
-    QTimer human_decision_tick_;
-    QTimer human_decision_deadline_;
-
-    void wait_for_human_need(int need_chips, Street st, int raise_increment_chips);
-    bool wait_for_human_check_or_bet(Street st);
-    bool wait_for_human_bb_preflop();
-    void finish_human_check(bool check, int bet_chips);
-    void finish_human_bb_preflop(bool raise);
-    /// Extends only the **deadline** timer; the 1 Hz tick timer is unchanged (`arm_decision_timers`).
-    void requestMoreTime();
-    /// Shared 1 Hz tick + deadline wiring for human facing / check / BB-preflop waits.
-    void arm_decision_timers(std::function<void()> on_deadline);
+    SeatManager seat_mgr_;
+    BankrollTracker bankroll_tracker_;
+    std::unique_ptr<HumanDecisionController> human_decision_ctrl_;
+    std::unique_ptr<GamePersistence> persistence_;
 
     /// Minimum chips for a legal raise: `max(big blind, last raise increment)`.
     static int min_raise_increment_chips(int big_blind, int last_raise_increment);
     void schedule_next_hand_if_idle();
     void complete_hand_idle();
-    void try_auto_rebuys_for_busted_bots();
-    /// Applies rebuy without recording snapshots (engine use).
-    bool apply_buy_back_in_internal(int seat);
-    void record_bankroll_snapshot();
-    void sync_seat_buy_in_from_table_when_wallet_empty();
-    void init_bankroll_after_configure();
-    void apply_seat_buy_ins_to_table();
-    void apply_seat_bankroll_total_now(int seat, int totalChips);
-    void flush_pending_bankroll_totals();
+    void configureImpl(int smallBlind, int bigBlind, int streetBet, int startStack, bool resetBankrollOnStackApply);
     void bot_action_pause();
     /// Postflop: no open bet — record a check and pause (mirrors human `Check` label).
     void bot_record_postflop_check(int seat);

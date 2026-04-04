@@ -1,14 +1,12 @@
 #include "training_store.hpp"
 
+#include "persist_sqlite.hpp"
+
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSettings>
 #include <QtGlobal>
 
 namespace {
-
-constexpr char kV1[] = "v1";
-constexpr char kTraining[] = "training";
 
 constexpr int kDefaultTrainerAdvanceMs = 5000;
 constexpr int kMinTrainerAdvanceMs = 500;
@@ -82,149 +80,151 @@ QString stringify(const QJsonObject &o)
 
 } // namespace
 
-TrainingStore::TrainingStore(QObject *parent) : QObject(parent) {}
+TrainingStore::TrainingStore(QObject *parent) : QObject(parent)
+{
+    if (!AppStateSqlite::isOpen())
+        return;
+    bool wrote = false;
+    if (!AppStateSqlite::contains(QStringLiteral("v1/training/trainerAutoAdvanceMs")))
+    {
+        AppStateSqlite::setValue(QStringLiteral("v1/training/trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs);
+        wrote = true;
+    }
+    if (!AppStateSqlite::contains(QStringLiteral("v1/training/trainerDecisionSeconds")))
+    {
+        AppStateSqlite::setValue(QStringLiteral("v1/training/trainerDecisionSeconds"), kDefaultTrainerDecisionSec);
+        wrote = true;
+    }
+    if (wrote)
+        AppStateSqlite::sync();
+}
 
 int TrainingStore::trainerAutoAdvanceMs() const
 {
-    QSettings s;
-    s.beginGroup(QString::fromLatin1(kV1));
-    s.beginGroup(QString::fromLatin1(kTraining));
-    const int v = s.value(QStringLiteral("trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs).toInt();
-    s.endGroup();
-    s.endGroup();
+    if (!AppStateSqlite::isOpen())
+        return kDefaultTrainerAdvanceMs;
+    const int v = AppStateSqlite::value(QStringLiteral("v1/training/trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs).toInt();
     return qBound(kMinTrainerAdvanceMs, v, kMaxTrainerAdvanceMs);
 }
 
 void TrainingStore::setTrainerAutoAdvanceMs(int ms)
 {
+    if (!AppStateSqlite::isOpen())
+        return;
     const int w = qBound(kMinTrainerAdvanceMs, ms, kMaxTrainerAdvanceMs);
-    QSettings s;
-    s.beginGroup(QString::fromLatin1(kV1));
-    s.beginGroup(QString::fromLatin1(kTraining));
     const int cur = qBound(
         kMinTrainerAdvanceMs,
-        s.value(QStringLiteral("trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs).toInt(),
+        AppStateSqlite::value(QStringLiteral("v1/training/trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs).toInt(),
         kMaxTrainerAdvanceMs);
     if (w == cur)
-    {
-        s.endGroup();
-        s.endGroup();
         return;
-    }
-    s.setValue(QStringLiteral("trainerAutoAdvanceMs"), w);
-    s.endGroup();
-    s.endGroup();
-    s.sync();
+    AppStateSqlite::setValue(QStringLiteral("v1/training/trainerAutoAdvanceMs"), w);
+    AppStateSqlite::sync();
     emit trainerAutoAdvanceMsChanged();
 }
 
 int TrainingStore::trainerDecisionSeconds() const
 {
-    QSettings s;
-    s.beginGroup(QString::fromLatin1(kV1));
-    s.beginGroup(QString::fromLatin1(kTraining));
-    const int v = s.value(QStringLiteral("trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt();
-    s.endGroup();
-    s.endGroup();
+    if (!AppStateSqlite::isOpen())
+        return kDefaultTrainerDecisionSec;
+    const int v =
+        AppStateSqlite::value(QStringLiteral("v1/training/trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt();
     return qBound(kMinTrainerDecisionSec, v, kMaxTrainerDecisionSec);
 }
 
 void TrainingStore::setTrainerDecisionSeconds(int sec)
 {
+    if (!AppStateSqlite::isOpen())
+        return;
     const int w = qBound(kMinTrainerDecisionSec, sec, kMaxTrainerDecisionSec);
-    QSettings s;
-    s.beginGroup(QString::fromLatin1(kV1));
-    s.beginGroup(QString::fromLatin1(kTraining));
     const int cur = qBound(
         kMinTrainerDecisionSec,
-        s.value(QStringLiteral("trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt(),
+        AppStateSqlite::value(QStringLiteral("v1/training/trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt(),
         kMaxTrainerDecisionSec);
     if (w == cur)
-    {
-        s.endGroup();
-        s.endGroup();
         return;
-    }
-    s.setValue(QStringLiteral("trainerDecisionSeconds"), w);
-    s.endGroup();
-    s.endGroup();
-    s.sync();
+    AppStateSqlite::setValue(QStringLiteral("v1/training/trainerDecisionSeconds"), w);
+    AppStateSqlite::sync();
     emit trainerDecisionSecondsChanged();
 }
 
 QVariantMap TrainingStore::loadProgress() const
 {
-    QSettings s;
-    s.beginGroup(QString::fromLatin1(kV1));
-    s.beginGroup(QString::fromLatin1(kTraining));
-
     QVariantMap out;
-    out.insert(QStringLiteral("schemaVersion"), s.value(QStringLiteral("schemaVersion"), kSchemaVersion).toInt());
-    out.insert(QStringLiteral("totalDecisions"), s.value(QStringLiteral("totalDecisions"), 0).toLongLong());
-    out.insert(QStringLiteral("totalCorrect"), s.value(QStringLiteral("totalCorrect"), 0).toLongLong());
-    out.insert(QStringLiteral("totalEvLossBb"), s.value(QStringLiteral("totalEvLossBb"), 0.0).toDouble());
-    out.insert(QStringLiteral("rollupJson"), s.value(QStringLiteral("rollupJson"), QString()).toString());
-
-    s.endGroup();
-    s.endGroup();
+    if (!AppStateSqlite::isOpen())
+    {
+        out.insert(QStringLiteral("schemaVersion"), kSchemaVersion);
+        out.insert(QStringLiteral("totalDecisions"), static_cast<qlonglong>(0));
+        out.insert(QStringLiteral("totalCorrect"), static_cast<qlonglong>(0));
+        out.insert(QStringLiteral("totalEvLossBb"), 0.0);
+        out.insert(QStringLiteral("rollupJson"), QString());
+        return out;
+    }
+    out.insert(QStringLiteral("schemaVersion"),
+               AppStateSqlite::value(QStringLiteral("v1/training/schemaVersion"), kSchemaVersion).toInt());
+    out.insert(QStringLiteral("totalDecisions"),
+               AppStateSqlite::value(QStringLiteral("v1/training/totalDecisions"), static_cast<qlonglong>(0)).toLongLong());
+    out.insert(QStringLiteral("totalCorrect"),
+               AppStateSqlite::value(QStringLiteral("v1/training/totalCorrect"), static_cast<qlonglong>(0)).toLongLong());
+    out.insert(QStringLiteral("totalEvLossBb"),
+               AppStateSqlite::value(QStringLiteral("v1/training/totalEvLossBb"), 0.0).toDouble());
+    out.insert(QStringLiteral("rollupJson"),
+               AppStateSqlite::value(QStringLiteral("v1/training/rollupJson"), QString()).toString());
     return out;
 }
 
 void TrainingStore::recordDecision(const QVariantMap &event)
 {
+    if (!AppStateSqlite::isOpen())
+        return;
     const QString position = strOf(event, QStringLiteral("position")).trimmed();
     const QString street = strOf(event, QStringLiteral("street")).trimmed();
     const QString spotId = strOf(event, QStringLiteral("spotId")).trimmed();
     const bool correct = boolOf(event, QStringLiteral("correct"));
     const double evLossBb = std::max(0.0, dblOf(event, QStringLiteral("evLossBb")));
 
-    QSettings s;
-    s.beginGroup(QString::fromLatin1(kV1));
-    s.beginGroup(QString::fromLatin1(kTraining));
+    AppStateSqlite::setValue(QStringLiteral("v1/training/schemaVersion"), kSchemaVersion);
 
-    s.setValue(QStringLiteral("schemaVersion"), kSchemaVersion);
+    const qlonglong totalD =
+        AppStateSqlite::value(QStringLiteral("v1/training/totalDecisions"), static_cast<qlonglong>(0)).toLongLong() + 1;
+    const qlonglong totalC =
+        AppStateSqlite::value(QStringLiteral("v1/training/totalCorrect"), static_cast<qlonglong>(0)).toLongLong()
+        + (correct ? 1 : 0);
+    const double totalEv =
+        AppStateSqlite::value(QStringLiteral("v1/training/totalEvLossBb"), 0.0).toDouble() + evLossBb;
+    AppStateSqlite::setValue(QStringLiteral("v1/training/totalDecisions"), totalD);
+    AppStateSqlite::setValue(QStringLiteral("v1/training/totalCorrect"), totalC);
+    AppStateSqlite::setValue(QStringLiteral("v1/training/totalEvLossBb"), totalEv);
 
-    const qlonglong totalD = s.value(QStringLiteral("totalDecisions"), 0).toLongLong() + 1;
-    const qlonglong totalC = s.value(QStringLiteral("totalCorrect"), 0).toLongLong() + (correct ? 1 : 0);
-    const double totalEv = s.value(QStringLiteral("totalEvLossBb"), 0.0).toDouble() + evLossBb;
-    s.setValue(QStringLiteral("totalDecisions"), totalD);
-    s.setValue(QStringLiteral("totalCorrect"), totalC);
-    s.setValue(QStringLiteral("totalEvLossBb"), totalEv);
-
-    QJsonObject roll = parse_rollup(s.value(QStringLiteral("rollupJson"), QString()).toString());
+    QJsonObject roll =
+        parse_rollup(AppStateSqlite::value(QStringLiteral("v1/training/rollupJson"), QString()).toString());
     if (!position.isEmpty())
         roll = bump_bucket(std::move(roll), QStringLiteral("position"), position, correct, evLossBb);
     if (!street.isEmpty())
         roll = bump_bucket(std::move(roll), QStringLiteral("street"), street, correct, evLossBb);
     if (!spotId.isEmpty())
         roll = bump_bucket(std::move(roll), QStringLiteral("spots"), spotId, correct, evLossBb);
-    s.setValue(QStringLiteral("rollupJson"), stringify(roll));
+    AppStateSqlite::setValue(QStringLiteral("v1/training/rollupJson"), stringify(roll));
 
-    s.endGroup();
-    s.endGroup();
-    s.sync();
+    AppStateSqlite::sync();
     emit progressChanged();
 }
 
 void TrainingStore::resetProgress()
 {
-    QSettings s;
-    s.beginGroup(QString::fromLatin1(kV1));
-    s.beginGroup(QString::fromLatin1(kTraining));
+    if (!AppStateSqlite::isOpen())
+        return;
     const int adv = qBound(
         kMinTrainerAdvanceMs,
-        s.value(QStringLiteral("trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs).toInt(),
+        AppStateSqlite::value(QStringLiteral("v1/training/trainerAutoAdvanceMs"), kDefaultTrainerAdvanceMs).toInt(),
         kMaxTrainerAdvanceMs);
     const int dec = qBound(
         kMinTrainerDecisionSec,
-        s.value(QStringLiteral("trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt(),
+        AppStateSqlite::value(QStringLiteral("v1/training/trainerDecisionSeconds"), kDefaultTrainerDecisionSec).toInt(),
         kMaxTrainerDecisionSec);
-    s.remove(QString());
-    s.setValue(QStringLiteral("trainerAutoAdvanceMs"), adv);
-    s.setValue(QStringLiteral("trainerDecisionSeconds"), dec);
-    s.endGroup();
-    s.endGroup();
-    s.sync();
+    AppStateSqlite::removeKeysWithPrefix(QStringLiteral("v1/training/"));
+    AppStateSqlite::setValue(QStringLiteral("v1/training/trainerAutoAdvanceMs"), adv);
+    AppStateSqlite::setValue(QStringLiteral("v1/training/trainerDecisionSeconds"), dec);
+    AppStateSqlite::sync();
     emit progressChanged();
 }
-

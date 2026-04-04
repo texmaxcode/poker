@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QVariantMap>
 
-/// Persists trainer progress / mistake aggregates (same QSettings file as `game` and `session_store`).
+/// Persists trainer progress / mistake aggregates in the app SQLite store (`AppStateSqlite`).
 /// Keys live under `v1/training/*`.
 class TrainingStore : public QObject
 {

@@ -18,12 +18,19 @@ Flipable {
     front: Image {
         source: "qrc:/assets/cards/blue2.svg"
         anchors.fill: parent
+        fillMode: Image.Stretch
+        /// Rasterize SVGs at widget size so the art fills the rect (avoids letterboxing from aspect fit).
+        sourceSize.width: Math.max(1, Math.round(flipable.width))
+        sourceSize.height: Math.max(1, Math.round(flipable.height))
     }
     back: Image {
         source: (card.length === 0)
                 ? "qrc:/assets/cards/blue2.svg"
                 : ("qrc:/assets/cards/" + card)
         anchors.fill: parent
+        fillMode: Image.Stretch
+        sourceSize.width: Math.max(1, Math.round(flipable.width))
+        sourceSize.height: Math.max(1, Math.round(flipable.height))
     }
 
     transform: Rotation {
