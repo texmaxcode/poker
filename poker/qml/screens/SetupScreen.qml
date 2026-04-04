@@ -216,11 +216,20 @@ Page {
         }
     }
 
+    function scrollMainToTop() {
+        var flick = scrollView.contentItem
+        if (flick) {
+            flick.contentY = 0
+            flick.contentX = 0
+        }
+    }
+
     ScrollView {
         id: scrollView
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        topPadding: Theme.uiScrollViewTopPadding
 
         RowLayout {
             width: scrollView.availableWidth
@@ -236,19 +245,6 @@ Page {
                 Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(300, scrollView.availableWidth - 40))
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
                 spacing: Theme.trainerColumnSpacing
-
-            Label {
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                text: qsTr(
-                    "Turn bots on or off by name, pick a tab to edit that player’s settings, then play from the table. "
-                    + "On the “You” tab, use “Play as bot” to show the range grid and autoplay with your strategy; "
-                    + "leave it off to play hands yourself. Bot tabs always show the full grid.")
-                font.pixelSize: Theme.trainerBodyPx
-                lineHeight: 1.25
-                color: Theme.textSecondary
-            }
 
             ThemedPanel {
                 panelTitle: qsTr("Bots and pricing")
@@ -281,7 +277,7 @@ Page {
                                 Label {
                                     text: botNames.displayName(index + 1)
                                     font.pixelSize: Theme.trainerCaptionPx
-                                    font.bold: true
+                                    font.weight: Font.ExtraBold
                                     color: Theme.colorForSeat(index + 1)
                                 }
                                 ThemedSwitch {
@@ -394,7 +390,7 @@ Page {
 
                 TabButton {
                     text: qsTr("You")
-                    font.bold: true
+                    font.weight: Font.ExtraBold
                     topPadding: 10
                     bottomPadding: 10
                     leftPadding: 14
@@ -413,7 +409,7 @@ Page {
                     TabButton {
                         required property int index
                         text: botNames.displayName(index + 1)
-                        font.bold: true
+                        font.weight: Font.ExtraBold
                         topPadding: 10
                         bottomPadding: 10
                         leftPadding: 14
@@ -448,7 +444,7 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         text: botNames.displayName(setup.selectedSeat)
-                        font.bold: true
+                        font.weight: Font.ExtraBold
                         font.pixelSize: Theme.trainerSectionPx
                         color: Theme.colorForSeat(setup.selectedSeat)
                     }
@@ -579,20 +575,6 @@ Page {
                             Layout.fillWidth: true
                         }
                     }
-                    Label {
-                        visible: selectedSeat !== 0
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        text: qsTr(
-                            "Total bankroll adds or removes chips for this seat (play money). "
-                            + "Table buy-in is how many chips you want on the felt up to 100 big blinds (%1 at this BB); the rest stays off-table. "
-                            + "Changing only buy-in moves chips between table and wallet without changing total. "
-                            + "When a hand is running, edits apply after the hand.")
-                                .arg(setup.buyInCapChips)
-                        font.pixelSize: Theme.trainerCaptionPx
-                        lineHeight: 1.25
-                        color: Theme.textMuted
-                    }
 
                     Label {
                         text: qsTr("Strategy selection")
@@ -646,19 +628,6 @@ Page {
                         }
                     }
 
-                    Label {
-                        visible: selectedSeat !== 0
-                        Layout.fillWidth: true
-                        Layout.maximumHeight: 120
-                        wrapMode: Text.WordWrap
-                        elide: Text.ElideRight
-                        maximumLineCount: 8
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.trainerBodyPx
-                        lineHeight: 1.25
-                        text: pokerGame.getStrategySummary(stratCombo.currentIndex)
-                    }
-
                     ThemedPanel {
                         panelTitle: qsTr("Engine parameters")
                         visible: selectedSeat >= 1 || setup.humanSeatAutoplay
@@ -667,19 +636,6 @@ Page {
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: Theme.uiGroupInnerSpacing
-
-                            Label {
-                                visible: selectedSeat !== 0
-                                Layout.fillWidth: true
-                                wrapMode: Text.WordWrap
-                                font.pixelSize: Theme.trainerBodyPx
-                                lineHeight: 1.25
-                                color: Theme.textSecondary
-                                text: qsTr(
-                                    "Preflop/postflop exponents shape how chart weight and hand strength map to "
-                                    + "continue frequencies. Bonuses add to base aggression; tight multipliers "
-                                    + "reduce it (nit-style). Applies to this bot only.")
-                            }
 
                             GridLayout {
                                 columns: 2
@@ -769,25 +725,10 @@ Page {
                                 }
                             }
 
-                            RowLayout {
-                                spacing: Theme.uiGroupInnerSpacing
-                                Button {
-                                    text: qsTr("Apply parameters")
-                                    font.pixelSize: Theme.trainerCaptionPx
-                                    onClicked: setup.applyParamFields()
-                                }
-                                Button {
-                                    text: qsTr("Reset to preset")
-                                    font.pixelSize: Theme.trainerCaptionPx
-                                    flat: true
-                                    onClicked: {
-                                        pokerGame.setSeatStrategy(setup.selectedSeat, stratCombo.currentIndex)
-                                        pokerGame.savePersistedSettings()
-                                        setup.refreshRangeGrids()
-                                        textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
-                                        setup.loadParamFields()
-                                    }
-                                }
+                            Button {
+                                text: qsTr("Apply parameters")
+                                font.pixelSize: Theme.trainerCaptionPx
+                                onClicked: setup.applyParamFields()
                             }
                         }
                     }
@@ -806,7 +747,7 @@ Page {
                             font.bold: true
                         }
                         TabButton {
-                            text: qsTr("Open / lead")
+                            text: qsTr("Open")
                             font.bold: true
                         }
                     }
@@ -855,28 +796,28 @@ Page {
                             }
                         }
 
-                        RowLayout {
+                        ColumnLayout {
                             id: rangeTextEditRow
                             width: parent.width
-                            spacing: 6
+                            spacing: 10
 
                             TextArea {
                                 id: textArea
                                 Layout.fillWidth: true
-                                Layout.minimumHeight: 72
-                                Layout.maximumHeight: 112
-                                Layout.preferredHeight: 88
+                                Layout.minimumHeight: 120
+                                Layout.preferredHeight: 156
+                                Layout.maximumHeight: 280
                                 wrapMode: TextArea.Wrap
                                 font.family: Theme.fontFamilyUi
-                                font.pixelSize: Theme.trainerCaptionPx
+                                font.pixelSize: Theme.trainerBodyPx
                                 color: Theme.textPrimary
                                 placeholderText: "AA,AKs,AKo,TT+"
                                 placeholderTextColor: Theme.textSecondary
                                 onEditingFinished: setup.applyRangeTextFromField()
                             }
-                            ColumnLayout {
-                                spacing: 4
-                                Layout.alignment: Qt.AlignTop
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
                                 RangeActionButton {
                                     compact: true
                                     text: qsTr("Apply")
@@ -900,6 +841,9 @@ Page {
                                         setup.rangeTextEditorOpen = false
                                     }
                                 }
+                                Item {
+                                    Layout.fillWidth: true
+                                }
                             }
                         }
                     }
@@ -907,7 +851,7 @@ Page {
             }
 
             Button {
-                text: qsTr("Reload current player from engine")
+                text: qsTr("Reload from engine")
                 Layout.alignment: Qt.AlignLeft
                 flat: true
                 onClicked: reloadSeatEditor()

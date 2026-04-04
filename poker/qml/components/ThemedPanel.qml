@@ -13,6 +13,8 @@ Rectangle {
     property int panelTitlePixelSize: Theme.trainerSectionPx
     /// Vertical gap between title and body; default `Theme.uiGroupInnerSpacing`.
     property int panelSectionSpacing: -1
+    /// Inset from the chrome border to title + body (default matches training panels).
+    property int panelPadding: Theme.trainerPanelPadding
 
     Layout.fillWidth: true
     clip: true
@@ -23,14 +25,14 @@ Rectangle {
     border.width: 1
     border.color: Qt.alpha(Theme.chromeLine, borderOpacity)
 
-    implicitHeight: col.implicitHeight + 2 * Theme.trainerPanelPadding
+    implicitHeight: col.implicitHeight + 2 * root.panelPadding
 
     ColumnLayout {
         id: col
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: Theme.trainerPanelPadding
+        anchors.margins: root.panelPadding
         spacing: root.panelSectionSpacing >= 0 ? root.panelSectionSpacing : Theme.uiGroupInnerSpacing
 
         Label {

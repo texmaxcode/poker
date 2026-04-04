@@ -60,7 +60,7 @@ Button {
         if (overrideHeight >= 0)
             return overrideHeight
         if (style === "chrome")
-            return Metrics.toolbarHeight - 10
+            return Metrics.toolbarChromeHeight
         if (style === "form")
             return Metrics.hudButtonHeight
         if (style === "chip")
@@ -90,7 +90,7 @@ Button {
             anchors.verticalCenter: parent.verticalCenter
             text: root.text
             font.bold: true
-            font.pointSize: Theme.uiToolBarTitlePt
+            font.pointSize: Theme.uiToolBarChromePt
             font.family: root.chromeFontFamily.length > 0 ? root.chromeFontFamily : root._fontFamily
         }
     }
@@ -148,7 +148,7 @@ Button {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.text
                 font.bold: true
-                font.pointSize: Theme.uiToolBarTitlePt
+                font.pointSize: Theme.uiToolBarChromePt
                 font.family: root.chromeFontFamily.length > 0 ? root.chromeFontFamily : root._fontFamily
                 color: root.pressed ? Theme.fire : (root.hovered ? Theme.gold : Theme.textPrimary)
                 elide: Text.ElideRight

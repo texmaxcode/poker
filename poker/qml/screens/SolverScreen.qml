@@ -17,6 +17,10 @@ Page {
     property string nashSummaryText: qsTr("Pick a toy game and run CFR+ to compute an approximate Nash equilibrium.")
     property string nashDetailText: ""
 
+    readonly property int solverFieldFontPx: Theme.trainerCaptionPx - 2
+    readonly property int solverFieldPadH: 13
+    readonly property int solverFieldPadV: 9
+
     function applySavedSolver(m) {
         if (m.hero1 !== undefined && m.hero1.length > 0)
             h1.text = m.hero1
@@ -193,11 +197,20 @@ Page {
         }
     }
 
+    function scrollMainToTop() {
+        var flick = scroll.contentItem
+        if (flick) {
+            flick.contentY = 0
+            flick.contentX = 0
+        }
+    }
+
     ScrollView {
         id: scroll
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        topPadding: Theme.uiScrollViewTopPadding
 
         RowLayout {
             width: scroll.availableWidth
@@ -213,26 +226,6 @@ Page {
                 Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, scroll.availableWidth - 40))
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
                 spacing: Theme.trainerColumnSpacing
-
-                Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: qsTr("Monte Carlo equity vs range or exact cards — pot odds & chip-EV (not full GTO).")
-                    font.pixelSize: Theme.trainerBodyPx
-                    lineHeight: 1.25
-                    color: Theme.textSecondary
-
-                    HoverHandler {
-                        id: solverIntroHover
-                    }
-                    ToolTip.visible: solverIntroHover.hovered
-                    ToolTip.delay: 400
-                    ToolTip.text: qsTr(
-                        "This tool runs Monte Carlo equity vs a villain range (or exact hand). "
-                        + "It helps with pot-odds and chip-EV for call/fold decisions.\n\n"
-                        + "A true Nash-equilibrium solver for full no-limit Texas Hold'em requires large game-tree "
-                        + "abstractions (bet sizes, states) and CFR-style algorithms; that's not implemented here.")
-                }
 
                 ThemedPanel {
                     Layout.fillWidth: true
@@ -258,8 +251,13 @@ Page {
                             id: h1
                             placeholderText: "Ah"
                             text: "Ah"
-                            Layout.maximumWidth: 100
-                            implicitWidth: 100
+                            font.pixelSize: solverPage.solverFieldFontPx
+                            leftPadding: solverPage.solverFieldPadH
+                            rightPadding: solverPage.solverFieldPadH
+                            topPadding: solverPage.solverFieldPadV
+                            bottomPadding: solverPage.solverFieldPadV
+                            Layout.maximumWidth: 112
+                            implicitWidth: 112
                         }
                         Label {
                             text: qsTr("Hero card 2")
@@ -270,8 +268,13 @@ Page {
                             id: h2
                             placeholderText: "Kd"
                             text: "Kd"
-                            Layout.maximumWidth: 100
-                            implicitWidth: 100
+                            font.pixelSize: solverPage.solverFieldFontPx
+                            leftPadding: solverPage.solverFieldPadH
+                            rightPadding: solverPage.solverFieldPadH
+                            topPadding: solverPage.solverFieldPadV
+                            bottomPadding: solverPage.solverFieldPadV
+                            Layout.maximumWidth: 112
+                            implicitWidth: 112
                         }
                         Label {
                             text: qsTr("Board (optional)")
@@ -281,6 +284,12 @@ Page {
                         TextField {
                             id: brd
                             placeholderText: "Qs Jh 2c or empty"
+                            placeholderTextColor: Qt.alpha(Theme.textSecondary, 0.88)
+                            font.pixelSize: solverPage.solverFieldFontPx
+                            leftPadding: solverPage.solverFieldPadH
+                            rightPadding: solverPage.solverFieldPadH
+                            topPadding: solverPage.solverFieldPadV
+                            bottomPadding: solverPage.solverFieldPadV
                             Layout.fillWidth: true
                             Layout.maximumWidth: 560
                         }
@@ -293,6 +302,11 @@ Page {
                             id: vrange
                             placeholderText: "AA,AKs,QQ+"
                             text: "AA,TT+,AKs,AKo"
+                            font.pixelSize: solverPage.solverFieldFontPx
+                            leftPadding: solverPage.solverFieldPadH
+                            rightPadding: solverPage.solverFieldPadH
+                            topPadding: solverPage.solverFieldPadV
+                            bottomPadding: solverPage.solverFieldPadV
                             Layout.fillWidth: true
                             Layout.maximumWidth: 560
                         }
@@ -306,14 +320,24 @@ Page {
                             TextField {
                                 id: ve1
                                 placeholderText: "Qs"
-                                Layout.preferredWidth: 88
-                                implicitWidth: 88
+                                font.pixelSize: solverPage.solverFieldFontPx
+                                leftPadding: solverPage.solverFieldPadH
+                                rightPadding: solverPage.solverFieldPadH
+                                topPadding: solverPage.solverFieldPadV
+                                bottomPadding: solverPage.solverFieldPadV
+                                Layout.preferredWidth: 96
+                                implicitWidth: 96
                             }
                             TextField {
                                 id: ve2
                                 placeholderText: "Jh"
-                                Layout.preferredWidth: 88
-                                implicitWidth: 88
+                                font.pixelSize: solverPage.solverFieldFontPx
+                                leftPadding: solverPage.solverFieldPadH
+                                rightPadding: solverPage.solverFieldPadH
+                                topPadding: solverPage.solverFieldPadV
+                                bottomPadding: solverPage.solverFieldPadV
+                                Layout.preferredWidth: 96
+                                implicitWidth: 96
                             }
                             Item {
                                 Layout.fillWidth: true

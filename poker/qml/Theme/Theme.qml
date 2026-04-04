@@ -161,6 +161,8 @@ QtObject {
 
     /// Lobby / setup / stats / solver / training scroll pages (not the in-game table/HUD).
     readonly property int uiPagePadding: 15
+    /// Space between the toolbar (or window top on lobby) and the first line of scroll content.
+    readonly property int uiScrollViewTopPadding: 18
     readonly property int uiPageColumnSpacing: 11
     /// GroupBox and grouped panels outside the poker table (matches training panel padding).
     readonly property int uiGroupedPanelPadding: 14
@@ -172,7 +174,9 @@ QtObject {
 
     /// Application-wide UI (lobby, stats, setup, solver, table, HUD).
     readonly property int uiBasePt: 13
-    readonly property int uiToolBarTitlePt: 13
+    readonly property int uiToolBarTitlePt: 18
+    /// Lobby chrome chip label + icon (smaller than centered page title).
+    readonly property int uiToolBarChromePt: 13
     readonly property int uiToolBarBackPt: 11
     readonly property int uiGroupTitlePt: 14
     readonly property int uiBodyPx: 14
@@ -220,7 +224,7 @@ QtObject {
     readonly property color rangeLayerCall: "#d4b84a"
     /// Raise layer — fire orange (aggression).
     readonly property color rangeLayerRaise: fire
-    /// Open / lead layer — burgundy rose (distinct from raise, readable on dark felt).
+    /// Open layer — burgundy rose (distinct from raise, readable on dark felt).
     readonly property color rangeLayerOpen: "#a85868"
     /// Composite strips: tinted into `panel` so the grid reads quieter than full accent fills.
     readonly property color rangeLayerCallSubdued: Qt.tint(panel, Qt.alpha(rangeLayerCall, 0.56))

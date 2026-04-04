@@ -239,10 +239,19 @@ Page {
         startAutoAdvance()
     }
 
+    function scrollMainToTop() {
+        var flick = scrollView.contentItem
+        if (flick) {
+            flick.contentY = 0
+            flick.contentX = 0
+        }
+    }
+
     ScrollView {
         id: scrollView
         anchors.fill: parent
         clip: true
+        topPadding: Theme.uiScrollViewTopPadding
 
         RowLayout {
             width: scrollView.availableWidth
@@ -362,19 +371,6 @@ Page {
                     function onTrainerDecisionSecondsChanged() {
                         timeLimitSpin.value = trainingStore.trainerDecisionSeconds
                     }
-                }
-
-                Label {
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    text: qsTr(
-                        "Random two cards each hand. Your choice is scored against the 13×13 weights for the position/mode (see JSON). "
-                        + "Grade uses that action’s frequency: ≥70% Correct, ≥5% Mix, else Wrong. Feedback shows the highest-weight action as “best”. "
-                        + "Changing position reloads the scenario; use Training picks to leave.")
-                    color: Theme.textSecondary
-                    font.pixelSize: Theme.trainerBodyPx
-                    lineHeight: 1.25
                 }
 
                 Rectangle {

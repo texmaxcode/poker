@@ -45,6 +45,15 @@ Item {
     readonly property color borderDealer: Theme.gold
     readonly property color borderIdle: Theme.seatBorderIdle
 
+    /// Name strip: lift background slightly and brighten seat-colored text while this seat is acting.
+    readonly property color namePlateBg: root.isActing
+            ? Qt.lighter(Qt.tint(Theme.panelElevated, Qt.alpha(Theme.focusGold, 0.14)), 1.09)
+            : Theme.panelElevated
+    readonly property color nameTextColor: {
+        var c = root.seatIndex >= 0 ? Theme.colorForSeat(root.seatIndex) : Theme.textPrimary
+        return root.isActing ? Qt.lighter(c, 1.28) : c
+    }
+
     readonly property color streetActionColor: {
         var t = root.streetActionText.toLowerCase()
         // Match All-in / ALL IN / Allin (engine uses "All-in $N"); must come before "raise".
@@ -282,21 +291,34 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: root.nameRowH
                     radius: Math.max(4, Math.round(6 * _s))
-                    color: Theme.panelElevated
+                    color: root.namePlateBg
                     clip: true
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 200
+                            easing.type: Easing.OutQuad
+                        }
+                    }
 
                     Text {
                         anchors.fill: parent
                         anchors.margins: Math.max(3, Math.round(6 * _s))
                         text: root.name
-                        color: root.seatIndex >= 0 ? Theme.colorForSeat(root.seatIndex) : Theme.textPrimary
+                        color: root.nameTextColor
                         font.family: Theme.fontFamilyUi
                         font.pointSize: Math.max(8, Theme.uiSeatNamePt * _s)
+                        font.weight: Font.ExtraBold
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         wrapMode: Text.WrapAnywhere
                         maximumLineCount: 2
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 200
+                                easing.type: Easing.OutQuad
+                            }
+                        }
                     }
                 }
 

@@ -236,10 +236,19 @@ Page {
         startAutoAdvance()
     }
 
+    function scrollMainToTop() {
+        var flick = scrollView.contentItem
+        if (flick) {
+            flick.contentY = 0
+            flick.contentX = 0
+        }
+    }
+
     ScrollView {
         id: scrollView
         anchors.fill: parent
         clip: true
+        topPadding: Theme.uiScrollViewTopPadding
 
         RowLayout {
             width: scrollView.availableWidth
@@ -330,18 +339,6 @@ Page {
                     function onTrainerDecisionSecondsChanged() {
                         timeLimitSpin.value = trainingStore.trainerDecisionSeconds
                     }
-                }
-
-                Label {
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    text: qsTr(
-                        "Single raised pot, flop only. Spots cycle in file order. Check, or bet 33% / 75% pot — same grading bands from strategy frequency; "
-                        + "EV loss (bb) vs the best option is tracked in progress. Bundled EVs are illustrative; edit spots JSON to match your study material.")
-                    color: Theme.textSecondary
-                    font.pixelSize: Theme.trainerBodyPx
-                    lineHeight: 1.25
                 }
 
                 Rectangle {

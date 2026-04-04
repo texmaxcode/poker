@@ -27,6 +27,7 @@ Page {
         id: lobbyScroll
         anchors.fill: parent
         clip: true
+        topPadding: Theme.uiScrollViewTopPadding
 
         Item {
             id: lobbyScrollContent

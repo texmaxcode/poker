@@ -137,7 +137,17 @@ Item {
             return 0
         const p = anchor.mapToItem(target, 0, 0)
         const h = popup.height > 2 ? popup.height : Math.max(popup.implicitHeight, 120)
-        return Math.max(12, p.y - h - 10)
+        const margin = 10
+        const edge = 12
+        const aboveY = p.y - h - margin
+        const maxY = target.height - h - edge
+        // Prefer above the cell; top rows don't have room — place below so the bubble stays tied to the cell.
+        if (aboveY >= edge)
+            return Math.max(edge, Math.min(maxY, aboveY))
+        const belowY = p.y + anchor.height + margin
+        if (belowY <= maxY)
+            return Math.max(edge, belowY)
+        return Math.max(edge, Math.min(maxY, belowY))
     }
 
     function syncTipPopupPos() {
@@ -237,15 +247,6 @@ Item {
                     }
                 }
             }
-        }
-
-        Label {
-            visible: root.composite
-            font.family: Theme.fontFamilyUi
-            font.pixelSize: Theme.uiRangeGridLegendPx
-            color: Theme.textMuted
-            opacity: 0.9
-            text: qsTr("Above diagonal: suited · on diagonal: pairs · below: offsuit")
         }
 
         RowLayout {

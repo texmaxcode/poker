@@ -102,7 +102,10 @@ ApplicationWindow {
 
             Label {
                 Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignVCenter
                 horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
                 font.family: Theme.fontFamilyUi
                 font.bold: true
                 font.pointSize: Theme.uiToolBarTitlePt
@@ -142,6 +145,41 @@ ApplicationWindow {
         anchors.fill: parent
         currentIndex: 0
 
+        /// Previous stack index — used to scroll content to top when returning from the lobby.
+        property int _prevIndex: 0
+
+        onCurrentIndexChanged: {
+            const cur = stack.currentIndex
+            const prev = stack._prevIndex
+            if (cur > 0 && prev === 0) {
+                Qt.callLater(function () {
+                    switch (cur) {
+                    case 2:
+                        setupPage.scrollMainToTop()
+                        break
+                    case 3:
+                        solverPage.scrollMainToTop()
+                        break
+                    case 4:
+                        statsPage.scrollMainToTop()
+                        break
+                    case 5:
+                        trainerHomePage.scrollMainToTop()
+                        break
+                    case 6:
+                        preflopTrainerPage.scrollMainToTop()
+                        break
+                    case 7:
+                        flopTrainerPage.scrollMainToTop()
+                        break
+                    }
+                })
+            }
+            stack._prevIndex = cur
+        }
+
+        Component.onCompleted: stack._prevIndex = stack.currentIndex
+
         LobbyScreen {
             stackLayout: stack
         }
@@ -151,15 +189,19 @@ ApplicationWindow {
         }
 
         SetupScreen {
+            id: setupPage
         }
 
         SolverScreen {
+            id: solverPage
         }
 
         StatsScreen {
+            id: statsPage
         }
 
         TrainerHome {
+            id: trainerHomePage
             stackLayout: stack
         }
 

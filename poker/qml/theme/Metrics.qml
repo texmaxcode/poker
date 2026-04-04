@@ -8,9 +8,12 @@ QtObject {
     readonly property int windowMinWidth: 720
     readonly property int windowMinHeight: 560
 
-    readonly property int toolbarHeight: 42
-    readonly property int toolbarMarginH: 8
-    readonly property int toolbarMarginV: 5
+    /// Header strip with Lobby button + page title (ApplicationWindow `header`).
+    readonly property int toolbarHeight: 58
+    readonly property int toolbarMarginH: 10
+    readonly property int toolbarMarginV: 9
+    /// Lobby / back chrome `GameButton` height — original compact size (not full toolbar height).
+    readonly property int toolbarChromeHeight: 32
 
     /// HUD pill height — matches previous compact action buttons so layout stays stable.
     readonly property int hudButtonHeight: 38
@@ -21,6 +24,5 @@ QtObject {
     readonly property int radiusToolbarButton: 8
 
     readonly property int iconToolbar: 16
-    /// Toolbar back / Lobby chrome `GameButton` — sized to the ~32px content area.
     readonly property int iconToolbarChrome: 22
 }

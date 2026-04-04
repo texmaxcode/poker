@@ -22,6 +22,7 @@
         <file>components/Player.qml</file>
         <file>components/GameControls.qml</file>
         <file>components/RangeGrid.qml</file>
+        <file>components/ResetButton.qml</file>
 
         <file>screens/LobbyScreen.qml</file>
         <file>screens/GameScreen.qml</file>

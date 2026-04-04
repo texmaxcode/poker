@@ -33,10 +33,19 @@ Page {
             stackLayout.currentIndex = idx
     }
 
+    function scrollMainToTop() {
+        var flick = scrollView.contentItem
+        if (flick) {
+            flick.contentY = 0
+            flick.contentX = 0
+        }
+    }
+
     ScrollView {
         id: scrollView
         anchors.fill: parent
         clip: true
+        topPadding: Theme.uiScrollViewTopPadding
 
         RowLayout {
             width: scrollView.availableWidth
@@ -52,18 +61,6 @@ Page {
                 Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, scrollView.availableWidth - 40))
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
                 spacing: Theme.trainerColumnSpacing
-
-                Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: qsTr(
-                        "You get a random hand (preflop) or a fixed flop spot. Choose an action; the app compares it to the loaded strategy and shows a grade. "
-                        + "After a short pause the next question appears (delay is configurable below). Decisions, accuracy, and flop EV loss roll up in Training progress below.")
-                    color: Theme.textSecondary
-                    font.pixelSize: Theme.trainerBodyPx
-                    lineHeight: 1.25
-                    horizontalAlignment: Text.AlignHCenter
-                }
 
                 Rectangle {
                     Layout.fillWidth: true
@@ -168,10 +165,8 @@ Page {
                             Layout.fillWidth: true
                             spacing: 10
 
-                            Button {
+                            ResetButton {
                                 text: qsTr("Reset training progress")
-                                font.pixelSize: Theme.trainerCaptionPx
-                                padding: Theme.trainerButtonPadding
                                 onClicked: trainingStore.resetProgress()
                             }
                             Item { Layout.fillWidth: true }
