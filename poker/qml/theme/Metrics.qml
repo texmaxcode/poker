@@ -18,11 +18,8 @@ QtObject {
     /// HUD pill height — matches previous compact action buttons so layout stays stable.
     readonly property int hudButtonHeight: 38
     readonly property int chipButtonHeight: 28
-    readonly property int formButtonMinWidth: 96
-
     readonly property int radiusHudPill: 6
     readonly property int radiusToolbarButton: 8
 
-    readonly property int iconToolbar: 16
     readonly property int iconToolbarChrome: 22
 }

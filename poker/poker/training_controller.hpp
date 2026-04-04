@@ -47,10 +47,7 @@ public:
     Q_INVOKABLE QVariantMap nextRiverQuestion();
     Q_INVOKABLE QVariantMap submitRiverAnswer(const QString &action);
 
-    QVariantMap lastFeedback() const { return last_feedback_; }
-
 signals:
-    void lastFeedbackChanged();
 
 private:
     struct Scenario

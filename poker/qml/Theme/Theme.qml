@@ -21,8 +21,6 @@ QtObject {
     readonly property color fire: "#ff6a1a"
     readonly property color fireDeep: "#c2410c"
     readonly property color ember: "#dc2626"
-    readonly property color burgundy: "#4a1820"
-
     readonly property color textPrimary: "#f2ebe4"
     readonly property color textSecondary: "#a89890"
     readonly property color textMuted: "#7a7068"
@@ -47,12 +45,10 @@ QtObject {
     readonly property color hudBg0: "#2a1c14"
     readonly property color hudBg1: "#140e0a"
     readonly property color hudBorder: "#7a5020"
-    readonly property color hudDivider: "#5a3a1888"
     readonly property color inputBg: "#222028"
     readonly property color inputBorder: "#4a4048"
     readonly property color accentBlue: "#7eb8e8"
     readonly property color hudActionLabel: "#8b93a8"
-    readonly property color hudActionAccent: "#7ec8ff"
     readonly property color hudActionPanel: "#3a4a6a"
     readonly property color hudActionBright: "#d0e4ff"
     readonly property color insetDark: "#222"
@@ -111,38 +107,23 @@ QtObject {
 
     /// Training / drill screens: keep readable line length and controls off ultra-wide edges.
     readonly property int trainerContentMaxWidth: 920
-    /// Drill cards (preflop / flop trainers) — larger than table `boardCard*` for study screens only.
-    readonly property int trainerDrillCardWidth: 150
-    readonly property int trainerDrillCardHeight: 222
     /// Flop trainer: community cards match table scale so pot + board + seat fit without overlap.
     readonly property int trainerFlopBoardCardWidth: 100
     readonly property int trainerFlopBoardCardHeight: 148
     /// Gap between drill cards and between HUD action rows — matches `GameControls` action spacing (12).
     readonly property int trainerDrillHudSpacing: 12
-    /// Inset from drill area right edge for embedded HUD — space between centered seat and controls.
-    readonly property int trainerHudSeatMargin: 22
     /// Nudge hero seat horizontally from panel center (negative = left) so HUD sits clearly to the side.
     readonly property int trainerDrillSeatCenterOffset: -44
 
-    /// Typography for training copy (large for readability). Body = primary reading style (match TrainerHome intro).
-    readonly property int trainerTitlePt: 26
+    /// Typography for training copy (large for readability).
     readonly property int trainerPageHeadlinePt: 22
     readonly property int trainerSectionPx: 20
     readonly property int trainerBodyPx: 17
-    /// Kept for compatibility; same as `trainerBodyPx` so all trainer paragraphs match.
-    readonly property int trainerBodyMutedPx: 17
     readonly property int trainerCaptionPx: 17
-    readonly property int trainerStatusPx: 23
-    /// Feedback / grade line after an answer (same px as status for consistency).
-    readonly property int trainerResultPx: 23
-    /// Fixed slot at top of preflop/flop drill cards — avoids layout jump when feedback length changes.
-    readonly property int trainerExerciseStatusSlotHeight: 128
     readonly property int trainerMetricLabelPx: 15
     readonly property int trainerMetricValuePx: 24
     readonly property int trainerToolButtonPx: 17
     readonly property int trainerButtonLabelPx: 19
-    readonly property int trainerGroupTitlePt: 15
-
     readonly property int trainerColumnSpacing: 14
     readonly property int trainerPanelPadding: 14
     readonly property int trainerPanelRadius: 10
@@ -156,34 +137,25 @@ QtObject {
     /// Win-line banner: mini cards beside one-line result text (`GameControls` embedded HUD).
     readonly property int resultBannerCardW: 40
     readonly property int resultBannerCardH: 58
-    readonly property int trainerButtonPadding: 14
     readonly property int trainerSpinBoxWidth: 140
 
     /// Lobby / setup / stats / solver / training scroll pages (not the in-game table/HUD).
     readonly property int uiPagePadding: 15
     /// Space between the toolbar (or window top on lobby) and the first line of scroll content.
     readonly property int uiScrollViewTopPadding: 18
-    readonly property int uiPageColumnSpacing: 11
     /// GroupBox and grouped panels outside the poker table (matches training panel padding).
     readonly property int uiGroupedPanelPadding: 14
-    readonly property int uiGroupedPanelTopPadding: 30
     /// Vertical spacing inside GroupBox ColumnLayouts (setup, stats, solver).
     readonly property int uiGroupInnerSpacing: 11
-    /// Extra gap between the GroupBox title bar and the first line of body content.
-    readonly property int uiGroupBoxTitleBodyGap: 10
-
     /// Application-wide UI (lobby, stats, setup, solver, table, HUD).
     readonly property int uiBasePt: 13
     readonly property int uiToolBarTitlePt: 18
     /// Lobby chrome chip label + icon (smaller than centered page title).
     readonly property int uiToolBarChromePt: 13
-    readonly property int uiToolBarBackPt: 11
-    readonly property int uiGroupTitlePt: 14
     readonly property int uiBodyPx: 14
     readonly property int uiSmallPx: 12
     readonly property int uiMicroPx: 11
     readonly property int uiMonoPx: 13
-    readonly property int uiLobbyTitlePt: 19
     /// Lobby framed panel heading (“What would you like to do?”).
     readonly property int uiLobbyPanelTitlePx: 22
     /// Nav tiles: title + sub use `pixelSize`; two-line caps; fixed block heights keep every tile aligned.
@@ -204,15 +176,12 @@ QtObject {
     readonly property int uiPotMainPt: 22
     readonly property int uiPotSepPt: 18
     readonly property int uiPotCallPt: 18
-    readonly property int uiPotSidePt: 12
     readonly property int uiSeatFoldPt: 12
     readonly property int uiSeatStreetPt: 11
     readonly property int uiSeatNamePt: 12
     readonly property int uiSeatPosPt: 12
     readonly property int uiStackPt: 18
     readonly property int uiHudButtonPt: 11
-    readonly property int uiGameHudPx: 14
-    readonly property int uiChartLegendPx: 12
     readonly property int uiChartCanvasPx: 12
     readonly property int uiRangeGridAxisPx: 14
     readonly property int uiRangeGridLegendPx: 13
@@ -255,6 +224,4 @@ QtObject {
 
     /// Text color for labels on accent-colored buttons (gold, green, etc.).
     readonly property color onAccentText: "#ffffff"
-    /// Short UI transition (hover, border, scale).
-    readonly property int animDurationShort: 120
 }

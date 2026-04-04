@@ -5,9 +5,7 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstdio>
-#include <random>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -535,11 +533,6 @@ QVariantMap solve_leduc_impl(int iterations)
 } // namespace
 
 ToyNashSolver::ToyNashSolver(QObject *parent) : QObject(parent) {}
-
-QVariantMap ToyNashSolver::solveKuhn(int iterations) const
-{
-    return solve_kuhn_impl(iterations);
-}
 
 void ToyNashSolver::solveKuhnAsync(int iterations)
 {

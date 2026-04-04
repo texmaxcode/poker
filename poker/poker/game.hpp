@@ -82,9 +82,6 @@ private:
     std::array<QString, kMaxPlayers> seat_street_action_label_{};
     int last_raise_increment_ = 0;
     bool bb_preflop_option_open_ = false;
-    /// Last seat to bet or raise on the river (for showdown order per standard rules).
-    int river_last_aggressor_ = -1;
-    bool river_had_bet_or_raise_ = false;
     std::mt19937 rng_{std::random_device{}()};
 
     std::vector<card> get_hand_vector(int idx) const;
@@ -299,8 +296,6 @@ private:
     void clear_for_new_hand();
     void clear_street_action_labels();
     void set_seat_street_action(int seat, const QString &label);
-    /// Reserved for future HUD hooks; does not write `statusText` (banner shows last hand result only).
-    void push_human_action_status(const QString &actionLabel);
     void set_hand_result_status(const QString &msg, const QStringList &cardAssets = {});
     QString board_compact_for_result() const;
     /// One line per seat with chips won: `Name wins $N holding … on … with …` (hand name from `winning_hand_label`).
@@ -308,8 +303,6 @@ private:
     int banner_seat_from_showdown_gains(const std::array<int, kMaxPlayers> &stack_gain, int players_n) const;
     /// Last player wins the pot because everyone else folded (no showdown).
     QString fold_win_status_line(int seat, int pot_chips) const;
-    /// `Name — [hand name] — holes · board` (viz still shows the 5-card combination).
-    QString hand_result_status_line(int seat) const;
     /// Human-readable winning holding from holes + board at `street` (e.g. “Two pair, Q and 10”).
     QString winning_hand_label(int seat) const;
     QStringList result_banner_card_assets_for_seat(int seat) const;
@@ -325,8 +318,6 @@ private:
     void do_payouts();
     void switch_button();
     QString human_hand_line_for_ui() const;
-    /// Community cards for end-of-hand / status text (empty if flop not dealt).
-    QString board_line_for_ui() const;
     /// Two hole cards, e.g. `"Ah Kd"`.
     QString hole_cards_display(int seat) const;
     void sync_ui();

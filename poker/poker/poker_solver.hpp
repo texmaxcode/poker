@@ -20,18 +20,7 @@ public:
     /// Hero cards like "Ah" "Kd"; board space-separated; villain range text (same as Bots tab).
     /// If villainExact1 and villainExact2 are non-empty, ignores range and uses that hole.
     /// potBeforeCall + callAmount: if both > 0, computes break-even equity and EV of calling.
-    /// Runs on the calling thread (blocks) — prefer computeEquityAsync from UI.
-    Q_INVOKABLE QVariantMap computeEquity(const QString &hero1,
-                                          const QString &hero2,
-                                          const QString &boardSpaceSeparated,
-                                          const QString &villainRangeText,
-                                          const QString &villainExact1,
-                                          const QString &villainExact2,
-                                          int iterations,
-                                          double potBeforeCall,
-                                          double callAmount) const;
-
-    /// Same inputs as computeEquity; work runs on a worker thread. Listen for equityComputationFinished.
+    /// Work runs on a worker thread. Listen for equityComputationFinished.
     Q_INVOKABLE void computeEquityAsync(const QString &hero1,
                                         const QString &hero2,
                                         const QString &boardSpaceSeparated,
@@ -41,8 +30,6 @@ public:
                                         int iterations,
                                         double potBeforeCall,
                                         double callAmount);
-
-    Q_INVOKABLE bool equityComputationRunning() const { return async_busy_.load(); }
 
 signals:
     void equityComputationFinished(const QVariantMap &result);

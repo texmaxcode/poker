@@ -6,8 +6,6 @@
 #include <QMetaObject>
 #include <QThreadPool>
 
-#include <cmath>
-#include <random>
 
 namespace {
 
@@ -191,20 +189,6 @@ QVariantMap compute_equity_impl(const QString &hero1,
 } // namespace
 
 PokerSolver::PokerSolver(QObject *parent) : QObject(parent) {}
-
-QVariantMap PokerSolver::computeEquity(const QString &hero1,
-                                       const QString &hero2,
-                                       const QString &boardSpaceSeparated,
-                                       const QString &villainRangeText,
-                                       const QString &villainExact1,
-                                       const QString &villainExact2,
-                                       int iterations,
-                                       double potBeforeCall,
-                                       double callAmount) const
-{
-    return compute_equity_impl(hero1, hero2, boardSpaceSeparated, villainRangeText, villainExact1, villainExact2,
-                               iterations, potBeforeCall, callAmount);
-}
 
 void PokerSolver::computeEquityAsync(const QString &hero1,
                                      const QString &hero2,

@@ -6,7 +6,7 @@ This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold�
 
 ## Table and stakes
 
-- **Blinds** — You set **small blind**, **big blind**, and **street bet** (used as a default open/raise unit for bots). Values are persisted with `QSettings`.
+- **Blinds** — You set **small blind**, **big blind**, and **street bet** (used as a default open/raise unit for bots). Values are persisted via `AppStateSqlite`.
 - **Buy-in** — Each seat has a target **buy-in** (chips on the table). Amount is capped at **100× the current big blind** (`maxBuyInChips()`). Anything above that stays **off the table** as wallet chips until applied or used for rebuy.
 - **Rebuy** — If a seat’s stack hits **0** and the wallet still covers one full buy-in, the player can **buy back in** when the table is idle (human uses the HUD button; bots auto-rebuy from a synthetic reserve when configured).
 

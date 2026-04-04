@@ -151,7 +151,6 @@ void HumanDecisionController::submitFoldFromCheck()
     human_decision_tick_.stop();
     human_decision_deadline_.stop();
     game_.set_seat_street_action(game::kHumanSeat, QStringLiteral("Fold"));
-    game_.push_human_action_status(QStringLiteral("Fold"));
     game_.in_hand_[static_cast<size_t>(game::kHumanSeat)] = false;
     emit humanCheckFinished();
 }
@@ -236,14 +235,12 @@ void HumanDecisionController::finish_human_check(bool check, int bet_chips)
                                       ? QStringLiteral("All-in $%1").arg(taken)
                                       : QStringLiteral("Raise $%1").arg(taken);
             game_.set_seat_street_action(game::kHumanSeat, lbl);
-            game_.push_human_action_status(lbl);
         }
         emit game_.pot_changed();
     }
     else
     {
         game_.set_seat_street_action(game::kHumanSeat, QStringLiteral("Check"));
-        game_.push_human_action_status(QStringLiteral("Check"));
     }
     emit humanCheckFinished();
 }
@@ -303,7 +300,6 @@ void HumanDecisionController::finish_human_bb_preflop(bool raise)
     human_decision_tick_.stop();
     human_decision_deadline_.stop();
     game_.set_seat_street_action(game::kHumanSeat, QStringLiteral("Check"));
-    game_.push_human_action_status(QStringLiteral("Check"));
     emit humanBbPreflopFinished();
 }
 
@@ -321,7 +317,6 @@ void HumanDecisionController::submitBbPreflopRaise(int chips_to_add)
     if (inc <= 0 || game_.max_street_contrib() != game_.big_blind || game_.table[bi].stack <= 0)
     {
         game_.set_seat_street_action(game::kHumanSeat, QStringLiteral("Check"));
-        game_.push_human_action_status(QStringLiteral("Check"));
         emit humanBbPreflopFinished();
         return;
     }
@@ -329,7 +324,6 @@ void HumanDecisionController::submitBbPreflopRaise(int chips_to_add)
     if (c < inc)
     {
         game_.set_seat_street_action(game::kHumanSeat, QStringLiteral("Check"));
-        game_.push_human_action_status(QStringLiteral("Check"));
         emit humanBbPreflopFinished();
         return;
     }
@@ -345,7 +339,6 @@ void HumanDecisionController::submitBbPreflopRaise(int chips_to_add)
                 ? QStringLiteral("All-in $%1").arg(taken)
                 : QStringLiteral("Raise to $%1").arg(static_cast<int>(game_.street_contrib_[bi]));
         game_.set_seat_street_action(game::kHumanSeat, lbl);
-        game_.push_human_action_status(lbl);
     }
     emit game_.pot_changed();
     emit humanBbPreflopFinished();

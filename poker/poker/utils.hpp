@@ -1,7 +1,6 @@
 #ifndef TEXAS_HOLDEM_GYM_UTILS_H
 #define TEXAS_HOLDEM_GYM_UTILS_H
 
-#include <string>
 #include <type_traits>
 
 template <typename Enumeration>

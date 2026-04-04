@@ -15,8 +15,7 @@ class ToyNashSolver : public QObject
 public:
     explicit ToyNashSolver(QObject *parent = nullptr);
 
-    /// Solve Kuhn poker (3-card) via CFR+; returns EV and average strategies.
-    Q_INVOKABLE QVariantMap solveKuhn(int iterations) const;
+    /// Solve Kuhn poker (3-card) via CFR+; returns EV and average strategies. Runs on a worker thread.
     Q_INVOKABLE void solveKuhnAsync(int iterations);
 
     /// Solve Leduc hold'em (6-card, 1 public card) via CFR+; returns EV and average strategies.

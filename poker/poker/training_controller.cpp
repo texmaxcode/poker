@@ -185,7 +185,6 @@ void TrainingController::startPreflopDrill(const QString &position, const QStrin
     cur_card1_.clear();
     cur_card2_.clear();
     last_feedback_.clear();
-    emit lastFeedbackChanged();
 }
 
 void TrainingController::startFlopDrill(const QString &matchup)
@@ -193,7 +192,6 @@ void TrainingController::startFlopDrill(const QString &matchup)
     (void)matchup;
     flop_idx_ = -1;
     last_feedback_.clear();
-    emit lastFeedbackChanged();
 }
 
 void TrainingController::startTurnDrill(const QString &matchup)
@@ -201,7 +199,6 @@ void TrainingController::startTurnDrill(const QString &matchup)
     (void)matchup;
     turn_idx_ = -1;
     last_feedback_.clear();
-    emit lastFeedbackChanged();
 }
 
 void TrainingController::startRiverDrill(const QString &matchup)
@@ -209,7 +206,6 @@ void TrainingController::startRiverDrill(const QString &matchup)
     (void)matchup;
     river_idx_ = -1;
     last_feedback_.clear();
-    emit lastFeedbackChanged();
 }
 
 QVariantMap TrainingController::nextPreflopQuestion()
@@ -334,7 +330,6 @@ QVariantMap TrainingController::submitPreflopAnswer(const QString &action, int r
         store_->recordDecision(ev);
     }
 
-    emit lastFeedbackChanged();
     return out;
 }
 
@@ -403,7 +398,6 @@ QVariantMap TrainingController::submitPostflopAnswer(const QString &action, cons
         store_->recordDecision(evm);
     }
 
-    emit lastFeedbackChanged();
     return out;
 }
 

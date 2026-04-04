@@ -269,20 +269,6 @@ QString game::human_hand_line_for_ui() const
     return QString::fromStdString(describe_holdem_hand(v));
 }
 
-QString game::board_line_for_ui() const
-{
-    if (flop.size() < 3)
-        return {};
-    QString out = QStringLiteral("Board: ");
-    out += card_to_display_string(flop[0]) + QLatin1Char(' ') + card_to_display_string(flop[1]) + QLatin1Char(' ')
-        + card_to_display_string(flop[2]);
-    if (street >= Street::TURN)
-        out += QLatin1Char(' ') + card_to_display_string(turn);
-    if (street >= Street::RIVER)
-        out += QLatin1Char(' ') + card_to_display_string(river);
-    return out;
-}
-
 QString game::hole_cards_display(int seat) const
 {
     if (seat < 0 || seat >= players_count())
@@ -358,19 +344,6 @@ QString game::winning_hand_label(int seat) const
     if (v.size() < 2)
         return {};
     return QString::fromStdString(describe_holdem_hand(v));
-}
-
-QString game::hand_result_status_line(int seat) const
-{
-    QString line = seat_display_name(seat);
-    const QString handName = winning_hand_label(seat);
-    if (!handName.isEmpty())
-        line += QStringLiteral(" — ") + handName;
-    line += QStringLiteral(" — ") + hole_cards_display(seat);
-    const QString brd = board_compact_for_result();
-    if (!brd.isEmpty())
-        line += QStringLiteral(" · ") + brd;
-    return line;
 }
 
 // Preflop: first actor is UTG — clockwise after the big blind (heads-up: button / small blind first).
@@ -708,7 +681,6 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
         if (human_decision_ctrl_->humanFacingAction() == 0)
         {
             set_seat_street_action(seat, QStringLiteral("Fold"));
-            push_human_action_status(QStringLiteral("Fold"));
             in_hand_[si] = false;
             return true;
         }
@@ -722,7 +694,6 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             if (chips <= 0)
             {
                 set_seat_street_action(seat, QStringLiteral("Fold"));
-                push_human_action_status(QStringLiteral("Fold"));
                 in_hand_[si] = false;
                 return true;
             }
@@ -734,7 +705,6 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
                 {
                     const QString lbl = QStringLiteral("All-in $%1").arg(taken_short);
                     set_seat_street_action(seat, lbl);
-                    push_human_action_status(lbl);
                 }
                 emit pot_changed();
                 return true;
@@ -751,29 +721,17 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
                     bb_preflop_option_open_ = false;
                 note_river_aggressor(st, seat);
                 if (taken_raise >= stack_before_raise)
-                {
-                    const QString lbl = QStringLiteral("All-in $%1").arg(taken_raise);
-                    set_seat_street_action(seat, lbl);
-                    push_human_action_status(lbl);
-                }
+                    set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(taken_raise));
                 else
-                {
-                    const QString lbl = QStringLiteral("Raise to $%1").arg(new_contrib);
-                    set_seat_street_action(seat, lbl);
-                    push_human_action_status(lbl);
-                }
+                    set_seat_street_action(seat, QStringLiteral("Raise to $%1").arg(new_contrib));
             }
             else if (taken_raise >= stack_before_raise)
             {
-                const QString lbl = QStringLiteral("All-in $%1").arg(taken_raise);
-                set_seat_street_action(seat, lbl);
-                push_human_action_status(lbl);
+                set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(taken_raise));
             }
             else
             {
-                const QString lbl = QStringLiteral("Call $%1").arg(taken_raise);
-                set_seat_street_action(seat, lbl);
-                push_human_action_status(lbl);
+                set_seat_street_action(seat, QStringLiteral("Call $%1").arg(taken_raise));
             }
             emit pot_changed();
             return true;
@@ -784,17 +742,9 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
         add_chips_to_pot(seat, taken_call);
         street_contrib_[si] += taken_call;
         if (taken_call >= stack_before_call)
-        {
-            const QString lbl = QStringLiteral("All-in $%1").arg(taken_call);
-            set_seat_street_action(seat, lbl);
-            push_human_action_status(lbl);
-        }
+            set_seat_street_action(seat, QStringLiteral("All-in $%1").arg(taken_call));
         else
-        {
-            const QString lbl = QStringLiteral("Call $%1").arg(taken_call);
-            set_seat_street_action(seat, lbl);
-            push_human_action_status(lbl);
-        }
+            set_seat_street_action(seat, QStringLiteral("Call $%1").arg(taken_call));
         emit pot_changed();
         return true;
     }
@@ -1000,13 +950,8 @@ bool game::handle_bb_preflop_option()
     return false;
 }
 
-void game::note_river_aggressor(Street st, int seat)
+void game::note_river_aggressor(Street /*st*/, int /*seat*/)
 {
-    if (st == Street::RIVER)
-    {
-        river_last_aggressor_ = seat;
-        river_had_bet_or_raise_ = true;
-    }
 }
 
 void game::award_pot_to_last_standing()
@@ -1036,12 +981,6 @@ bool game::run_street_betting(Street st)
     const int n = players_count();
     if (n < 2 || count_active() < 2)
         return false;
-
-    if (st == Street::RIVER)
-    {
-        river_last_aggressor_ = -1;
-        river_had_bet_or_raise_ = false;
-    }
 
     if (st != Street::PRE_FLOP)
         reset_postflop_street_contrib();
@@ -1450,11 +1389,6 @@ void game::set_seat_street_action(int seat, const QString &label)
         seat_street_action_label_[static_cast<size_t>(seat)] = label;
 }
 
-void game::push_human_action_status(const QString &actionLabel)
-{
-    (void)actionLabel;
-}
-
 QString game::board_compact_for_result() const
 {
     if (flop.size() < 3)
@@ -1514,8 +1448,6 @@ void game::clear_for_new_hand()
     bb_seat_ = -1;
     human_decision_ctrl_->reset();
     cards_dealt_ = false;
-    river_last_aggressor_ = -1;
-    river_had_bet_or_raise_ = false;
     ++hand_seq_;
     emit pot_changed();
 }
