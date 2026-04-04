@@ -285,6 +285,7 @@ Page {
                         text: qsTr("Preflop")
                         font.pointSize: Theme.trainerPageHeadlinePt
                         font.bold: true
+                        font.capitalization: Font.AllUppercase
                         color: Theme.gold
                     }
 

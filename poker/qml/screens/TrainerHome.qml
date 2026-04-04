@@ -82,6 +82,7 @@ Page {
                             Layout.fillWidth: true
                             text: qsTr("Training progress")
                             font.bold: true
+                            font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
                             color: Theme.textPrimary
                         }
@@ -119,7 +120,12 @@ Page {
                                     y: 10
                                     width: parent.width - 20
                                     spacing: 4
-                                    Text { text: qsTr("Decisions"); color: Theme.textMuted; font.pixelSize: Theme.trainerMetricLabelPx }
+                                    Text {
+                                        text: qsTr("Decisions")
+                                        color: Theme.textMuted
+                                        font.pixelSize: Theme.trainerMetricLabelPx
+                                        font.capitalization: Font.AllUppercase
+                                    }
                                     Text { text: String(progressCol.totalD); color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
@@ -137,7 +143,12 @@ Page {
                                     y: 10
                                     width: parent.width - 20
                                     spacing: 4
-                                    Text { text: qsTr("Accuracy"); color: Theme.textMuted; font.pixelSize: Theme.trainerMetricLabelPx }
+                                    Text {
+                                        text: qsTr("Accuracy")
+                                        color: Theme.textMuted
+                                        font.pixelSize: Theme.trainerMetricLabelPx
+                                        font.capitalization: Font.AllUppercase
+                                    }
                                     Text { text: progressCol.accPct.toFixed(1) + "%"; color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
@@ -155,7 +166,12 @@ Page {
                                     y: 10
                                     width: parent.width - 20
                                     spacing: 4
-                                    Text { text: qsTr("EV lost"); color: Theme.textMuted; font.pixelSize: Theme.trainerMetricLabelPx }
+                                    Text {
+                                        text: qsTr("EV lost")
+                                        color: Theme.textMuted
+                                        font.pixelSize: Theme.trainerMetricLabelPx
+                                        font.capitalization: Font.AllUppercase
+                                    }
                                     Text { text: progressCol.totalEv.toFixed(3) + " bb"; color: Theme.textPrimary; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
@@ -194,6 +210,7 @@ Page {
                             Layout.fillWidth: true
                             text: qsTr("How scoring works")
                             font.bold: true
+                            font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
                             color: Theme.textPrimary
                         }
@@ -286,6 +303,7 @@ Page {
                             text: qsTr("Coming next")
                             color: Theme.textPrimary
                             font.bold: true
+                            font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
                         }
                         Label {

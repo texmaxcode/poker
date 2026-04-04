@@ -40,6 +40,7 @@ Rectangle {
             Layout.fillWidth: true
             text: root.panelTitle
             font.bold: true
+            font.capitalization: Font.AllUppercase
             font.pixelSize: root.panelTitlePixelSize
             color: Theme.textPrimary
             wrapMode: Text.WordWrap

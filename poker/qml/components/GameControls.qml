@@ -55,6 +55,27 @@ Item {
 
     signal trainerAction(string action, int amountChips)
 
+    /// Mirrors `pokerGame.interactiveHuman` — NOTIFY on nested `var` refs is unreliable for RowLayout bindings.
+    property bool engineHumanInteractive: true
+
+    function refreshEngineHumanInteractive() {
+        if (!pokerGame) {
+            engineHumanInteractive = true
+            return
+        }
+        engineHumanInteractive = pokerGame.interactiveHuman !== false
+    }
+
+    Component.onCompleted: refreshEngineHumanInteractive()
+    onPokerGameChanged: refreshEngineHumanInteractive()
+
+    Connections {
+        target: game_controls.pokerGame
+        function onInteractiveHumanChanged() {
+            game_controls.refreshEngineHumanInteractive()
+        }
+    }
+
     readonly property bool humanDecisionActive: trainerMode
             ? (!trainerInputLocked && decisionSecondsLeft > 0)
             : (decisionSecondsLeft > 0 && humanStackChips > 0)
@@ -808,8 +829,12 @@ Item {
                 x: 8
                 spacing: 10
 
+                readonly property bool playingAsBot: game_controls.pokerGame !== null
+                        && !game_controls.engineHumanInteractive
+
                 ThemedCheckBox {
                     id: sitOutCheck
+                    visible: !sitOutRow.playingAsBot
                     text: qsTr("Sit out")
                     font.family: Theme.fontFamilyUi
                     font.pixelSize: Theme.uiMicroPx
@@ -821,6 +846,14 @@ Item {
                             pokerGame.savePersistedSettings()
                         }
                     }
+                }
+
+                Label {
+                    visible: sitOutRow.playingAsBot
+                    text: qsTr("Bot playing")
+                    font.family: Theme.fontFamilyUi
+                    font.pixelSize: Theme.uiMicroPx
+                    color: Theme.textSecondary
                 }
 
                 Item {

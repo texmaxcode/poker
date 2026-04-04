@@ -96,7 +96,7 @@ Page {
                             spacing: 12
 
                             LobbyNavTile {
-                                title: qsTr("Poker table")
+                                title: qsTr("Texas Hold'em Table")
                                 sub: qsTr("Play hands")
                                 detailTip: qsTr(
                                     "6-max Texas Hold’em table: you and five named bots. "
@@ -215,6 +215,7 @@ Page {
                     font.family: Theme.fontFamilyUi
                     font.pointSize: Theme.uiLobbyNavTileTitlePt
                     font.bold: true
+                    font.capitalization: Font.AllUppercase
                     wrapMode: Text.WordWrap
                     maximumLineCount: 2
                     elide: Text.ElideRight

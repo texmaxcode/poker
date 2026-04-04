@@ -209,7 +209,10 @@ Page {
                     isHumanSeat: index === 0
                     decisionSecondsLeft: game_screen.decisionSecondsLeft
                     foldedDim: (game_screen.seatInHand[index] === false)
+                    /// "WATCHING" only when sitting out to observe; not when autoplaying your strategy (Play as bot).
                     humanWatching: index === 0 && game_screen.humanSittingOut
+                            && (game_screen.pokerGameAccess === null
+                                || game_screen.pokerGameAccess.interactiveHuman)
                     handEpoch: game_screen.handSeq
                 }
             }

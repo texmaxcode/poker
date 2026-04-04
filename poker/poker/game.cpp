@@ -793,7 +793,13 @@ void game::submitBbPreflopRaise(int chips_to_add)
 
 void game::setInteractiveHuman(bool enabled)
 {
+    if (interactive_human_ == enabled)
+        return;
     interactive_human_ = enabled;
+    /// Autoplay uses your configured strategy; do not keep "sit out" (that state is for watching only).
+    if (!enabled)
+        setHumanSitOut(false);
+    emit interactiveHumanChanged();
 }
 
 void game::setHumanSitOut(bool enabled)
@@ -2041,6 +2047,8 @@ void game::loadPersistedSettings()
 
     setHumanSitOut(store.value(QStringLiteral("humanSitOut"), false).toBool());
     setInteractiveHuman(store.value(QStringLiteral("interactiveHuman"), true).toBool());
+    if (!interactive_human_)
+        setHumanSitOut(false);
     setBotSlowActions(store.value(QStringLiteral("botSlowActions"), false).toBool());
     for (int s = 1; s < kMaxPlayers; ++s)
     {
@@ -2048,6 +2056,8 @@ void game::loadPersistedSettings()
         setSeatParticipating(s, store.value(QStringLiteral("seat%1/participating").arg(s), def).toBool());
     }
     store.endGroup();
+    /// `setInteractiveHuman(true)` often no-ops without NOTIFY — QML must re-bind HUD “Bot playing” vs sit out.
+    emit interactiveHumanChanged();
 }
 
 void game::savePersistedSettings() const

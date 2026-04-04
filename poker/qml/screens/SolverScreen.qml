@@ -81,6 +81,7 @@ Page {
             Label {
                 text: qsTr("Simulation log")
                 font.bold: true
+                font.capitalization: Font.AllUppercase
                 font.pixelSize: Theme.trainerSectionPx
                 color: Theme.gold
             }
@@ -468,7 +469,7 @@ Page {
                             Layout.fillWidth: true
                             text: solverPage.summaryText
                             wrapMode: Text.Wrap
-                            color: Theme.textPrimary
+                            color: Theme.textSecondary
                             font.family: Theme.fontFamilyUi
                             font.pixelSize: Theme.trainerBodyPx
                             lineHeight: 1.25
@@ -580,7 +581,7 @@ Page {
                             readOnly: true
                             wrapMode: TextArea.Wrap
                             font.family: "monospace"
-                            font.pixelSize: Theme.trainerBodyPx
+                            font.pixelSize: Theme.uiMonoPx
                             color: Theme.textPrimary
                             text: solverPage.nashSummaryText + "\n\n" + solverPage.nashDetailText
                             background: Rectangle {

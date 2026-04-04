@@ -108,6 +108,7 @@ ApplicationWindow {
                 verticalAlignment: Text.AlignVCenter
                 font.family: Theme.fontFamilyUi
                 font.bold: true
+                font.capitalization: Font.AllUppercase
                 font.pointSize: Theme.uiToolBarTitlePt
                 color: Theme.gold
                 text: headerTitleForIndex(stack.currentIndex)
@@ -122,7 +123,7 @@ ApplicationWindow {
     function headerTitleForIndex(idx) {
         switch (idx) {
         case 1:
-            return qsTr("Poker table")
+            return qsTr("Texas Hold'em Table")
         case 2:
             return qsTr("Bots & ranges")
         case 3:

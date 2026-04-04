@@ -283,6 +283,7 @@ Page {
                         color: Theme.gold
                         font.pointSize: Theme.trainerPageHeadlinePt
                         font.bold: true
+                        font.capitalization: Font.AllUppercase
                     }
 
                     Item { Layout.fillWidth: true }

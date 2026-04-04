@@ -19,6 +19,10 @@ Page {
 
     property string strategyPopupTitle: ""
     property string strategyPopupBody: ""
+    /// True while `playAsBotCheck.checked` is assigned from the engine — `toggled` must not write back.
+    property bool _syncingPlayAsBot: false
+    /// False until first frame after sync so `onCheckedChanged` does not overwrite `interactiveHuman` on startup.
+    property bool playAsBotUserInputEnabled: false
     /// Collapsed: “Range text…” only; expanded: compact row (textarea + Apply/Full), then hide after apply.
     property bool rangeTextEditorOpen: false
 
@@ -55,6 +59,7 @@ Page {
             Label {
                 text: setup.strategyPopupTitle
                 font.bold: true
+                font.capitalization: Font.AllUppercase
                 font.pointSize: Theme.trainerSectionPx
                 color: Theme.gold
                 wrapMode: Text.WordWrap
@@ -193,6 +198,10 @@ Page {
         streetSpin.value = pokerGame.configuredStreetBet()
         slowBotsCheck.checked = pokerGame.botSlowActions()
         syncPlayAsBotCheckboxFromEngine()
+        /// After sync’s deferred `_syncing` clear; avoids `toggled` applying stale engine state on startup.
+        Qt.callLater(function () {
+            setup.playAsBotUserInputEnabled = true
+        })
         Qt.callLater(reloadSeatEditor)
     }
 
@@ -205,7 +214,14 @@ Page {
     }
 
     function syncPlayAsBotCheckboxFromEngine() {
-        playAsBotCheck.checked = !pokerGame.interactiveHuman()
+        setup._syncingPlayAsBot = true
+        const wantChecked = !pokerGame.interactiveHuman
+        if (playAsBotCheck.checked !== wantChecked)
+            playAsBotCheck.checked = wantChecked
+        /// Defer clearing so any asynchronously delivered `toggled` from the assignment still sees `_syncing`.
+        Qt.callLater(function () {
+            setup._syncingPlayAsBot = false
+        })
     }
 
     Connections {
@@ -296,6 +312,7 @@ Page {
                         Layout.topMargin: 4
                         text: qsTr("Game settings")
                         font.bold: true
+                        font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerCaptionPx
                         color: Theme.textPrimary
                     }
@@ -397,7 +414,12 @@ Page {
                     rightPadding: 14
                     contentItem: Label {
                         text: parent.text
-                        font: parent.font
+                        font.family: parent.font.family
+                        font.pixelSize: parent.font.pixelSize
+                        font.weight: parent.font.weight
+                        font.bold: parent.font.bold
+                        font.italic: parent.font.italic
+                        font.capitalization: Font.AllUppercase
                         color: Theme.colorForSeat(0)
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -416,20 +438,18 @@ Page {
                         rightPadding: 14
                         contentItem: Label {
                             text: parent.text
-                            font: parent.font
+                            font.family: parent.font.family
+                            font.pixelSize: parent.font.pixelSize
+                            font.weight: parent.font.weight
+                            font.bold: parent.font.bold
+                            font.italic: parent.font.italic
+                            font.capitalization: Font.AllUppercase
                             color: Theme.colorForSeat(index + 1)
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             elide: Text.ElideRight
                         }
                     }
-                }
-            }
-
-            Connections {
-                target: seatTabBar
-                function onCurrentIndexChanged() {
-                    setup.reloadSeatEditor()
                 }
             }
 
@@ -445,6 +465,7 @@ Page {
                         Layout.fillWidth: true
                         text: botNames.displayName(setup.selectedSeat)
                         font.weight: Font.ExtraBold
+                        font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerSectionPx
                         color: Theme.colorForSeat(setup.selectedSeat)
                     }
@@ -579,6 +600,7 @@ Page {
                     Label {
                         text: qsTr("Strategy selection")
                         font.bold: true
+                        font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerSectionPx
                     }
                     RowLayout {
@@ -619,9 +641,13 @@ Page {
                         visible: selectedSeat === 0
                         Layout.fillWidth: true
                         text: qsTr("Play as bot (autoplay my seat with the strategy above)")
-                        /// User-driven only — programmatic `checked` sync does not emit `clicked`.
-                        onClicked: {
-                            pokerGame.setInteractiveHuman(!playAsBotCheck.checked)
+                        /// Update the engine in this signal (sync), not in Qt.callLater — deferred updates race
+                        /// `syncPlayAsBotCheckboxFromEngine()` and can re-apply stale `interactiveHuman` to the checkbox.
+                        onToggled: function (checked) {
+                            if (!setup.playAsBotUserInputEnabled || setup._syncingPlayAsBot)
+                                return
+                            const playAsBotOn = (checked !== undefined) ? checked : playAsBotCheck.checked
+                            pokerGame.setInteractiveHuman(!playAsBotOn)
                             pokerGame.savePersistedSettings()
                             setup.refreshRangeGrids()
                             setup.loadParamFields()
@@ -741,14 +767,47 @@ Page {
                         TabButton {
                             text: qsTr("Call")
                             font.bold: true
+                            contentItem: Label {
+                                text: parent.text
+                                font.family: parent.font.family
+                                font.pixelSize: parent.font.pixelSize
+                                font.weight: parent.font.weight
+                                font.bold: parent.font.bold
+                                font.italic: parent.font.italic
+                                font.capitalization: Font.AllUppercase
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                         TabButton {
                             text: qsTr("Raise")
                             font.bold: true
+                            contentItem: Label {
+                                text: parent.text
+                                font.family: parent.font.family
+                                font.pixelSize: parent.font.pixelSize
+                                font.weight: parent.font.weight
+                                font.bold: parent.font.bold
+                                font.italic: parent.font.italic
+                                font.capitalization: Font.AllUppercase
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                         TabButton {
                             text: qsTr("Open")
                             font.bold: true
+                            contentItem: Label {
+                                text: parent.text
+                                font.family: parent.font.family
+                                font.pixelSize: parent.font.pixelSize
+                                font.weight: parent.font.weight
+                                font.bold: parent.font.bold
+                                font.italic: parent.font.italic
+                                font.capitalization: Font.AllUppercase
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                     }
 
@@ -862,6 +921,14 @@ Page {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
             }
+        }
+    }
+
+    Connections {
+        target: seatTabBar
+        function onCurrentIndexChanged() {
+            setup.syncPlayAsBotCheckboxFromEngine()
+            setup.reloadSeatEditor()
         }
     }
 

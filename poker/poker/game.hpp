@@ -179,8 +179,9 @@ public:
     Q_INVOKABLE bool botActionDelayEnabled() const { return bot_action_delay_enabled_; }
     /// When false, seat 0 uses the same strategy/range bot logic as seats 1–5 (no on-felt decision UI).
     /// When true (default), the human acts through the HUD. Unit tests may disable for scripted runs.
+    Q_PROPERTY(bool interactiveHuman READ interactiveHuman WRITE setInteractiveHuman NOTIFY interactiveHumanChanged)
     Q_INVOKABLE void setInteractiveHuman(bool enabled);
-    Q_INVOKABLE bool interactiveHuman() const { return interactive_human_; }
+    bool interactiveHuman() const { return interactive_human_; }
     /// When true, seat 0 skips upcoming hands (watch bots). Enabling while you must act folds/checks
     /// through the current decision (fold facing a bet; fold when checked to; check BB option).
     Q_INVOKABLE void setHumanSitOut(bool enabled);
@@ -237,6 +238,7 @@ signals:
     void pot_changed();
     void sessionStatsChanged();
     void rangeRevisionChanged();
+    void interactiveHumanChanged();
     void humanDecisionFinished();
     void humanCheckFinished();
     void humanBbPreflopFinished();

@@ -39,7 +39,7 @@ Page {
     readonly property int statsTablePx: 22
     readonly property int statsTableHeaderPx: 23
     readonly property int statsTableTopSlotH: statsTableHeaderPx + 14
-    readonly property int statsTableRowSpacing: 2
+    readonly property int statsTableRowSpacing: 1
     /// Extra inset inside framed panels so table text sits farther from the border.
     readonly property int statsPanelPadding: Theme.trainerPanelPadding + 18
     readonly property int statsTableColSpacing: 14
@@ -188,6 +188,7 @@ Page {
                                 Label {
                                     text: qsTr("Player")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 88
@@ -196,6 +197,7 @@ Page {
                                 Label {
                                     text: qsTr("Table")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 56
@@ -204,6 +206,7 @@ Page {
                                 Label {
                                     text: qsTr("Off")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 56
@@ -212,6 +215,7 @@ Page {
                                 Label {
                                     text: qsTr("Tot")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 56
@@ -300,6 +304,7 @@ Page {
                                 Label {
                                     text: qsTr("Player")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 88
@@ -307,6 +312,7 @@ Page {
                                 Label {
                                     text: qsTr("Buy-in")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 72
@@ -391,6 +397,7 @@ Page {
                                 Label {
                                     text: qsTr("#")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.preferredWidth: 40
                                     horizontalAlignment: Text.AlignLeft
@@ -398,6 +405,7 @@ Page {
                                 Label {
                                     text: qsTr("Player")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 88
@@ -405,6 +413,7 @@ Page {
                                 Label {
                                     text: qsTr("Total")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 64
@@ -413,6 +422,7 @@ Page {
                                 Label {
                                     text: qsTr("P/L")
                                     font.bold: true
+                                    font.capitalization: Font.AllUppercase
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     Layout.preferredWidth: 56
                                     horizontalAlignment: Text.AlignRight
@@ -734,6 +744,7 @@ Page {
                                         wrapMode: Text.WordWrap
                                         font.pixelSize: Theme.trainerCaptionPx + 1
                                         font.bold: true
+                                        font.capitalization: Font.AllUppercase
                                         color: Theme.textPrimary
                                         text: {
                                             var t = statsPage.formatTimeMs(

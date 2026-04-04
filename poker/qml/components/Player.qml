@@ -22,7 +22,7 @@ Item {
     property bool show_cards: false
     property bool inHand: true
     property bool foldedDim: false
-    /// Seat 0: show "Watching" when sitting out (not a fold).
+    /// Seat 0: show "WATCHING" when sitting out to observe (not folded); false when autoplaying as bot.
     property bool humanWatching: false
     /// False when this seat is turned off in setup (bots only).
     property bool seatAtTable: true
@@ -74,7 +74,7 @@ Item {
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
     /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
     readonly property int seatInnerPad: Math.max(4, Math.round(11 * _s))
-    implicitHeight: Math.round(312 * _s)
+    implicitHeight: Math.round(306 * _s)
     implicitWidth: Math.round((Theme.holePairTotalWidth + 22) * _s)
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
@@ -82,7 +82,7 @@ Item {
     readonly property int cardW: Math.round(Theme.holeCardWidth * _s)
     readonly property int cardH: Math.round(Theme.holeCardHeight * _s)
     readonly property int cardGap: Math.max(2, Math.round(Theme.holeCardGap * _s))
-    readonly property int cardRowH: Math.round((Theme.holeCardHeight + 12) * _s)
+    readonly property int cardRowH: Math.round((Theme.holeCardHeight + 6) * _s)
     readonly property int streetRowH: Math.max(18, Math.round(26 * _s))
     readonly property int nameRowH: Math.max(28, Math.round(40 * _s))
     readonly property int posBox: Math.max(28, Math.round(40 * _s))
