@@ -276,6 +276,8 @@ private:
     int stats_seq_ = 0;
     /// Bumped when call/raise/bet range weights change (text parse, cell edit, reset full).
     int range_revision_ = 0;
+    /// While `loadPersistedSettings()` runs, skip auto-save in mutators (order matters: strategy then range text).
+    bool suppress_persist_ = false;
     /// Per-hand stack traces (after each completed hand) for bankroll charts.
     std::vector<std::array<int, kMaxPlayers>> bankroll_history_{};
     /// Parallel to `bankroll_history_`: snapshot timestamp (ms since epoch).

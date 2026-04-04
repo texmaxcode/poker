@@ -180,7 +180,9 @@ Page {
     }
 
     function reloadSeatEditor() {
+        stratCombo._stratSyncFromEngine = true
         stratCombo.currentIndex = pokerGame.seatStrategyIndex(setup.selectedSeat)
+        stratCombo._stratSyncFromEngine = false
         textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
         refreshRangeGrids()
         loadParamFields()
@@ -621,12 +623,15 @@ Page {
 
                         ComboBox {
                             id: stratCombo
+                            /// While syncing from `reloadSeatEditor` — do not call `setSeatStrategy` (would wipe loaded ranges).
+                            property bool _stratSyncFromEngine: false
                             model: strategyNames
                             currentIndex: 0
                             Layout.fillWidth: true
-                            onActivated: function (i) {
-                                pokerGame.setSeatStrategy(setup.selectedSeat, i)
-                                pokerGame.savePersistedSettings()
+                            onCurrentIndexChanged: {
+                                if (stratCombo._stratSyncFromEngine)
+                                    return
+                                pokerGame.setSeatStrategy(setup.selectedSeat, currentIndex)
                                 setup.refreshRangeGrids()
                                 textArea.text = pokerGame.exportSeatRangeText(setup.selectedSeat, rangeLayerTab.currentIndex)
                                 setup.loadParamFields()

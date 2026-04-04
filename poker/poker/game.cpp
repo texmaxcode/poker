@@ -1970,6 +1970,8 @@ void game::loadPersistedSettings()
         return;
     }
 
+    suppress_persist_ = true;
+
     const int sb = clamp_int(store.value(QStringLiteral("smallBlind")).toInt(), 1, 500);
     const int bb = clamp_int(store.value(QStringLiteral("bigBlind")).toInt(), 1, 500);
     const int st = clamp_int(store.value(QStringLiteral("streetBet")).toInt(), 1, 100000);
@@ -2056,6 +2058,7 @@ void game::loadPersistedSettings()
         setSeatParticipating(s, store.value(QStringLiteral("seat%1/participating").arg(s), def).toBool());
     }
     store.endGroup();
+    suppress_persist_ = false;
     /// `setInteractiveHuman(true)` often no-ops without NOTIFY — QML must re-bind HUD “Bot playing” vs sit out.
     emit interactiveHumanChanged();
 }
@@ -2111,6 +2114,10 @@ void game::setSeatStrategy(int seat, int strategyIndex)
     fill_preset_range(seat_cfg_[si].range_call, strat);
     seat_cfg_[si].range_raise = seat_cfg_[si].range_call;
     seat_cfg_[si].range_bet = seat_cfg_[si].range_call;
+    ++range_revision_;
+    emit rangeRevisionChanged();
+    if (!suppress_persist_)
+        savePersistedSettings();
 }
 
 QVariantMap game::seatStrategyParams(int seat) const
@@ -2197,6 +2204,8 @@ void game::setRangeCell(int seat, int row, int col, double w, int layer)
     layer_matrix(seat_cfg_[static_cast<size_t>(seat)], layer)->set_cell(row, col, w);
     ++range_revision_;
     emit rangeRevisionChanged();
+    if (!suppress_persist_)
+        savePersistedSettings();
 }
 
 void game::resetSeatRangeFull(int seat)
@@ -2209,6 +2218,8 @@ void game::resetSeatRangeFull(int seat)
     sb.range_bet.fill(1.0);
     ++range_revision_;
     emit rangeRevisionChanged();
+    if (!suppress_persist_)
+        savePersistedSettings();
 }
 
 void game::setSeatParticipating(int seat, bool participating)
