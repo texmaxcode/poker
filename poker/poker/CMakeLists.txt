@@ -13,7 +13,6 @@ qt_add_library(poker
   game.cpp
   game_persistence.cpp
   seat_manager.cpp
-  seat_manager.cpp
   human_decision_controller.cpp
   game_ui_sync.cpp
   hand_eval.cpp
