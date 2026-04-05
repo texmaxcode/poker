@@ -9,14 +9,19 @@ jobs:
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.10.0'
-          modules: 'qtbase qtdeclarative'
+          version: '6.10.*'
+          target: desktop
+          arch: linux_gcc_64
+          # Do not use `modules` for qtbase/qtdeclarative — that input is for *add-on* modules (qtcharts, …).
+          # Default aqt install includes qtbase + qtdeclarative (Quick/QML).
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-test-dev libsqlite3-dev ninja-build
+          sudo apt-get install -y libboost-test-dev libsqlite3-dev ninja-build pkg-config
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        env:
+          QTFRAMEWORK_BYPASS_LICENSE_CHECK: "1"
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
       - name: Build
         run: cmake --build build -j$(nproc)
       - name: Test
