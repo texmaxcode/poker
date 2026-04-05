@@ -45,14 +45,17 @@ QtObject {
     readonly property color feltBorder: "#0a2820"
     readonly property color railOuter: "#121018"
     readonly property color railBezel: "#1a1018"
-    readonly property color railWood0: "#4a3228"
-    readonly property color railWood1: "#2a1810"
-    readonly property color railWood2: "#140c08"
-    readonly property color railEdge: "#a06840"
+    readonly property color railWood0: "#352218"
+    readonly property color railWood1: "#1c1008"
+    readonly property color railWood2: "#0c0604"
+    /// Muted trim on the felt oval (was bright copper; keep separation from wood without a harsh ring).
+    readonly property color railEdge: "#342018"
 
     readonly property color hudBg0: "#2a1c14"
     readonly property color hudBg1: "#140e0a"
     readonly property color hudBorder: "#7a5020"
+    /// Table pot strip — slightly darker than `hudBorder` so the rim stays readable on the felt.
+    readonly property color potHudBorder: "#523018"
     readonly property color inputBg: "#222028"
     readonly property color inputBorder: "#4a4048"
     readonly property color accentBlue: "#7eb8e8"

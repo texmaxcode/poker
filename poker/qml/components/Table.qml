@@ -85,7 +85,7 @@ Item {
             radius: Math.max(5, Math.round(11 * table_container.potHudScale))
             color: Theme.hudBg1
             border.width: Math.max(1, Math.round(2 * table_container.potHudScale))
-            border.color: Theme.hudBorder
+            border.color: Theme.potHudBorder
             clip: true
 
             gradient: Gradient {

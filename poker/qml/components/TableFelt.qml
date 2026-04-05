@@ -1,7 +1,7 @@
 import QtQuick
 import Theme 1.0
 
-/// Vector-only table playfield (no bitmaps): dark room + oval rail + felt.
+/// Vector table playfield: room wash + oval rail + felt (no bitmaps).
 Item {
     id: root
     anchors.fill: parent
@@ -61,7 +61,6 @@ Item {
             border.color: Theme.railBezel
         }
 
-        /// Wood rail / armrest band (wider than a thin bezel — like a real table ramp).
         Rectangle {
             anchors.fill: parent
             anchors.margins: 10
@@ -80,7 +79,7 @@ Item {
                     color: Theme.railWood2
                 }
             }
-            border.width: 2
+            border.width: 1
             border.color: Theme.railEdge
         }
 
@@ -107,27 +106,33 @@ Item {
             border.color: Theme.feltBorder
             clip: true
 
+            /// Subtle fiber noise — 1×1 only, hues from the felt gradient (no light “wear” streaks).
             Canvas {
                 id: feltGrain
                 anchors.fill: parent
-                opacity: 0.14
+                opacity: 0.22
                 onPaint: {
                     if (width < 4 || height < 4)
                         return
                     var ctx = getContext("2d")
                     ctx.clearRect(0, 0, width, height)
-                    const n = Math.min(8000, Math.floor(width * height * 0.015))
-                    for (var i = 0; i < n; ++i) {
-                        const x = Math.random() * width
-                        const y = Math.random() * height
-                        ctx.fillStyle = Qt.rgba(0.05, 0.12, 0.1, 0.12 + Math.random() * 0.18)
-                        ctx.fillRect(x, y, 1, 1)
+                    var n = Math.min(6000, Math.floor(width * height * 0.012))
+                    var i
+                    for (i = 0; i < n; ++i) {
+                        var x = Math.random() * width
+                        var y = Math.random() * height
+                        var t = Math.random()
+                        // Darker fibers (shadow side of nap)
+                        ctx.fillStyle = Qt.rgba(0.02 + t * 0.04, 0.08 + t * 0.1, 0.06 + t * 0.08, 0.08 + Math.random() * 0.14)
+                        ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1)
                     }
-                    for (var j = 0; j < Math.floor(n * 0.2); ++j) {
-                        const x2 = Math.random() * width
-                        const y2 = Math.random() * height
-                        ctx.fillStyle = Qt.rgba(0.9, 0.95, 0.85, 0.04 + Math.random() * 0.06)
-                        ctx.fillRect(x2, y2, 2, 1)
+                    var nh = Math.floor(n * 0.35)
+                    for (i = 0; i < nh; ++i) {
+                        var x3 = Math.random() * width
+                        var y3 = Math.random() * height
+                        // Rare lighter green flecks (still on-felt, not yellow)
+                        ctx.fillStyle = Qt.rgba(0.12 + Math.random() * 0.1, 0.28 + Math.random() * 0.12, 0.2 + Math.random() * 0.1, 0.05 + Math.random() * 0.08)
+                        ctx.fillRect(Math.floor(x3), Math.floor(y3), 1, 1)
                     }
                 }
                 onWidthChanged: Qt.callLater(requestPaint)
@@ -136,22 +141,14 @@ Item {
             }
         }
 
+        /// Single soft playing-line inset (was two stacked white rings that could read as harsh lines).
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 40
-            radius: Math.max(4, parent.cr - 40)
+            anchors.margins: 44
+            radius: Math.max(4, parent.cr - 44)
             color: "transparent"
             border.width: 1
-            border.color: "#ffffff14"
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 46
-            radius: Math.max(4, parent.cr - 46)
-            color: "transparent"
-            border.width: 1
-            border.color: "#ffffff06"
+            border.color: Qt.rgba(0.55, 0.72, 0.62, 0.12)
         }
     }
 }
