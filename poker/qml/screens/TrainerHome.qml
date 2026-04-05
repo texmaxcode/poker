@@ -244,11 +244,13 @@ Page {
                         text: qsTr("Delay after answer")
                         color: Theme.textMuted
                         font.pixelSize: Theme.trainerCaptionPx
+                        Layout.alignment: Qt.AlignVCenter
                     }
-                    SpinBox {
+                    ThemedSpinBox {
                         id: delaySecSpin
                         Layout.preferredWidth: Theme.trainerSpinBoxWidth
-                        font.pixelSize: Theme.trainerCaptionPx
+                        labelPixelSize: Theme.trainerCaptionPx
+                        Layout.alignment: Qt.AlignVCenter
                         from: 1
                         to: 120
                         editable: true

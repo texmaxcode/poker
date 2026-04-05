@@ -80,7 +80,7 @@ bool GamePersistence::load_bankroll_session_from_settings()
                 std::array<int, game::kMaxPlayers> snap{};
                 for (int i = 0; i < game::kMaxPlayers; ++i)
                     snap[static_cast<size_t>(i)] =
-                        clamp_int(static_cast<int>(row[i].toDouble()), 0, 1000000000);
+                        clamp_int(static_cast<int>(row[i].toDouble()), 0, 2000000000);
                 loaded_hist.push_back(snap);
             }
             const int rows = static_cast<int>(loaded_hist.size());
@@ -110,7 +110,7 @@ bool GamePersistence::load_bankroll_session_from_settings()
             std::array<int, game::kMaxPlayers> snap{};
             for (int i = 0; i < game::kMaxPlayers; ++i)
                 snap[static_cast<size_t>(i)] = clamp_int(
-                    static_cast<int>(histOuter[r * game::kMaxPlayers + i].toDouble()), 0, 1000000000);
+                    static_cast<int>(histOuter[r * game::kMaxPlayers + i].toDouble()), 0, 2000000000);
             loaded_hist.push_back(snap);
         }
         loaded_times.reserve(static_cast<size_t>(rows));
@@ -141,7 +141,7 @@ bool GamePersistence::load_bankroll_session_from_settings()
         {
             for (int i = 0; i < game::kMaxPlayers; ++i)
                 game_.bankroll_tracker_.session_baseline_[static_cast<size_t>(i)] =
-                    clamp_int(static_cast<int>(bl[i].toDouble()), 0, 1000000000);
+                    clamp_int(static_cast<int>(bl[i].toDouble()), 0, 2000000000);
         }
     }
     else
@@ -165,6 +165,8 @@ void GamePersistence::loadPersistedSettings()
 
     if (AppStateSqlite::contains(QStringLiteral("v1/smallBlind")))
     {
+        game_.max_on_table_bb_ =
+            clamp_int(AppStateSqlite::value(QStringLiteral("v1/maxOnTableBb"), 100).toInt(), 1, 10000);
         const int sb = clamp_int(AppStateSqlite::value(QStringLiteral("v1/smallBlind")).toInt(), 1, 500);
         const int bb = clamp_int(AppStateSqlite::value(QStringLiteral("v1/bigBlind")).toInt(), 1, 500);
         const int st = clamp_int(AppStateSqlite::value(QStringLiteral("v1/streetBet")).toInt(), 1, 100000);
@@ -184,12 +186,15 @@ void GamePersistence::loadPersistedSettings()
         {
             const QString wk = QStringLiteral("v1/seat%1/wallet").arg(i);
             if (AppStateSqlite::contains(wk))
-                game_.seat_mgr_.seat_wallet_[static_cast<size_t>(i)] = clamp_int(AppStateSqlite::value(wk).toInt(), 0, 100000000);
+                game_.seat_mgr_.seat_wallet_[static_cast<size_t>(i)] = clamp_int(AppStateSqlite::value(wk).toInt(), 0, 2000000000);
         }
         game_.seat_mgr_.apply_seat_buy_ins_to_table(false);
     }
     else
     {
+        if (AppStateSqlite::contains(QStringLiteral("v1/maxOnTableBb")))
+            game_.max_on_table_bb_ =
+                clamp_int(AppStateSqlite::value(QStringLiteral("v1/maxOnTableBb")).toInt(), 1, 10000);
         if (AppStateSqlite::contains(QStringLiteral("v1/bigBlind")))
             game_.big_blind = clamp_int(AppStateSqlite::value(QStringLiteral("v1/bigBlind")).toInt(), 1, 500);
         if (AppStateSqlite::contains(QStringLiteral("v1/streetBet")))
@@ -205,7 +210,7 @@ void GamePersistence::loadPersistedSettings()
                 game_.seat_mgr_.seat_buy_in_[static_cast<size_t>(i)] = clamp_int(AppStateSqlite::value(bik).toInt(), 1, cap);
             const QString wk = QStringLiteral("v1/seat%1/wallet").arg(i);
             if (AppStateSqlite::contains(wk))
-                game_.seat_mgr_.seat_wallet_[static_cast<size_t>(i)] = clamp_int(AppStateSqlite::value(wk).toInt(), 0, 100000000);
+                game_.seat_mgr_.seat_wallet_[static_cast<size_t>(i)] = clamp_int(AppStateSqlite::value(wk).toInt(), 0, 2000000000);
         }
         game_.seat_mgr_.apply_seat_buy_ins_to_table(false);
     }
@@ -253,6 +258,14 @@ void GamePersistence::loadPersistedSettings()
             pm.insert(QStringLiteral("bbCheckraiseBonus"), AppStateSqlite::value(pfx + QStringLiteral("bbCheckraiseBonus")));
         if (AppStateSqlite::contains(pfx + QStringLiteral("bbCheckraiseTightMul")))
             pm.insert(QStringLiteral("bbCheckraiseTightMul"), AppStateSqlite::value(pfx + QStringLiteral("bbCheckraiseTightMul")));
+        if (AppStateSqlite::contains(pfx + QStringLiteral("buyInBb")))
+            pm.insert(QStringLiteral("buyInBb"), AppStateSqlite::value(pfx + QStringLiteral("buyInBb")));
+        if (!AppStateSqlite::contains(pfx + QStringLiteral("buyInBb")))
+        {
+            const int bbm = std::max(1, game_.big_blind);
+            const int bi = game_.seat_mgr_.seat_buy_in_[static_cast<size_t>(i)];
+            pm.insert(QStringLiteral("buyInBb"), std::max(1, bi / bbm));
+        }
         if (!pm.isEmpty())
             game_.setSeatStrategyParams(i, pm);
     }
@@ -262,12 +275,17 @@ void GamePersistence::loadPersistedSettings()
     if (!game_.interactive_human_)
         game_.setHumanSitOut(false);
     game_.setBotSlowActions(AppStateSqlite::value(QStringLiteral("v1/botSlowActions"), false).toBool());
+    game_.setWinningHandShowMs(
+        clamp_int(AppStateSqlite::value(QStringLiteral("v1/winningHandShowMs"), 5000).toInt(), 500, 60000));
     for (int s = 1; s < game::kMaxPlayers; ++s)
     {
         const bool def = true;
         game_.setSeatParticipating(s,
                              AppStateSqlite::value(QStringLiteral("v1/seat%1/participating").arg(s), def).toBool());
     }
+    if (!game_.interactive_human_)
+        game_.seat_mgr_.seat_buy_in_[0] = game_.effectiveSeatBuyInChips(0);
+    game_.seat_mgr_.apply_seat_buy_ins_to_table(false);
     game_.suppress_persist_ = false;
     game_.persist_loaded_ = true;
     emit game_.interactiveHumanChanged();
@@ -303,9 +321,11 @@ void GamePersistence::writePersistedSettingsImpl(bool onlyIfMissingKeys) const
     put(QStringLiteral("v1/bigBlind"), game_.big_blind);
     put(QStringLiteral("v1/streetBet"), game_.street_bet_);
     put(QStringLiteral("v1/startStack"), game_.starting_stack_);
+    put(QStringLiteral("v1/maxOnTableBb"), game_.max_on_table_bb_);
     put(QStringLiteral("v1/humanSitOut"), game_.human_sitting_out_);
     put(QStringLiteral("v1/interactiveHuman"), game_.interactive_human_);
     put(QStringLiteral("v1/botSlowActions"), game_.bot_slow_actions_);
+    put(QStringLiteral("v1/winningHandShowMs"), game_.winning_hand_show_ms_);
     for (int s = 1; s < game::kMaxPlayers; ++s)
         put(QStringLiteral("v1/seat%1/participating").arg(s),
             game_.seat_mgr_.seat_participating_[static_cast<size_t>(s)]);
@@ -328,6 +348,7 @@ void GamePersistence::writePersistedSettingsImpl(bool onlyIfMissingKeys) const
         put(pfx + QStringLiteral("openBetTightMul"), bp.open_bet_tight_mul);
         put(pfx + QStringLiteral("bbCheckraiseBonus"), bp.bb_checkraise_bonus);
         put(pfx + QStringLiteral("bbCheckraiseTightMul"), bp.bb_checkraise_tight_mul);
+        put(pfx + QStringLiteral("buyInBb"), bp.buy_in_bb);
     }
 
     if (onlyIfMissingKeys)

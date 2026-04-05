@@ -1,13 +1,13 @@
 pragma Singleton
 import QtQuick
 
-/// Layout constants — window chrome, HUD geometry, radii. Targets 1280×900 and 1920×1080.
+/// Layout constants — window chrome, HUD geometry, radii. Default window matches minimum (1280×720); scales up on larger displays.
 QtObject {
-    readonly property int windowWidthDefault: 1400
-    readonly property int windowHeightDefault: 900
     /// Minimum window — table + floating HUD beside seat 0 validated at this size.
     readonly property int windowMinWidth: 1280
     readonly property int windowMinHeight: 720
+    readonly property int windowWidthDefault: windowMinWidth
+    readonly property int windowHeightDefault: windowMinHeight
 
     /// Header strip with Lobby button + page title (ApplicationWindow `header`).
     readonly property int toolbarHeight: 58

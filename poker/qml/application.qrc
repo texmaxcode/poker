@@ -12,6 +12,7 @@
         <file>components/GameButton.qml</file>
         <file>components/BrandedBackground.qml</file>
         <file>components/ThemedCheckBox.qml</file>
+        <file>components/ThemedSpinBox.qml</file>
         <file>components/ThemedSwitch.qml</file>
         <file>components/SizingPresetBar.qml</file>
         <file>components/BotNames.qml</file>

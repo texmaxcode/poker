@@ -86,8 +86,8 @@ Item {
     readonly property int cardRowH: Math.round(Theme.holeCardHeight * _s)
     readonly property int streetRowH: Math.max(18, Math.round(26 * _s))
     readonly property int nameRowH: Math.max(28, Math.round(40 * _s))
-    /// Wide enough for “UTG” / “CO” / dealer chip without clipping Merriweather.
-    readonly property int posBox: Math.max(34, Math.round(46 * _s))
+    /// Wide enough for “UTG” / “CO” / dealer chip without clipping Rye (badge a few px larger than name row).
+    readonly property int posBox: Math.max(38, Math.round(50 * _s))
     readonly property int thinkSlotH: Math.max(8, Math.round(12 * _s))
     readonly property int stackRowH: Math.max(22, Math.round(30 * _s))
 
@@ -315,7 +315,7 @@ Item {
                         color: root.nameTextColor
                         font.family: Theme.fontFamilyButton
                         font.pointSize: Math.max(8, Theme.uiSeatNamePt * _s)
-                        font.weight: Font.ExtraBold
+                        font.weight: Font.Normal
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -335,9 +335,10 @@ Item {
                     Layout.preferredHeight: root.posBox
                     Layout.alignment: Qt.AlignVCenter
                     radius: Math.max(4, Math.round(6 * _s))
-                    color: root.isDealer ? Theme.hudBg0 : Theme.panelElevated
+                    color: root.isDealer ? Qt.lighter(Theme.hudBg0, 1.14)
+                                         : Qt.lighter(Theme.panelElevated, 1.12)
                     border.width: root.isDealer ? 2 : 1
-                    border.color: root.isDealer ? root.gold : Theme.panelBorderMuted
+                    border.color: root.isDealer ? root.gold : Qt.lighter(Theme.panelBorderMuted, 1.08)
                     clip: true
 
                     Text {
@@ -345,7 +346,7 @@ Item {
                         width: parent.width - Math.max(2, Math.round(4 * _s))
                         text: root.position
                         color: root.isDealer ? Theme.textPrimary : Theme.textSecondary
-                        font.family: Theme.fontFamilyUi
+                        font.family: Theme.fontFamilyDisplay
                         font.pointSize: Math.max(8, Theme.uiSeatPosPt * _s)
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter

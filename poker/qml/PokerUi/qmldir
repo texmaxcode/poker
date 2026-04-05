@@ -3,6 +3,7 @@ ThemedPanel 1.0 ../components/ThemedPanel.qml
 GameButton 1.0 ../components/GameButton.qml
 BrandedBackground 1.0 ../components/BrandedBackground.qml
 ThemedCheckBox 1.0 ../components/ThemedCheckBox.qml
+ThemedSpinBox 1.0 ../components/ThemedSpinBox.qml
 ThemedSwitch 1.0 ../components/ThemedSwitch.qml
 SizingPresetBar 1.0 ../components/SizingPresetBar.qml
 BotNames 1.0 ../components/BotNames.qml

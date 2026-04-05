@@ -15,6 +15,8 @@ Page {
     }
 
     property int pot: 0
+    /// Physical pots (main + sides) from `hand_contrib_`; empty when pot is 0.
+    property var potSlices: []
     property var seatStacks: [100, 100, 100, 100, 100, 100]
     property var seatC1: ["", "", "", "", "", ""]
     property var seatC2: ["", "", "", "", "", ""]
@@ -27,6 +29,9 @@ Page {
     property int sbSeat: -1
     property int bbSeat: -1
     property int playerCount: 6
+    /// Stakes from `configure` / persisted settings (`game::sync_ui` pushes these to the page root).
+    property int smallBlind: 1
+    property int bigBlind: 3
 
     property string board0: ""
     property string board1: ""
@@ -192,6 +197,9 @@ Page {
                 anchors.fill: parent
                 centerScale: tableArea.tableScale
                 pot_amount: game_screen.pot
+                pot_slices: game_screen.potSlices
+                smallBlind: game_screen.smallBlind
+                bigBlind: game_screen.bigBlind
                 actingSeat: game_screen.actingSeat
                 decisionSecondsLeft: game_screen.decisionSecondsLeft
                 facingNeedChips: game_screen.facingNeedChips

@@ -59,6 +59,8 @@ private:
 
     int small_blind = 1;
     int big_blind = 3;
+    /// Max chips on the table per buy-in, expressed as big-blind multiples (× BB chips).
+    int max_on_table_bb_ = 100;
     int street_bet_ = 9;
     int button = 0;
     bool in_progress = false;
@@ -123,7 +125,7 @@ public:
     /// Invoked from QML (avoid name clash with QML/Qt `start`); runs one full hand.
     Q_INVOKABLE void beginNewHand();
     bool is_game_in_progress() const;
-    /// Adds a player if stack is in `(10×BB, 100×BB]` — training-app stake model, not a generic engine API.
+    /// Adds a player if stack is in `(10×BB, maxBuyInChips()]` — training-app stake model, not a generic engine API.
     void join_table(player player);
     int players_count() const;
     void collect_blinds();
@@ -142,7 +144,10 @@ public:
     Q_INVOKABLE int configuredBigBlind() const { return big_blind; }
     Q_INVOKABLE int configuredStreetBet() const { return street_bet_; }
     Q_INVOKABLE int configuredStartStack() const { return starting_stack_; }
-    /// Maximum chips a seat may bring to the table per buy-in / apply (100× big blind).
+    /// Table rule: max on-table chips per buy-in = `configuredMaxOnTableBb() × big blind` (chips).
+    Q_INVOKABLE int configuredMaxOnTableBb() const { return max_on_table_bb_; }
+    Q_INVOKABLE void setMaxOnTableBb(int maxBb);
+    /// Maximum chips a seat may bring to the table per buy-in / apply (`configuredMaxOnTableBb() ×` big blind).
     Q_INVOKABLE int maxBuyInChips() const;
     /// Table stack + off-table wallet for `seat` (pending total if edited mid-hand).
     Q_INVOKABLE int seatBankrollTotal(int seat) const;
@@ -186,6 +191,10 @@ public:
     Q_PROPERTY(bool botSlowActions READ botSlowActions WRITE setBotSlowActions NOTIFY botSlowActionsChanged)
     Q_INVOKABLE void setBotSlowActions(bool enabled);
     bool botSlowActions() const;
+    /// Pause after a hand ends (showdown / winner lines) before `beginNewHand()` when auto-deal is on. Clamped 500 ms–60 s.
+    Q_PROPERTY(int winningHandShowMs READ winningHandShowMs WRITE setWinningHandShowMs NOTIFY winningHandShowMsChanged)
+    Q_INVOKABLE void setWinningHandShowMs(int ms);
+    int winningHandShowMs() const;
     /// When false, skips the fixed delay after each bot action (default true; set false in unit tests).
     Q_INVOKABLE void setBotActionDelayEnabled(bool enabled);
     Q_INVOKABLE bool botActionDelayEnabled() const { return bot_action_delay_enabled_; }
@@ -238,6 +247,8 @@ public:
     /// Blind seats and first actor seats for the current `button` / `in_hand_` state (tests / diagnostics).
     /// Clockwise table order uses `(seat + n - 1) % n` in index space (see `first_in_hand_after`).
     Q_INVOKABLE QVariantMap bettingAnchors() const;
+    /// Effective preflop “bet to match” after blinds (`max(SB posted, BB posted)`); 0 when idle / before init.
+    Q_INVOKABLE int preflopBlindLevel() const { return preflop_blind_level_; }
 
     /// Off-table portion of bankroll, available for rebuy (starts at 0 after apply; persistence may restore a reserve).
     Q_INVOKABLE int seatWallet(int seat) const;
@@ -252,6 +263,7 @@ signals:
     void rangeRevisionChanged();
     void interactiveHumanChanged();
     void botSlowActionsChanged();
+    void winningHandShowMsChanged();
 
 public slots:
     void buttonClicked(QString button);
@@ -265,9 +277,13 @@ private:
     bool human_sitting_out_ = false;
     int sb_seat_ = -1;
     int bb_seat_ = -1;
+    /// After blinds: `max(actual SB posted, actual BB posted)` — used for BB option / “raised over blinds” (nominal `big_blind` is wrong when blinds are short).
+    int preflop_blind_level_ = 0;
     int acting_seat_ = -1;
     bool auto_hand_loop_ = true;
     bool bot_slow_actions_ = false;
+    /// `schedule_next_hand_if_idle`: delay before auto `beginNewHand()` (default 5 s).
+    int winning_hand_show_ms_ = 5000;
     /// When false, `bot_action_pause` is a no-op (keeps CI fast; UI keeps default true).
     bool bot_action_delay_enabled_ = true;
     /// Bumped when call/raise/bet range weights change (text parse, cell edit, reset full).
@@ -290,6 +306,8 @@ private:
     void schedule_next_hand_if_idle();
     void complete_hand_idle();
     void configureImpl(int smallBlind, int bigBlind, int streetBet, int startStack, bool resetBankrollOnStackApply);
+    /// Stack target for rebuy / apply: seat 0 uses `seat_buy_in_` when interactive; otherwise `buy_in_bb ×` BB (capped).
+    int effectiveSeatBuyInChips(int seat) const;
     void bot_action_pause();
     /// Postflop: no open bet — record a check and pause (mirrors human `Check` label).
     void bot_record_postflop_check(int seat);

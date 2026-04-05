@@ -12,26 +12,26 @@ BotParams params_for(BotStrategy s)
     switch (s)
     {
     case BotStrategy::AlwaysCall:
-        return {0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+        return {0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 100};
     case BotStrategy::Rock:
-        return {3.2, 2.8, 0.0, 0.35, 0.0, 0.4, 0.0, 0.3};
+        return {3.2, 2.8, 0.0, 0.35, 0.0, 0.4, 0.0, 0.3, 100};
     case BotStrategy::Nit:
-        return {2.6, 2.4, 0.0, 0.35, 0.0, 0.4, 0.0, 0.3};
+        return {2.6, 2.4, 0.0, 0.35, 0.0, 0.4, 0.0, 0.3, 100};
     case BotStrategy::TightAggressive:
-        return {2.0, 0.85, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+        return {2.0, 0.85, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 100};
     case BotStrategy::LoosePassive:
-        return {0.75, 1.8, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+        return {0.75, 1.8, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 100};
     case BotStrategy::LooseAggressive:
-        return {0.55, 0.65, 0.18, 1.0, 0.2, 1.0, 0.22, 1.0};
+        return {0.55, 0.65, 0.18, 1.0, 0.2, 1.0, 0.22, 1.0, 100};
     case BotStrategy::Balanced:
-        return {1.15, 1.1, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+        return {1.15, 1.1, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 100};
     case BotStrategy::Maniac:
-        return {0.35, 0.4, 0.18, 1.0, 0.2, 1.0, 0.22, 1.0};
+        return {0.35, 0.4, 0.18, 1.0, 0.2, 1.0, 0.22, 1.0, 100};
     case BotStrategy::GTOHeuristic:
         // Near-balanced frequencies with mild pressure — starting point; user can tune every field.
-        return {1.12, 1.08, 0.09, 0.82, 0.10, 0.78, 0.11, 0.75};
+        return {1.12, 1.08, 0.09, 0.82, 0.10, 0.78, 0.11, 0.75, 100};
     default:
-        return {1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+        return {1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 100};
     }
 }
 

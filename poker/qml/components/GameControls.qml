@@ -127,8 +127,10 @@ Item {
 
     /// False while sitting out — disables action buttons; do not use alone to collapse the whole HUD.
     readonly property bool showHumanActions: !humanSitOut
-    /// Timer / progress strip: show while playing or watching so the panel height stays stable.
-    readonly property bool showTableDecisionChrome: !trainerMode && (showWagerUi || humanSitOut)
+    /// Timer / progress strip: table uses sit-out/watch; trainers show while the drill waits for input.
+    readonly property bool showTableDecisionChrome: trainerMode
+            ? (showHumanActions && showWagerUi)
+            : (showWagerUi || humanSitOut)
 
     /// Table: hand strength is shown in the dedicated row above; banner is status / showdown (+ watching when sitting out).
     readonly property string statusFullDisplay: {
@@ -297,7 +299,7 @@ Item {
                 color: Theme.textPrimary
                 font.family: Theme.fontFamilyUi
                 font.pixelSize: game_controls.hudBodyPx
-                wrapMode: Text.NoWrap
+                wrapMode: game_controls.embeddedMode ? Text.NoWrap : Text.WordWrap
                 elide: Text.ElideRight
             }
 
@@ -410,7 +412,8 @@ Item {
                 ProgressBar {
                     id: embeddedDecisionBar
                     /// Keep the bar’s vertical space on the table HUD even between decisions (timer at 0).
-                    visible: game_controls.embeddedMode && game_controls.showTableDecisionChrome
+                    visible: game_controls.showTableDecisionChrome
+                        && (game_controls.embeddedMode || game_controls.trainerMode)
                     width: parent.width
                     height: Math.max(4, Math.round(6 * game_controls.ez))
                     padding: Math.max(1, Math.round(2 * game_controls.ez))
@@ -607,6 +610,7 @@ Item {
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
                     fontSize: game_controls.hudBtnPt
+                    hudLabelFontFamily: Theme.fontFamilyUi
                     overrideHeight: game_controls.hudActBtnH
                     clickEnabled: !game_controls.trainerInputLocked && game_controls.facingRaise
                             && game_controls.decisionSecondsLeft > 0
@@ -619,11 +623,12 @@ Item {
 
                 GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
-                    text: qsTr("Bet 33%")
+                    text: qsTr("Bet ⅓ pot")
                     pillWidth: 108
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
                     fontSize: game_controls.hudBtnPt
+                    hudLabelFontFamily: Theme.fontFamilyUi
                     overrideHeight: game_controls.hudActBtnH
                     clickEnabled: !game_controls.trainerInputLocked && game_controls.facingRaise
                             && game_controls.decisionSecondsLeft > 0
@@ -636,11 +641,12 @@ Item {
 
                 GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
-                    text: qsTr("Bet 75%")
+                    text: qsTr("Bet ¾ pot")
                     pillWidth: 88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
                     fontSize: game_controls.hudBtnPt
+                    hudLabelFontFamily: Theme.fontFamilyUi
                     overrideHeight: game_controls.hudActBtnH
                     clickEnabled: !game_controls.trainerInputLocked && game_controls.facingRaise
                             && game_controls.decisionSecondsLeft > 0
@@ -927,7 +933,7 @@ Item {
                 spacing: 12
 
                 GameButton {
-                    text: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
+                    text: qsTr("Buy back in ($%1)").arg(game_controls.buyInChips)
                     fontSize: game_controls.hudBtnPt
                     pillWidth: 0
                     horizontalPadding: 16

@@ -31,6 +31,7 @@ Page {
             + qsTr("Open raise tight × — Multiplier on that open / probe tendency.\n\n")
             + qsTr("BB check-raise bonus — Extra weight for check-raising from the big blind preflop.\n\n")
             + qsTr("BB check-raise tight × — Multiplier on BB check-raise frequency.\n\n")
+            + qsTr("Buy-in (× BB) — For bots (and when you use “Play as bot”), target stack and automatic rebuys use this many big blinds (not dollars), capped by “Max on table (BB)” below.\n\n")
             + qsTr("Tap Set to apply. The engine clamps values to safe ranges.")
     /// True while `playAsBotCheck.checked` is assigned from the engine — `toggled` must not write back.
     property bool _syncingPlayAsBot: false
@@ -39,6 +40,8 @@ Page {
     /// to `checked: false`; an early `checkedChanged` would otherwise call `setBotSlowActions(false)` and wipe
     /// the value restored by `loadPersistedSettings()` (main runs load **before** QML loads).
     property bool _syncingSlowBots: true
+    /// Same pattern for `winningHandSecSpin` vs `pokerGame.winningHandShowMs`.
+    property bool _syncingWinningHandSec: true
     /// False until first frame after sync so `onCheckedChanged` does not overwrite `interactiveHuman` on startup.
     property bool playAsBotUserInputEnabled: false
     /// Collapsed: “Range as text” only; expanded: compact row (textarea + Apply/Full), then hide after apply.
@@ -156,6 +159,7 @@ Page {
         strat_ob_tight.text = formatParamNum(m.openBetTightMul)
         strat_bb_bonus.text = formatParamNum(m.bbCheckraiseBonus)
         strat_bb_tight.text = formatParamNum(m.bbCheckraiseTightMul)
+        strat_buy_bb.value = (m.buyInBb !== undefined && m.buyInBb !== null) ? m.buyInBb : 100
     }
 
     function applyParamFields() {
@@ -175,9 +179,14 @@ Page {
         put("openBetTightMul", strat_ob_tight.text)
         put("bbCheckraiseBonus", strat_bb_bonus.text)
         put("bbCheckraiseTightMul", strat_bb_tight.text)
+        var bi = parseInt(strat_buy_bb.value, 10)
+        if (isFinite(bi))
+            m["buyInBb"] = bi
         if (Object.keys(m).length < 1)
             return
         pokerGame.setSeatStrategyParams(setup.selectedSeat, m)
+        if (!pokerGame.gameInProgress())
+            pokerGame.applySeatBuyInsToStacks()
         setup.persistSave()
         loadParamFields()
     }
@@ -211,16 +220,22 @@ Page {
         reloadSeatEditor()
     }
 
-    /// Matches engine `maxBuyInChips()` (100× BB); use before stakes are applied so the cap tracks the BB spin.
-    readonly property int buyInCapChips: Math.max(1, bbSpin.value * 100)
+    /// Pending cap from the Game settings spins (max on table BB × BB); call after `maxTableBbSpin` exists.
+    function buyInCapChipsValue() {
+        return Math.max(1, maxTableBbSpin.value * bbSpin.value)
+    }
 
     Component.onCompleted: {
         sbSpin.value = pokerGame.configuredSmallBlind()
         bbSpin.value = pokerGame.configuredBigBlind()
         streetSpin.value = pokerGame.configuredStreetBet()
+        maxTableBbSpin.value = pokerGame.configuredMaxOnTableBb()
         setup._syncingSlowBots = true
         slowBotsCheck.checked = pokerGame.botSlowActions
         setup._syncingSlowBots = false
+        setup._syncingWinningHandSec = true
+        winningHandSecSpin.value = Math.max(1, Math.min(60, Math.round(pokerGame.winningHandShowMs / 1000)))
+        setup._syncingWinningHandSec = false
         syncPlayAsBotCheckboxFromEngine()
         /// After sync’s deferred `_syncing` clear; avoids `toggled` applying stale engine state on startup.
         Qt.callLater(function () {
@@ -235,9 +250,13 @@ Page {
             sbSpin.value = pokerGame.configuredSmallBlind()
             bbSpin.value = pokerGame.configuredBigBlind()
             streetSpin.value = pokerGame.configuredStreetBet()
+            maxTableBbSpin.value = pokerGame.configuredMaxOnTableBb()
             setup._syncingSlowBots = true
             slowBotsCheck.checked = pokerGame.botSlowActions
             setup._syncingSlowBots = false
+            setup._syncingWinningHandSec = true
+            winningHandSecSpin.value = Math.max(1, Math.min(60, Math.round(pokerGame.winningHandShowMs / 1000)))
+            setup._syncingWinningHandSec = false
             totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
             syncPlayAsBotCheckboxFromEngine()
@@ -261,6 +280,15 @@ Page {
         function onSessionStatsChanged() {
             totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
+        }
+    }
+
+    Connections {
+        target: pokerGame
+        function onWinningHandShowMsChanged() {
+            setup._syncingWinningHandSec = true
+            winningHandSecSpin.value = Math.max(1, Math.min(60, Math.round(pokerGame.winningHandShowMs / 1000)))
+            setup._syncingWinningHandSec = false
         }
     }
 
@@ -369,7 +397,7 @@ Page {
                         RowLayout {
                             spacing: 4
                             Label {
-                                text: qsTr("SB")
+                                text: qsTr("SB ($)")
                                 font.pixelSize: Theme.trainerCaptionPx
                                 font.bold: true
                             }
@@ -386,7 +414,7 @@ Page {
                         RowLayout {
                             spacing: 4
                             Label {
-                                text: qsTr("BB")
+                                text: qsTr("BB ($)")
                                 font.pixelSize: Theme.trainerCaptionPx
                                 font.bold: true
                             }
@@ -403,7 +431,7 @@ Page {
                         RowLayout {
                             spacing: 4
                             Label {
-                                text: qsTr("Min raise")
+                                text: qsTr("Min open ($)")
                                 font.pixelSize: Theme.trainerCaptionPx
                                 font.bold: true
                             }
@@ -417,12 +445,32 @@ Page {
                                 Layout.maximumWidth: 120
                             }
                         }
+                        RowLayout {
+                            spacing: 4
+                            Label {
+                                text: qsTr("Max on table (BB)")
+                                font.pixelSize: Theme.trainerCaptionPx
+                                font.bold: true
+                            }
+                            SpinBox {
+                                id: maxTableBbSpin
+                                from: 1
+                                to: 5000
+                                value: 100
+                                editable: true
+                                Layout.preferredWidth: 104
+                                Layout.maximumWidth: 120
+                            }
+                        }
                         RangeActionButton {
-                            text: qsTr("Apply stakes")
+                            text: qsTr("SET")
+                            compact: true
+                            dense: true
                             fillCol: Qt.tint(Theme.panelElevated, "#42c9a227")
                             borderCol: Theme.goldMuted
                             Layout.leftMargin: 4
                             onClicked: {
+                                pokerGame.setMaxOnTableBb(maxTableBbSpin.value)
                                 pokerGame.configure(sbSpin.value, bbSpin.value, streetSpin.value,
                                         pokerGame.configuredStartStack())
                                 setup.persistSave()
@@ -431,9 +479,62 @@ Page {
                         }
                     }
 
+                    Label {
+                        Layout.fillWidth: true
+                        font.pixelSize: Theme.trainerCaptionPx
+                        color: Theme.textSecondary
+                        wrapMode: Text.WordWrap
+                        text: qsTr("SB $%1 · BB $%2").arg(sbSpin.value).arg(bbSpin.value)
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 4
+                        text: qsTr("Timing")
+                        font.family: Theme.fontFamilyDisplay
+                        font.bold: true
+                        font.capitalization: Font.AllUppercase
+                        font.pixelSize: Theme.trainerCaptionPx
+                        font.letterSpacing: 0.5
+                        color: Theme.sectionTitle
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Label {
+                            text: qsTr("Winning hand display")
+                            font.pixelSize: Theme.trainerCaptionPx
+                            font.bold: true
+                        }
+                        SpinBox {
+                            id: winningHandSecSpin
+                            from: 1
+                            to: 60
+                            stepSize: 1
+                            editable: true
+                            Layout.preferredWidth: 104
+                            Layout.maximumWidth: 120
+                            onValueChanged: {
+                                if (setup._syncingWinningHandSec)
+                                    return
+                                pokerGame.setWinningHandShowMs(value * 1000)
+                                setup.persistSave()
+                            }
+                        }
+                        Label {
+                            text: qsTr("seconds before next hand (auto-deal)")
+                            font.pixelSize: Theme.trainerCaptionPx
+                            color: Theme.textSecondary
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+
                     ThemedCheckBox {
                         id: slowBotsCheck
-                        text: qsTr("Slow down bot actions (longer pauses between bot decisions)")
+                        text: qsTr("Slow down bots!")
                         /// Use `onCheckedChanged` (fires after `checked` updates). `toggled` / stale `checked`
                         /// in `onToggled` can race and write the wrong value; early emissions before sync must
                         /// be ignored via `_syncingSlowBots` (defaults true until `Component.onCompleted`).
@@ -523,15 +624,15 @@ Page {
                         Layout.fillWidth: true
                         spacing: 6
                         Label {
-                            text: qsTr("Wallet")
+                            text: qsTr("Wallet ($)")
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                         }
                         SpinBox {
                             id: totalBankSpin
                             from: 1
-                            to: 100000000
-                            stepSize: 100
+                            to: 2000000000
+                            stepSize: 1
                             editable: true
                             Layout.fillWidth: false
                             Layout.preferredWidth: 160
@@ -569,15 +670,17 @@ Page {
                             }
                         }
                         Label {
-                            text: qsTr("On the table")
+                            visible: setup.selectedSeat === 0 && !playAsBotCheck.checked
+                            text: qsTr("On table ($)")
                             font.bold: true
                             font.pixelSize: Theme.trainerCaptionPx
                             Layout.leftMargin: 8
                         }
                         SpinBox {
                             id: seatBankSpin
+                            visible: setup.selectedSeat === 0 && !playAsBotCheck.checked
                             from: 1
-                            to: setup.buyInCapChips
+                            to: Math.max(1, maxTableBbSpin.value * bbSpin.value)
                             stepSize: 1
                             editable: true
                             Layout.fillWidth: false
@@ -591,7 +694,7 @@ Page {
 
                             function refreshFromGame() {
                                 _applyingFromGame = true
-                                value = Math.min(pokerGame.seatBuyIn(setup.selectedSeat), setup.buyInCapChips)
+                                value = Math.min(pokerGame.seatBuyIn(setup.selectedSeat), setup.buyInCapChipsValue())
                                 _applyingFromGame = false
                             }
 
@@ -620,8 +723,16 @@ Page {
                             Connections {
                                 target: bbSpin
                                 function onValueChanged() {
-                                    if (seatBankSpin.value > setup.buyInCapChips)
-                                        seatBankSpin.value = setup.buyInCapChips
+                                    if (seatBankSpin.value > setup.buyInCapChipsValue())
+                                        seatBankSpin.value = setup.buyInCapChipsValue()
+                                }
+                            }
+
+                            Connections {
+                                target: maxTableBbSpin
+                                function onValueChanged() {
+                                    if (seatBankSpin.value > setup.buyInCapChipsValue())
+                                        seatBankSpin.value = setup.buyInCapChipsValue()
                                 }
                             }
 
@@ -745,6 +856,25 @@ Page {
                                     onClicked: setup.openStrategyLogPopup(
                                             qsTr("Engine parameters"),
                                             setup.engineParamsHelpText)
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                visible: setup.selectedSeat >= 1 || setup.humanSeatAutoplay
+                                spacing: 8
+                                Label {
+                                    text: qsTr("Buy-in (× BB)")
+                                    font.pixelSize: Theme.trainerCaptionPx
+                                }
+                                SpinBox {
+                                    id: strat_buy_bb
+                                    from: 1
+                                    to: 10000
+                                    value: 100
+                                    editable: true
+                                    Layout.preferredWidth: 120
+                                    Layout.maximumWidth: 140
                                 }
                             }
 
@@ -1083,16 +1213,19 @@ Page {
         property color fillCol: Theme.panelElevated
         property color borderCol: Theme.chromeLineGold
         property bool compact: false
+        /// Smaller padding than `compact` (e.g. SET stakes).
+        property bool dense: false
 
         flat: false
         focusPolicy: Qt.NoFocus
         font.family: Theme.fontFamilyButton
-        font.pixelSize: compact ? Theme.trainerCaptionPx : Theme.trainerButtonLabelPx
+        font.pixelSize: (dense && compact) ? Math.max(10, Theme.trainerCaptionPx - 1)
+                : (compact ? Theme.trainerCaptionPx : Theme.trainerButtonLabelPx)
         font.bold: true
-        leftPadding: compact ? 14 : 22
-        rightPadding: compact ? 14 : 22
-        topPadding: compact ? 6 : 12
-        bottomPadding: compact ? 6 : 12
+        leftPadding: dense ? 10 : (compact ? 14 : 22)
+        rightPadding: dense ? 10 : (compact ? 14 : 22)
+        topPadding: dense ? 4 : (compact ? 6 : 12)
+        bottomPadding: dense ? 4 : (compact ? 6 : 12)
 
         background: Rectangle {
             implicitWidth: rangeActBtn.contentItem.implicitWidth + rangeActBtn.leftPadding + rangeActBtn.rightPadding

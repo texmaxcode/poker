@@ -222,7 +222,7 @@ Page {
         board3 = String(q.board3)
         seatVisualEpoch++
         resetTrainerPotDisplay()
-        statusLine = qsTr("Spot %1").arg(spotId)
+        statusLine = qsTr("Pick the best play.")
         startDecisionClock()
     }
 
@@ -236,8 +236,9 @@ Page {
             startAutoAdvance()
             return
         }
+        const spotLabel = Theme.trainerSpotDisplayTitle(spotId)
         statusLine = qsTr("%1 — %2 (freq %3%) · EV loss %4 bb")
-                .arg(spotId)
+                .arg(spotLabel.length ? spotLabel : spotId)
                 .arg(String(r.grade))
                 .arg(Math.round(Number(r.chosenFreq) * 100))
                 .arg(Number(r.evLossBb).toFixed(3))
@@ -309,12 +310,14 @@ Page {
                         text: qsTr("Delay")
                         color: Theme.textMuted
                         font.pixelSize: Theme.trainerCaptionPx
+                        Layout.alignment: Qt.AlignVCenter
                     }
-                    SpinBox {
+                    ThemedSpinBox {
                         id: delaySecSpin
-                        font.pixelSize: Theme.trainerCaptionPx
+                        labelPixelSize: Theme.trainerCaptionPx
                         Layout.fillWidth: page.trainerControlColumns <= 2
                         Layout.preferredWidth: page.trainerControlColumns >= 4 ? Theme.trainerSpinBoxWidth : implicitWidth
+                        Layout.alignment: Qt.AlignVCenter
                         from: 1
                         to: 120
                         editable: true
@@ -329,12 +332,14 @@ Page {
                         text: qsTr("Time limit")
                         color: Theme.textMuted
                         font.pixelSize: Theme.trainerCaptionPx
+                        Layout.alignment: Qt.AlignVCenter
                     }
-                    SpinBox {
+                    ThemedSpinBox {
                         id: timeLimitSpin
-                        font.pixelSize: Theme.trainerCaptionPx
+                        labelPixelSize: Theme.trainerCaptionPx
                         Layout.fillWidth: page.trainerControlColumns <= 2
                         Layout.preferredWidth: page.trainerControlColumns >= 4 ? Theme.trainerSpinBoxWidth : implicitWidth
+                        Layout.alignment: Qt.AlignVCenter
                         from: 5
                         to: 120
                         editable: true
@@ -371,7 +376,7 @@ Page {
                         anchors.fill: parent
                         anchors.margins: 2
 
-                        readonly property int seatReserve: 220
+                        readonly property int seatReserve: 280
                         readonly property real seatScale: {
                             var h = drillPanel.height
                             if (h <= 0)
@@ -382,25 +387,23 @@ Page {
                         readonly property int turnStripIntrinsic: 4 * Theme.trainerFlopBoardCardWidth
                                 + 3 * Theme.trainerDrillHudSpacing
                         readonly property real boardStripScale: Math.min(1.0, Math.max(0.28,
-                                (drillArea.width - 20) / Math.max(1, turnStripIntrinsic)))
+                                (drillArea.width - 2 * Theme.trainerPanelPadding) / Math.max(1, turnStripIntrinsic)))
                         readonly property int drillCardW: Math.max(32, Math.round(Theme.trainerFlopBoardCardWidth * boardStripScale))
                         readonly property int drillCardH: Math.max(48, Math.round(Theme.trainerFlopBoardCardHeight * boardStripScale))
                         readonly property int drillCardGap: Math.max(3, Math.round(Theme.trainerDrillHudSpacing * boardStripScale))
                         readonly property int turnBoardStripWidth: 4 * drillCardW + 3 * drillCardGap
 
-                        readonly property Item humanSeat: trainerSeatWrap
-                        /// Same formula as `Game.qml` table HUD (seat is nested in a layout — use `mapFromItem` below).
-                        readonly property real hudPanelW: Math.min(400, Math.max(Theme.trainerEmbeddedHudMinWidth,
-                                drillArea.width * 0.36))
-
                         ColumnLayout {
                             id: flopDrillStack
                             anchors.fill: parent
-                            spacing: 10
+                            anchors.leftMargin: Theme.trainerPanelPadding
+                            anchors.rightMargin: Theme.trainerPanelPadding
+                            anchors.topMargin: Theme.trainerPanelPadding
+                            anchors.bottomMargin: Theme.trainerPanelPadding
+                            spacing: 12
 
                             Column {
                                 Layout.alignment: Qt.AlignHCenter
-                                Layout.topMargin: 0
                                 spacing: 8
                                 width: drillArea.turnBoardStripWidth
 
@@ -476,95 +479,88 @@ Page {
                                 }
                             }
 
+                            Text {
+                                Layout.fillWidth: true
+                                visible: page.spotId.length > 0
+                                text: Theme.trainerSpotDisplayTitle(page.spotId)
+                                wrapMode: Text.WordWrap
+                                horizontalAlignment: Text.AlignHCenter
+                                color: Theme.textSecondary
+                                font.family: Theme.fontFamilyUi
+                                font.pixelSize: Theme.trainerBodyPx
+                                lineHeight: Theme.bodyLineHeight
+                            }
+
                             Item {
                                 Layout.fillHeight: true
-                                Layout.minimumHeight: 16
+                                Layout.minimumHeight: 4
+                                Layout.maximumHeight: 24
                             }
 
                             Item {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: Math.max(180, Math.round(312 * drillArea.seatScale))
-                                Layout.minimumHeight: Math.max(160, Math.round(200 * drillArea.seatScale))
-                                Layout.bottomMargin: 4
+                                Layout.preferredHeight: Math.max(170, Math.round(312 * drillArea.seatScale))
+                                Layout.minimumHeight: Math.max(150, Math.round(195 * drillArea.seatScale))
 
                                 Item {
                                     id: trainerSeatWrap
                                     width: Math.round(218 * drillArea.seatScale)
                                     height: Math.round(312 * drillArea.seatScale)
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.horizontalCenterOffset: Math.round(Theme.trainerDrillSeatCenterOffset * drillArea.seatScale)
 
-                                Player {
-                                    anchors.fill: parent
-                                    uiScale: drillArea.seatScale
-                                    seatIndex: 0
-                                    name: qsTr("You")
-                                    position: "BTN"
-                                    first_card: page.hero1
-                                    second_card: page.hero2
-                                    show_cards: true
-                                    inHand: true
-                                    seatAtTable: true
-                                    stackChips: 200
-                                    streetActionText: page.spotId.length ? page.spotId : qsTr("Turn")
-                                    handEpoch: page.seatVisualEpoch
-                                    instantHoleCards: true
-                                    isHumanSeat: true
-                                    isActing: page.decisionSecLeft > 0 && !page.inputLocked
-                                    decisionSecondsLeft: page.decisionSecLeft
-                                }
+                                    Player {
+                                        anchors.fill: parent
+                                        uiScale: drillArea.seatScale
+                                        seatIndex: 0
+                                        name: qsTr("You")
+                                        position: "BTN"
+                                        first_card: page.hero1
+                                        second_card: page.hero2
+                                        show_cards: true
+                                        inHand: true
+                                        seatAtTable: true
+                                        stackChips: 200
+                                        streetActionText: page.decisionSecLeft > 0 && !page.inputLocked
+                                                ? qsTr("Your action")
+                                                : qsTr("—")
+                                        handEpoch: page.seatVisualEpoch
+                                        instantHoleCards: true
+                                        isHumanSeat: true
+                                        isActing: page.decisionSecLeft > 0 && !page.inputLocked
+                                        decisionSecondsLeft: page.decisionSecLeft
+                                    }
                                 }
                             }
-                        }
 
-                        GameControls {
-                            id: flopExerciseHud
-                            z: 20
-                            trainerMode: true
-                            trainerFlopStreet: true
-                            pokerGame: null
-                            embeddedMode: true
-                            panelWidth: drillArea.hudPanelW
-                            x: {
-                                var hs = drillArea.humanSeat
-                                if (!hs)
-                                    return 8
-                                var gap = Theme.trainerDrillHudSpacing
-                                var w = flopExerciseHud.width
-                                var pos = drillArea.mapFromItem(hs, 0, 0)
-                                var placeRight = pos.x + hs.width + gap
-                                if (placeRight + w <= drillArea.width - 6)
-                                    return placeRight
-                                return Math.max(6, pos.x - w - gap)
+                            GameControls {
+                                id: flopExerciseHud
+                                Layout.fillWidth: true
+                                Layout.topMargin: 6
+                                trainerMode: true
+                                trainerFlopStreet: true
+                                pokerGame: null
+                                embeddedMode: false
+                                trainerInputLocked: page.inputLocked || page.assetLoadFailed
+                                humanSitOut: false
+                                statusText: page.statusLine
+                                statusSubText: page.secLeft > 0
+                                        ? qsTr("Next in %1 s").arg(page.secLeft)
+                                        : ""
+                                humanHandText: ""
+                                decisionSecondsLeft: page.inputLocked ? page.secLeft : page.decisionSecLeft
+                                decisionTimeTotal: trainingStore.trainerDecisionSeconds
+                                humanMoreTimeAvailable: false
+                                humanCanCheck: false
+                                humanBbPreflopOption: false
+                                humanCanRaiseFacing: true
+                                facingNeedChips: 0
+                                facingMinRaiseChips: 6
+                                facingMaxChips: 200
+                                facingPotAmount: page.trainerPotChips
+                                humanStackChips: 200
+                                humanBbCanRaise: false
+                                humanCanBuyBackIn: false
                             }
-                            y: {
-                                var hs = drillArea.humanSeat
-                                if (!hs)
-                                    return 8
-                                var pos = drillArea.mapFromItem(hs, 0, 0)
-                                var ideal = pos.y + hs.height - flopExerciseHud.height
-                                return Math.min(Math.max(6, ideal), drillArea.height - flopExerciseHud.height - 6)
-                            }
-                            trainerInputLocked: page.inputLocked || page.assetLoadFailed
-                            humanSitOut: false
-                            statusText: page.statusLine
-                            statusSubText: page.secLeft > 0
-                                    ? qsTr("Next hand in %1 s").arg(page.secLeft)
-                                    : ""
-                            humanHandText: ""
-                            decisionSecondsLeft: page.inputLocked ? page.secLeft : page.decisionSecLeft
-                            decisionTimeTotal: trainingStore.trainerDecisionSeconds
-                            humanMoreTimeAvailable: false
-                            humanCanCheck: false
-                            humanBbPreflopOption: false
-                            humanCanRaiseFacing: true
-                            facingNeedChips: 0
-                            facingMinRaiseChips: 6
-                            facingMaxChips: 200
-                            facingPotAmount: page.trainerPotChips
-                            humanStackChips: 200
-                            humanBbCanRaise: false
-                            humanCanBuyBackIn: false
                         }
 
                         Connections {
@@ -584,7 +580,7 @@ Page {
                         }
 
                         MouseArea {
-                            z: 19
+                            z: 40
                             anchors.fill: parent
                             visible: flopExerciseHud.sizingDialogOpen
                             onClicked: {

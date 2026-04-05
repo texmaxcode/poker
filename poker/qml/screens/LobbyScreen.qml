@@ -121,7 +121,7 @@ Page {
                             spacing: lobbyPage.lobbyNavRowSpacing
                             LobbyNavTile {
                                 bannerSource: "qrc:/assets/images/texas_holdem_icn.png"
-                                sub: qsTr("Play hands")
+                                sub: qsTr("Play")
                                 detailTip: qsTr(
                                     "6-max Texas Hold’em table: you and five named bots. "
                                     + "Use the HUD to act; you can sit out and watch bots. Blinds and pot are centered on the felt.")
@@ -129,15 +129,15 @@ Page {
                             }
                             LobbyNavTile {
                                 bannerSource: "qrc:/assets/images/bots_and_ranges.png"
-                                sub: qsTr("Configure bots")
+                                sub: qsTr("Configure")
                                 detailTip: qsTr(
-                                    "Set stakes and stack, pick a bot archetype per player, and edit 13×13 range grids or paste "
-                                    + "text ranges. Reference presets show default charts and full strategy notes on hover there.")
+                                    "Set stakes ($ SB/BB, min open) and table cap (BB). Wallet and stacks are $; strategy buy-in is in BB. "
+                                    + "Pick archetypes, edit 13×13 grids or paste text ranges; presets include strategy notes.")
                                 onClicked: lobbyPage.go(2)
                             }
                             LobbyNavTile {
                                 bannerSource: "qrc:/assets/images/solver_and_equity.png"
-                                sub: qsTr("Study tools")
+                                sub: qsTr("Tools")
                                 detailTip: qsTr(
                                     "Monte Carlo equity vs a range or exact villain cards, with optional pot-odds and chip-EV. "
                                     + "Helpful for study — not a full multi-street GTO solver.")
@@ -145,17 +145,17 @@ Page {
                             }
                             LobbyNavTile {
                                 bannerSource: "qrc:/assets/images/training.png"
-                                sub: qsTr("Practice drills")
+                                sub: qsTr("Drills")
                                 detailTip: qsTr(
                                     "Preflop and postflop trainers with immediate feedback, mistake tracking, and progress stats.")
                                 onClicked: lobbyPage.go(5)
                             }
                             LobbyNavTile {
                                 bannerSource: "qrc:/assets/images/stats.png"
-                                sub: qsTr("Ranks & charts")
+                                sub: qsTr("Ranks")
                                 detailTip: qsTr(
-                                    "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "
-                                    + "Set wallet and on-the-table amount on each player’s tab under Bots & ranges.")
+                                    "Stack rankings and profit vs baseline ($ chip dollars), plus a line chart after each hand. "
+                                    + "In Setup, wallet and on-table stacks are $; max-on-table and bot buy-in use BB (big-blind multiples).")
                                 onClicked: lobbyPage.go(4)
                             }
                         }

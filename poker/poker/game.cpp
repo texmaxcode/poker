@@ -42,6 +42,7 @@ BotParams clamp_bot_params(BotParams p)
     p.open_bet_tight_mul = c(p.open_bet_tight_mul, 0.1, 1.0);
     p.bb_checkraise_bonus = c(p.bb_checkraise_bonus, 0.0, 0.5);
     p.bb_checkraise_tight_mul = c(p.bb_checkraise_tight_mul, 0.1, 1.0);
+    p.buy_in_bb = std::clamp(p.buy_in_bb, 1, 10000);
     return p;
 }
 
@@ -119,8 +120,8 @@ void game::join_table(player p)
     if (table.size() >= static_cast<size_t>(kMaxPlayers))
         return;
     const bool more_than_ten_blinds = (p.stack >= 10 * big_blind);
-    const bool less_than_hundred_blinds = (p.stack <= 100 * big_blind);
-    const bool has_enough_money = more_than_ten_blinds && less_than_hundred_blinds;
+    const bool within_table_cap = (p.stack <= maxBuyInChips());
+    const bool has_enough_money = more_than_ten_blinds && within_table_cap;
     if (has_enough_money)
         table.push_back(p);
 }
@@ -332,7 +333,7 @@ int game::banner_seat_from_showdown_gains(const std::array<int, kMaxPlayers> &st
 
 QString game::fold_win_status_line(int seat, int pot_chips) const
 {
-    return QStringLiteral("%1 $%2 with %3 FOLDFEST.")
+    return QStringLiteral("%1 $%2 with %3")
         .arg(seat_display_name(seat))
         .arg(pot_chips)
         .arg(hole_cards_display(seat));
@@ -441,11 +442,18 @@ void game::init_preflop_street_contrib()
     street_contrib_.fill(0);
     compute_blind_seats(sb_seat_, bb_seat_);
     if (sb_seat_ < 0 || bb_seat_ < 0)
+    {
+        preflop_blind_level_ = 0;
         return;
-    street_contrib_[static_cast<size_t>(sb_seat_)] = small_blind;
-    street_contrib_[static_cast<size_t>(bb_seat_)] = big_blind;
-    set_seat_street_action(sb_seat_, QStringLiteral("SB $%1").arg(small_blind));
-    set_seat_street_action(bb_seat_, QStringLiteral("BB $%1").arg(big_blind));
+    }
+    const size_t sbi = static_cast<size_t>(sb_seat_);
+    const size_t bbi = static_cast<size_t>(bb_seat_);
+    /// Must match `collect_blinds()` — short stacks post less than nominal SB/BB (`player::pay`).
+    street_contrib_[sbi] = hand_contrib_[sbi];
+    street_contrib_[bbi] = hand_contrib_[bbi];
+    preflop_blind_level_ = std::max(street_contrib_[sbi], street_contrib_[bbi]);
+    set_seat_street_action(sb_seat_, QStringLiteral("SB $%1").arg(street_contrib_[sbi]));
+    set_seat_street_action(bb_seat_, QStringLiteral("BB $%1").arg(street_contrib_[bbi]));
     last_raise_increment_ = big_blind;
     bb_preflop_option_open_ = true;
 }
@@ -490,6 +498,9 @@ void game::setInteractiveHuman(bool enabled)
     /// Autoplay uses your configured strategy; do not keep "sit out" (that state is for watching only).
     if (!enabled)
         setHumanSitOut(false);
+    /// Seat 0 buy-in target follows `seat_buy_in_` when interactive; strategy `buy_in_bb` when autoplaying.
+    if (!enabled)
+        seat_mgr_.seat_buy_in_[static_cast<size_t>(kHumanSeat)] = effectiveSeatBuyInChips(kHumanSeat);
     emit interactiveHumanChanged();
 }
 
@@ -615,8 +626,8 @@ void game::schedule_next_hand_if_idle()
     if (!auto_hand_loop_)
         return;
     /// Pause so showdown / winner lines and mucked or shown hands stay readable before the next deal.
-    constexpr int kMsPauseAfterShowdown = 5000;
-    QTimer::singleShot(kMsPauseAfterShowdown, this, [this]() {
+    const int ms = std::clamp(winning_hand_show_ms_, 500, 60000);
+    QTimer::singleShot(ms, this, [this]() {
         if (!m_root)
             return;
         beginNewHand();
@@ -717,7 +728,7 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             if (new_contrib > current_max)
             {
                 last_raise_increment_ = new_contrib - current_max;
-                if (new_contrib > big_blind)
+                if (st == Street::PRE_FLOP && new_contrib > preflop_blind_level_)
                     bb_preflop_option_open_ = false;
                 note_river_aggressor(st, seat);
                 if (taken_raise >= stack_before_raise)
@@ -802,7 +813,7 @@ bool game::handle_forced_response(int seat, Street st, int current_max)
             add_chips_to_pot(seat, taken_r);
             street_contrib_[si] += taken_r;
             last_raise_increment_ = new_max - current_max;
-            if (new_max > big_blind)
+            if (st == Street::PRE_FLOP && new_max > preflop_blind_level_)
                 bb_preflop_option_open_ = false;
             note_river_aggressor(st, seat);
             if (table[si].stack <= 0 && taken_r > 0)
@@ -931,7 +942,7 @@ bool game::handle_bb_preflop_option()
                            : bot_bb_check_or_raise_p(seat_cfg_[bi].params, play_bb, rng_);
     const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
     const int max_c = max_street_contrib();
-    if (raise && inc > 0 && table[bi].stack >= inc && max_c == big_blind
+    if (raise && inc > 0 && table[bi].stack >= inc && max_c == preflop_blind_level_
         && rng_passes_layer_gate(wr_bb, play_bb, rng_))
     {
         const int taken_bb = table[bi].take_from_stack(inc);
@@ -1039,7 +1050,7 @@ bool game::run_street_betting(Street st)
             return true;
         }
 
-        if (st == Street::PRE_FLOP && max_c == big_blind && bb_preflop_option_open_)
+        if (st == Street::PRE_FLOP && max_c == preflop_blind_level_ && bb_preflop_option_open_)
         {
             const bool bb_raised = handle_bb_preflop_option();
             if (count_active() <= 1)
@@ -1446,6 +1457,7 @@ void game::clear_for_new_hand()
     acting_seat_ = -1;
     sb_seat_ = -1;
     bb_seat_ = -1;
+    preflop_blind_level_ = 0;
     human_decision_ctrl_->reset();
     cards_dealt_ = false;
     ++hand_seq_;
@@ -1469,12 +1481,23 @@ bool game::pendingSeatBankrollApply() const
 
 int game::seatBuyIn(int seat) const
 {
-    return seat_mgr_.seatBuyIn(seat);
+    return effectiveSeatBuyInChips(seat);
 }
 
 void game::setSeatBuyIn(int seat, int chips)
 {
-    seat_mgr_.setSeatBuyIn(seat, chips);
+    if (seat >= 1)
+    {
+        const int bb = std::max(1, big_blind);
+        const int cap = maxBuyInChips();
+        const int c = std::clamp(chips, 1, cap);
+        seat_cfg_[static_cast<size_t>(seat)].params.buy_in_bb = std::max(1, (c + bb - 1) / bb);
+        seat_cfg_[static_cast<size_t>(seat)].params = clamp_bot_params(seat_cfg_[static_cast<size_t>(seat)].params);
+        const int target = std::min(cap, std::max(1, seat_cfg_[static_cast<size_t>(seat)].params.buy_in_bb) * bb);
+        seat_mgr_.setSeatBuyIn(seat, target);
+    }
+    else
+        seat_mgr_.setSeatBuyIn(seat, chips);
 }
 
 void game::applySeatBuyInsToStacks()
@@ -1487,6 +1510,27 @@ void game::configure(int sb, int bb, int streetBet, int startStack)
     configureImpl(sb, bb, streetBet, startStack, true);
 }
 
+int game::effectiveSeatBuyInChips(int seat) const
+{
+    if (seat < 0 || seat >= kMaxPlayers)
+        return starting_stack_;
+    const int cap = maxBuyInChips();
+    const size_t si = static_cast<size_t>(seat);
+    const bool use_strategy_buy_in = (seat != kHumanSeat) || !interactive_human_;
+    if (!use_strategy_buy_in)
+        return std::max(1, std::min(seat_mgr_.seat_buy_in_[si], cap));
+    const int bb = std::max(1, big_blind);
+    const int mult = std::max(1, seat_cfg_[si].params.buy_in_bb);
+    return std::max(1, std::min(mult * bb, cap));
+}
+
+void game::setMaxOnTableBb(int maxBb)
+{
+    max_on_table_bb_ = std::clamp(maxBb, 1, 10000);
+    if (!suppress_persist_)
+        savePersistedSettings();
+}
+
 void game::configureImpl(int sb, int bb, int streetBet, int startStack, bool resetBankrollOnStackApply)
 {
     small_blind = sb;
@@ -1494,10 +1538,20 @@ void game::configureImpl(int sb, int bb, int streetBet, int startStack, bool res
     street_bet_ = streetBet;
     const int cap = seat_mgr_.maxBuyInChips();
     starting_stack_ = std::max(1, std::min(startStack, cap));
+    const int bbm = std::max(1, big_blind);
+    const int max_bb_mul = std::max(1, cap / bbm);
     for (int i = 0; i < kMaxPlayers; ++i)
     {
-        seat_mgr_.seat_buy_in_[static_cast<size_t>(i)] =
-            std::max(1, std::min(seat_mgr_.seat_buy_in_[static_cast<size_t>(i)], cap));
+        const size_t szi = static_cast<size_t>(i);
+        if (i == kHumanSeat && interactive_human_)
+        {
+            seat_mgr_.seat_buy_in_[szi] = std::max(1, std::min(seat_mgr_.seat_buy_in_[szi], cap));
+            continue;
+        }
+        seat_cfg_[szi].params.buy_in_bb =
+            std::min(std::max(1, seat_cfg_[szi].params.buy_in_bb), max_bb_mul);
+        seat_cfg_[szi].params = clamp_bot_params(seat_cfg_[szi].params);
+        seat_mgr_.seat_buy_in_[szi] = effectiveSeatBuyInChips(i);
     }
     seat_mgr_.apply_seat_buy_ins_to_table(resetBankrollOnStackApply);
     if (m_root)
@@ -1546,6 +1600,8 @@ void game::setSeatStrategy(int seat, int strategyIndex)
     fill_preset_range(seat_cfg_[si].range_call, strat);
     seat_cfg_[si].range_raise = seat_cfg_[si].range_call;
     seat_cfg_[si].range_bet = seat_cfg_[si].range_call;
+    if (seat != kHumanSeat || !interactive_human_)
+        seat_mgr_.seat_buy_in_[si] = effectiveSeatBuyInChips(seat);
     ++range_revision_;
     emit rangeRevisionChanged();
     if (!suppress_persist_)
@@ -1566,6 +1622,7 @@ QVariantMap game::seatStrategyParams(int seat) const
     m[QStringLiteral("openBetTightMul")] = p.open_bet_tight_mul;
     m[QStringLiteral("bbCheckraiseBonus")] = p.bb_checkraise_bonus;
     m[QStringLiteral("bbCheckraiseTightMul")] = p.bb_checkraise_tight_mul;
+    m[QStringLiteral("buyInBb")] = p.buy_in_bb;
     return m;
 }
 
@@ -1587,7 +1644,12 @@ void game::setSeatStrategyParams(int seat, QVariantMap map)
     take("openBetTightMul", p.open_bet_tight_mul);
     take("bbCheckraiseBonus", p.bb_checkraise_bonus);
     take("bbCheckraiseTightMul", p.bb_checkraise_tight_mul);
-    seat_cfg_[static_cast<size_t>(seat)].params = clamp_bot_params(p);
+    if (map.contains(QStringLiteral("buyInBb")))
+        p.buy_in_bb = map.value(QStringLiteral("buyInBb")).toInt();
+    p = clamp_bot_params(p);
+    seat_cfg_[static_cast<size_t>(seat)].params = p;
+    if (seat != kHumanSeat || !interactive_human_)
+        seat_mgr_.seat_buy_in_[static_cast<size_t>(seat)] = effectiveSeatBuyInChips(seat);
 }
 
 QVariantList game::getPresetRangeGrid(int strategyIndex, int layer) const
@@ -1687,6 +1749,22 @@ void game::setBotSlowActions(bool enabled)
 bool game::botSlowActions() const
 {
     return bot_slow_actions_;
+}
+
+void game::setWinningHandShowMs(int ms)
+{
+    const int v = std::clamp(ms, 500, 60000);
+    if (winning_hand_show_ms_ == v)
+        return;
+    winning_hand_show_ms_ = v;
+    emit winningHandShowMsChanged();
+    if (persist_loaded_ && !suppress_persist_)
+        savePersistedSettings();
+}
+
+int game::winningHandShowMs() const
+{
+    return winning_hand_show_ms_;
 }
 
 void game::setBotActionDelayEnabled(bool enabled)
@@ -1797,6 +1875,7 @@ QVariantMap game::bettingAnchors() const
     m.insert(QStringLiteral("bbSeat"), bb);
     m.insert(QStringLiteral("preflopFirstSeat"), bb >= 0 ? first_in_hand_after(bb) : -1);
     m.insert(QStringLiteral("postflopFirstSeat"), first_in_hand_after(button));
+    m.insert(QStringLiteral("preflopBlindLevel"), preflop_blind_level_);
     return m;
 }
 

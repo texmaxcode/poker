@@ -32,7 +32,7 @@ Page {
     /// Rows from `seatRankings()` sorted by seat index 0–5 (on table / off-table bankroll / total).
     property var seatBankrollDetail: []
     property bool pendingApplyBuyIns: false
-    /// Bumped whenever tables refresh so `seatBuyIn()` / blinds labels re-bind (invokables have no NOTIFY).
+    /// Bumped whenever tables refresh so `seatBuyIn()` re-binds (invokables have no NOTIFY).
     property int uiRevision: 0
     /// Bound to C++ `statsSeq` so leaderboard / chart refresh when bankroll snapshots update (not only on restart).
     property int statsSeq: pokerGame.statsSeq
@@ -196,23 +196,6 @@ Page {
                     color: Theme.dangerText
                     font.pixelSize: Theme.trainerBodyPx
                     lineHeight: Theme.bodyLineHeight
-                }
-
-                /// Blinds live here so the three panels share the same body layout (table rows stay aligned).
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-                    visible: !statsPage.statsDataError
-
-                    Label {
-                        text: qsTr("Blinds: $%1 / $%2").arg(pokerGame.configuredSmallBlind()).arg(pokerGame.configuredBigBlind())
-                                + (statsPage.uiRevision * 0)
-                        font.pixelSize: statsPage.statsTablePx
-                        color: Theme.textSecondary
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                    }
                 }
 
             /// Plain row (no nested ScrollView): a horizontal ScrollView was stealing vertical wheel from the page scroll.
@@ -555,7 +538,7 @@ Page {
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
-                                    text: qsTr("P / L")
+                                    text: qsTr("P/L")
                                     font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold

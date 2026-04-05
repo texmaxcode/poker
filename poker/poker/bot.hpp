@@ -37,6 +37,9 @@ struct BotParams
     /// BB preflop check-raise heuristic.
     double bb_checkraise_bonus = 0.0;
     double bb_checkraise_tight_mul = 1.0;
+    /// Target buy-in / rebuy size for seats that use strategy-driven stacks (bots; human when “Play as bot”).
+    /// Interpreted as multiples of the big blind; capped by the table’s max on-table rule (`maxBuyInChips()`).
+    int buy_in_bb = 100;
 };
 
 BotParams params_for(BotStrategy s);

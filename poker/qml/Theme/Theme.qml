@@ -136,8 +136,102 @@ QtObject {
     readonly property int trainerFlopBoardCardHeight: 148
     /// Gap between drill cards and between HUD action rows — matches `GameControls` action spacing (12).
     readonly property int trainerDrillHudSpacing: 12
-    /// Nudge hero seat horizontally from panel center (negative = left) so HUD sits clearly to the side.
-    readonly property int trainerDrillSeatCenterOffset: -44
+    /// Hero seat is centered; action dock sits below (no side-floating HUD).
+    readonly property int trainerDrillSeatCenterOffset: 0
+
+    /// Turn spot ids like `btnbb_turn_AK72_brick_KQo` into short UI titles (not internal debug strings).
+    function trainerSpotDisplayTitle(spotId) {
+        if (spotId === undefined || spotId === null)
+            return ""
+        var raw = String(spotId).trim()
+        if (raw.length === 0)
+            return ""
+        function noise(tok) {
+            if (tok.length < 2)
+                return false
+            var t = tok
+            if (/^[AKQJT2-9][akqjt0-9hcds]+$/i.test(t) && t.length <= 24)
+                return true
+            if (/^[AKQJT0-9]{3,12}[a-z]?$/i.test(t))
+                return true
+            return false
+        }
+        var parts = raw.split("_")
+        var out = []
+        var i = 0
+        while (i < parts.length) {
+            var p = parts[i]
+            if (p.length === 0) {
+                i++
+                continue
+            }
+            var pl = p.toLowerCase()
+            if (noise(p)) {
+                i++
+                continue
+            }
+            if (pl === "btnbb") {
+                out.push("BTN vs BB")
+                i++
+                continue
+            }
+            if (pl === "srp") {
+                out.push("SRP")
+                i++
+                continue
+            }
+            if (pl === "turn") {
+                out.push("Turn")
+                i++
+                continue
+            }
+            if (pl === "river") {
+                out.push("River")
+                i++
+                continue
+            }
+            if (pl === "flop") {
+                out.push("Flop")
+                i++
+                continue
+            }
+            if (pl === "four" && i + 1 < parts.length && parts[i + 1].toLowerCase() === "flush") {
+                out.push("Four-flush board")
+                i += 2
+                continue
+            }
+            if (pl === "dry" || pl === "wet") {
+                out.push(pl.charAt(0).toUpperCase() + pl.slice(1))
+                i++
+                continue
+            }
+            if (pl === "runout") {
+                out.push("Runout")
+                i++
+                continue
+            }
+            if (pl === "brick") {
+                out.push("Brick")
+                i++
+                continue
+            }
+            if (pl === "four" || pl === "flush") {
+                i++
+                continue
+            }
+            var pretty = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
+            out.push(pretty)
+            i++
+        }
+        if (out.length === 0)
+            return raw.replace(/_/g, " ")
+        var dedup = []
+        for (var j = 0; j < out.length; j++) {
+            if (j === 0 || out[j] !== out[j - 1])
+                dedup.push(out[j])
+        }
+        return dedup.join(" · ")
+    }
 
     /// Typography for training copy — sized for Merriweather (wider serif; Oswald was condensed so read smaller).
     readonly property int trainerPageHeadlinePt: 19

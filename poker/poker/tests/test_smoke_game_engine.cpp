@@ -41,6 +41,19 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_started)
   BOOST_CHECK_EQUAL(game.is_game_in_progress(), false);
 }
 
+BOOST_AUTO_TEST_CASE(short_big_blind_preflop_level_matches_actual_posts)
+{
+  game g;
+  g.setInteractiveHuman(false);
+  g.setAutoHandLoop(false);
+  g.setBotActionDelayEnabled(false);
+  // Default button 0: SB seat 5, BB seat 4 (see bettingAnchors test).
+  g.table[4].stack = 2;
+  g.start();
+  // Pot is emptied after payout; effective blind level persists until the next `clear_for_new_hand`.
+  BOOST_CHECK_EQUAL(g.preflopBlindLevel(), 2);
+}
+
 BOOST_AUTO_TEST_CASE(test_that_game_can_collect_blinds)
 {
   game game;

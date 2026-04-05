@@ -217,8 +217,10 @@ void HumanDecisionController::finish_human_check(bool check, int bet_chips)
     if (!check)
     {
         const size_t hi = static_cast<size_t>(game::kHumanSeat);
-        const int min_open = 1;
-        const int chips = std::clamp(bet_chips, min_open, game_.table[hi].stack);
+        const int stack = game_.table[hi].stack;
+        const int sb = game_.getStreetBet();
+        const int min_open = (stack >= sb) ? sb : stack;
+        const int chips = std::clamp(bet_chips, min_open, stack);
         if (chips < min_open)
         {
             emit humanCheckFinished();
@@ -314,7 +316,8 @@ void HumanDecisionController::submitBbPreflopRaise(int chips_to_add)
 
     const int inc = game::min_raise_increment_chips(game_.big_blind, game_.last_raise_increment_);
     const size_t bi = static_cast<size_t>(game::kHumanSeat);
-    if (inc <= 0 || game_.max_street_contrib() != game_.big_blind || game_.table[bi].stack <= 0)
+    if (inc <= 0 || game_.max_street_contrib() != game_.preflop_blind_level_
+        || game_.table[bi].stack <= 0)
     {
         game_.set_seat_street_action(game::kHumanSeat, QStringLiteral("Check"));
         emit humanBbPreflopFinished();

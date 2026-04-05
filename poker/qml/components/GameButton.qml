@@ -26,6 +26,8 @@ Button {
     property int formFontPixelSize: -1
     property bool formBold: false
     property color formBackgroundColor: Theme.panelElevated
+    /// When set on `style === "hud"`, overrides `fontFamilyButton` for legible % / symbols (e.g. trainer bet sizing).
+    property string hudLabelFontFamily: ""
 
     /// Maps to `enabled` (not named `interactive` — reserved on some Controls versions).
     property bool clickEnabled: true
@@ -126,7 +128,13 @@ Button {
             }
             font.bold: root.style === "form" ? root.formBold : root.boldFont
             font.weight: root.style === "chip" ? Font.Medium : Font.Normal
-            font.family: root.style === "chip" ? root._monoTypeface : root._buttonTypeface
+            font.family: {
+                if (root.style === "chip")
+                    return root._monoTypeface
+                if (root.style === "hud" && root.hudLabelFontFamily.length > 0)
+                    return root.hudLabelFontFamily
+                return root._buttonTypeface
+            }
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight

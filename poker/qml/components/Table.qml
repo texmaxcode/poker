@@ -3,13 +3,15 @@ import QtQuick.Layouts
 import Theme 1.0
 import PokerUi 1.0
 
-/// Pot HUD + board below. Pot ticks up with animation; pot bumps when chips grow.
-/// **One combined total** during play (engine still splits main/side for payouts; `GameControls` banner may list both).
+/// Pot HUD + board below. Pot ticks up with animation; bumps when chips grow.
+/// Center line is **total pot** only; `pot_slices` is kept for bindings but not shown as per-tier breakdown.
 Item {
     id: table_container
     anchors.fill: parent
 
     property int pot_amount: 0
+    /// Chip counts per physical pot (main, then side pots); from engine `nlhe_build_side_pot_slices`.
+    property var pot_slices: []
     property int actingSeat: -1
     property int decisionSecondsLeft: 0
     property int facingNeedChips: 0
@@ -41,6 +43,8 @@ Item {
     /// Pot bar + typography: same shrink as the board on tight layouts, but can grow past 1× on large table areas (bar was width-capped at 340px before).
     readonly property real potHudScale: Math.max(0.38, Math.min(1.42,
             boardRowScale * Math.min(1.4, Math.max(0.9, _tableShort / 780.0))))
+    /// Slightly smaller than pre-trainer restyle so the pill matches the old compact strip footprint.
+    readonly property real potBoxScale: potHudScale * 0.88
 
     /// Animated display value (counts toward current pot)
     property int potShown: 0
@@ -73,80 +77,93 @@ Item {
                 table_container.potHudScale * 0.92)))
         anchors.centerIn: parent
 
-        Rectangle {
+        /// Solid trainer-style pill; `potBoxScale` keeps it nearer the old gradient-strip size.
+        Column {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
             readonly property real _pw: table_container.width
-            /// Compact pot strip: narrower than board row; scales with table width without dominating.
-            width: Math.max(140, Math.min(Math.max(248, Math.round(_pw * 0.19)),
-                    Math.min(_pw * 0.72, _pw - 24)))
-            height: Math.max(Math.round(28 * table_container.potHudScale),
-                             potHudInner.implicitHeight + Math.round(8 * table_container.potHudScale))
-            radius: Math.max(5, Math.round(11 * table_container.potHudScale))
-            color: Theme.hudBg1
-            border.width: Math.max(1, Math.round(2 * table_container.potHudScale))
-            border.color: Theme.potHudBorder
-            clip: true
+            readonly property real _potPadW: Math.max(14, Math.round(18 * table_container.potBoxScale))
+            readonly property real _potPadH: Math.max(6, Math.round(8 * table_container.potBoxScale))
+            /// Fixed width so the pill does not grow/shrink when the pot amount or stakes text changes.
+            readonly property real _potPillW: Math.round(Math.min(300, Math.max(200, _pw * 0.42)))
+            width: Math.min(_potPillW + 8, Math.min(_pw * 0.72, _pw - 24))
+            spacing: Math.max(2, Math.round(4 * table_container.potBoxScale))
 
-            gradient: Gradient {
-                GradientStop {
-                    position: 0
-                    color: Theme.hudBg0
+            Rectangle {
+                id: potTrainerBox
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: potBlindsHud._potPillW
+                height: potStackColumn.implicitHeight + potBlindsHud._potPadH
+                radius: Math.max(5, Math.round(7 * Math.min(1.0, table_container.potBoxScale + 0.15)))
+                color: Theme.hudBg1
+                border.color: Theme.hudBorder
+                border.width: Math.max(1, Math.round(1.5 * Math.min(1.0, table_container.potBoxScale + 0.12)))
+
+                transform: Scale {
+                    id: potBumpScale
+                    origin.x: potTrainerBox.width * 0.5
+                    origin.y: potTrainerBox.height * 0.5
+                    xScale: 1
+                    yScale: 1
                 }
-                GradientStop {
-                    position: 1
-                    color: Theme.hudBg1
+
+                Column {
+                    id: potStackColumn
+                    anchors.centerIn: parent
+                    width: potTrainerBox.width - potBlindsHud._potPadW
+                    /// Section title (stakes) then pot — gap matches trainer panel title/body.
+                    spacing: Math.max(4, Math.round(6 * table_container.potBoxScale))
+
+                    Text {
+                        id: stakesSectionLabel
+                        text: qsTr("$%1/$%2").arg(table_container.smallBlind).arg(table_container.bigBlind)
+                        wrapMode: Text.NoWrap
+                        width: parent.width
+                        elide: Text.ElideRight
+                        color: Theme.sectionTitle
+                        font.family: Theme.fontFamilyDisplay
+                        font.bold: true
+                        font.capitalization: Font.AllUppercase
+                        font.letterSpacing: 0.5
+                        font.pixelSize: Math.max(7, Math.round((Theme.trainerCaptionPx - 4)
+                                * Math.max(0.72, table_container.potBoxScale)))
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Text {
+                        id: potLineText
+                        text: qsTr("Pot $%1").arg(Math.round(table_container.potShown))
+                        wrapMode: Text.NoWrap
+                        width: parent.width
+                        elide: Text.ElideRight
+                        color: Theme.gold
+                        font.family: Theme.fontFamilyDisplay
+                        font.bold: true
+                        font.pixelSize: Math.max(11, Math.round(Theme.uiPotMainPt * table_container.potBoxScale))
+                        horizontalAlignment: Text.AlignHCenter
+                    }
                 }
             }
 
-            Column {
-                id: potHudInner
-                anchors.centerIn: parent
-                spacing: Math.max(2, Math.round(4 * table_container.potHudScale))
-                width: parent.width - Math.max(8, Math.round(10 * table_container.potHudScale))
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: Math.max(4, Math.round(6 * table_container.potBoxScale))
+                visible: table_container.showToCallHint
 
-                Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: Math.max(8, Math.round(10 * table_container.potHudScale))
+                Text {
+                    text: qsTr("·")
+                    color: Theme.textMuted
+                    font.family: Theme.fontFamilyMono
+                    font.bold: true
+                    font.pixelSize: Math.max(7, Math.round(Theme.uiPotSepPt * table_container.potBoxScale))
+                }
 
-                    Text {
-                        id: potValueText
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "$" + Math.round(table_container.potShown)
-                        color: gold
-                        font.family: Theme.fontFamilyMono
-                        font.bold: true
-                        font.pointSize: Math.max(12, Math.round(Theme.uiPotMainPt * table_container.potHudScale))
-                        horizontalAlignment: Text.AlignHCenter
-
-                        transform: Scale {
-                            id: potValueScale
-                            origin.x: potValueText.width * 0.5
-                            origin.y: potValueText.height * 0.5
-                            xScale: 1
-                            yScale: 1
-                        }
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: table_container.showToCallHint
-                        text: qsTr("·")
-                        color: Theme.textMuted
-                        font.family: Theme.fontFamilyMono
-                        font.bold: true
-                        font.pointSize: Math.max(8, Math.round(Theme.uiPotSepPt * table_container.potHudScale))
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: table_container.showToCallHint
-                        text: qsTr("Call $%1").arg(table_container.facingNeedChips)
-                        color: Theme.focusGold
-                        font.family: Theme.fontFamilyMono
-                        font.bold: true
-                        font.pointSize: Math.max(9, Math.round(Theme.uiPotCallPt * table_container.potHudScale))
-                    }
+                Text {
+                    text: qsTr("Call $%1").arg(table_container.facingNeedChips)
+                    color: Theme.focusGold
+                    font.family: Theme.fontFamilyMono
+                    font.bold: true
+                    font.pixelSize: Math.max(8, Math.round(Theme.uiPotCallPt * table_container.potBoxScale))
                 }
             }
 
@@ -154,14 +171,14 @@ Item {
                 id: potBumpAnim
                 ParallelAnimation {
                     NumberAnimation {
-                        target: potValueScale
+                        target: potBumpScale
                         property: "xScale"
                         to: 1.08
                         duration: 95
                         easing.type: Easing.OutCubic
                     }
                     NumberAnimation {
-                        target: potValueScale
+                        target: potBumpScale
                         property: "yScale"
                         to: 1.08
                         duration: 95
@@ -170,14 +187,14 @@ Item {
                 }
                 ParallelAnimation {
                     NumberAnimation {
-                        target: potValueScale
+                        target: potBumpScale
                         property: "xScale"
                         to: 1.0
                         duration: 160
                         easing.type: Easing.OutCubic
                     }
                     NumberAnimation {
-                        target: potValueScale
+                        target: potBumpScale
                         property: "yScale"
                         to: 1.0
                         duration: 160

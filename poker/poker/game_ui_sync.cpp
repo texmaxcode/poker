@@ -3,12 +3,14 @@
 #include "game.hpp"
 
 #include "cards.hpp"
+#include "holdem_side_pot.hpp"
 #include "human_decision_controller.hpp"
 
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QString>
 #include <QVariant>
+#include <vector>
 
 void game::sync_ui()
 {
@@ -18,6 +20,25 @@ void game::sync_ui()
     m_root->setProperty("showdown", ui_showdown_);
     m_root->setProperty("handSeq", hand_seq_);
     m_root->setProperty("pot", pot);
+    {
+        QVariantList potSliceList;
+        if (pot > 0)
+        {
+            const int n = players_count();
+            std::vector<int> contrib(static_cast<size_t>(n));
+            for (int i = 0; i < n; ++i)
+                contrib[static_cast<size_t>(i)] = hand_contrib_[static_cast<size_t>(i)];
+            std::vector<NlheSidePotSlice> slices;
+            if (nlhe_build_side_pot_slices(contrib, pot, &slices))
+            {
+                for (const NlheSidePotSlice &sl : slices)
+                    potSliceList.append(sl.amount);
+            }
+            else
+                potSliceList.append(pot);
+        }
+        m_root->setProperty("potSlices", potSliceList);
+    }
     m_root->setProperty("buttonSeat", button);
     m_root->setProperty("sbSeat", sb_seat_);
     m_root->setProperty("bbSeat", bb_seat_);
@@ -57,8 +78,11 @@ void game::sync_ui()
     }
     if (human_decision_ctrl_->isWaitingForHumanCheck())
     {
-        m_root->setProperty("openRaiseMinChips", 1);
-        m_root->setProperty("openRaiseMaxChips", table[static_cast<size_t>(kHumanSeat)].stack);
+        const int stack = table[static_cast<size_t>(kHumanSeat)].stack;
+        const int sb = street_bet_;
+        const int minOpen = (stack >= sb) ? sb : std::max(1, stack);
+        m_root->setProperty("openRaiseMinChips", minOpen);
+        m_root->setProperty("openRaiseMaxChips", stack);
     }
     else
     {
@@ -94,8 +118,8 @@ void game::sync_ui()
         if (human_decision_ctrl_->isWaitingForHumanBbPreflop())
         {
             const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
-            bb_can_raise =
-                (inc > 0 && table[hi].stack >= inc && max_street_contrib() == big_blind);
+            bb_can_raise = (inc > 0 && table[hi].stack >= inc
+                            && max_street_contrib() == preflop_blind_level_);
         }
         m_root->setProperty("humanBbCanRaise", bb_can_raise);
     }
@@ -180,7 +204,7 @@ void game::sync_ui()
     }
 
     m_root->setProperty("humanCanBuyBackIn", canBuyBackIn(kHumanSeat));
-    m_root->setProperty("buyInChips", seat_mgr_.seat_buy_in_[static_cast<size_t>(kHumanSeat)]);
+    m_root->setProperty("buyInChips", effectiveSeatBuyInChips(kHumanSeat));
 
     m_root->setProperty("board0",
                         (street >= Street::FLOP && flop.size() > 0) ? card_to_qml_asset_path(flop[0]) : QString());

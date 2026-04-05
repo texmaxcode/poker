@@ -19,7 +19,7 @@ SeatManager::SeatManager(game &g)
 
 int SeatManager::maxBuyInChips() const
 {
-    return 100 * std::max(1, game_.big_blind);
+    return std::max(1, game_.configuredMaxOnTableBb()) * std::max(1, game_.big_blind);
 }
 
 int SeatManager::seatBuyIn(int seat) const
@@ -35,7 +35,7 @@ void SeatManager::setSeatBuyIn(int seat, int chips)
         return;
     const int cap = maxBuyInChips();
     int capped = std::min(chips, cap);
-    capped = std::min(capped, 100000000);
+    capped = std::min(capped, 2000000000);
     seat_buy_in_[static_cast<size_t>(seat)] = std::max(1, capped);
     if (game_.in_progress)
         pending_seat_buyins_apply_ = true;
@@ -75,7 +75,7 @@ void SeatManager::setSeatBankrollTotal(int seat, int totalChips)
 {
     if (seat < 0 || seat >= kMaxPlayers)
         return;
-    const int t = std::max(1, std::min(100000000, totalChips));
+    const int t = std::max(1, std::min(2000000000, totalChips));
     if (game_.in_progress)
     {
         pending_bankroll_total_[static_cast<size_t>(seat)] = t;
@@ -107,7 +107,8 @@ bool SeatManager::canBuyBackIn(int seat) const
         return false;
     if (game_.table[si].stack > 0)
         return false;
-    return seat_wallet_[si] >= seat_buy_in_[si];
+    const int cost = game_.effectiveSeatBuyInChips(seat);
+    return seat_wallet_[si] >= cost;
 }
 
 bool SeatManager::tryBuyBackIn(int seat)
@@ -139,8 +140,9 @@ void SeatManager::apply_seat_buy_ins_to_table(bool resetBankrollSession)
     const int cap = maxBuyInChips();
     for (size_t i = 0; i < game_.table.size(); ++i)
     {
-        seat_buy_in_[i] = std::max(1, std::min(seat_buy_in_[i], cap));
-        const int bi = seat_buy_in_[i];
+        const int seat = static_cast<int>(i);
+        const int bi = game_.effectiveSeatBuyInChips(seat);
+        seat_buy_in_[i] = std::max(1, std::min(bi, cap));
         const int total_wealth = game_.table[i].stack + seat_wallet_[i];
         int on_table = std::min(bi, cap);
         if (on_table > total_wealth)
@@ -162,9 +164,10 @@ void SeatManager::try_auto_rebuys_for_busted_bots()
         const size_t si = static_cast<size_t>(s);
         if (game_.table[si].stack > 0)
             continue;
-        if (seat_wallet_[si] < seat_buy_in_[si])
-            seat_wallet_[si] = seat_buy_in_[si];
-        if (seat_wallet_[si] >= seat_buy_in_[si])
+        const int cost = game_.effectiveSeatBuyInChips(s);
+        if (seat_wallet_[si] < cost)
+            seat_wallet_[si] = cost;
+        if (seat_wallet_[si] >= cost)
             apply_buy_back_in_internal(s);
     }
 }
@@ -178,7 +181,7 @@ bool SeatManager::apply_buy_back_in_internal(int seat)
         return false;
     if (game_.table[si].stack > 0)
         return false;
-    const int cost = seat_buy_in_[si];
+    const int cost = game_.effectiveSeatBuyInChips(seat);
     if (seat_wallet_[si] < cost)
         return false;
     game_.table[si].stack += cost;
@@ -232,7 +235,7 @@ void SeatManager::apply_seat_bankroll_total_now(int seat, int totalChips)
 {
     if (seat < 0 || seat >= kMaxPlayers)
         return;
-    const int t = std::max(1, std::min(100000000, totalChips));
+    const int t = std::max(1, std::min(2000000000, totalChips));
     const size_t si = static_cast<size_t>(seat);
     const int cap = maxBuyInChips();
     const int on_table = std::min(t, cap);
