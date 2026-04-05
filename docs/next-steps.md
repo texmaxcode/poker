@@ -9,8 +9,9 @@
 
 The app is feature-complete for its V1 surface area:
 
-- **Table play** — 6-max NLHE with configurable blinds/stacks, human vs 5 bots, sit-out, timed decisions, bet-sizing presets, side pots, showdown.
-- **Bot configuration** — Per-seat strategy archetypes, editable 13×13 opening ranges, per-seat buy-in/wallet.
+- **Table play** — 6-max NLHE with configurable blinds/stacks, human vs 5 bots, sit-out, timed decisions, bet-sizing presets, side pots, showdown; **HUD** floats beside seat 0 (Merriweather / Holtwood / Rye / Roboto Mono via bundled fonts).
+- **Window** — Minimum size enforced in QML **`Metrics.qml`** (**1280×720**); default size **1400×900**.
+- **Bot configuration** — Per-seat strategy archetypes, editable 13×13 opening ranges, per-seat buy-in/wallet; stakes row with **Apply stakes** adjacent to SB/BB/Min raise controls.
 - **Training** — Preflop, flop, turn, and river drill trainers with grading, EV feedback, progress stats.
 - **Solver & equity** — Monte Carlo equity vs range or exact hand, pot-odds/chip-EV, Kuhn/Leduc Nash (CFR+).
 - **Range viewer** — Read-only reference screen with position/mode selectors and composite range grid.
@@ -203,7 +204,7 @@ Current test count: 9 test files, ~31 test cases. Target: 80+.
 37 source files (18 `.cpp` + 18 `.hpp` + `game_ui_sync.cpp`). `holdem_rules_facade.hpp` deleted.
 
 ### QML (`poker/qml/`)
-15 components, 11 screens, 3 theme files, `Main.qml`. All registered in `application.qrc`.
+~30 QML files: **components/** (HUD, table, range grid, themed controls), **screens/** (lobby, game, setup, solver, stats, trainers, range viewer), **Theme/** + **theme/** singletons (`Theme.qml`, `Metrics.qml`, `Fonts.qml`), **`Main.qml`**. Resources listed in `application.qrc`.
 
 ### Tests (`poker/poker/tests/`)
 9 test files covering cards, deck, player, game engine, hand eval, equity, range matrix, side pots, bot decisions, persistence.

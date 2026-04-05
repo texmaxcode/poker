@@ -45,14 +45,6 @@ Item {
             }
         }
     }
-    Image {
-        anchors.fill: parent
-        fillMode: Image.PreserveAspectCrop
-        opacity: 0.52
-        source: "qrc:/assets/images/bg_vignette.svg"
-        smooth: true
-        mipmap: true
-    }
     Canvas {
         id: grain
         anchors.fill: parent

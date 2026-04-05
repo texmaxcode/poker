@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 import Theme 1.0
 import PokerUi 1.0
 
@@ -15,15 +16,34 @@ Item {
 
     /// When true, use compact timer row instead of full-width status row.
     property bool embeddedMode: false
-    readonly property int barBottomPad: embeddedMode ? 8 : 12
+    /// Set from `GameScreen` (`tableArea.tableScale`) so the embedded HUD shrinks with the table.
+    property real hudScale: 1.0
+    /// Embedded HUD scale: follows table + a small boost from window short side so chrome stays readable on 720p-class windows.
+    readonly property real _winShort: {
+        var w = Window.window
+        return (w && w.width > 0) ? Math.min(w.width, w.height) : 720
+    }
+    readonly property real ez: embeddedMode
+            ? Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0))))
+            : 1.0
+
+    readonly property int hudBtnPt: Math.max(9, Math.round(Theme.uiHudButtonPt * ez))
+    readonly property int hudActBtnH: Math.max(26, Math.round(34 * ez))
+    readonly property int hudBodyPx: Math.max(10, Math.round(Theme.uiBodyPx * ez))
+    readonly property int hudMicroPx: Math.max(8, Math.round(Theme.uiMicroPx * ez))
+    readonly property int hudSmallPx: Math.max(9, Math.round(Theme.uiSmallPx * ez))
+    /// Timer row (“Act”, seconds) — slightly larger than micro copy for legibility.
+    readonly property int hudTimerLabelPx: Math.max(10, Math.round((Theme.uiSmallPx + 1) * ez))
+
+    readonly property int barBottomPad: embeddedMode ? Math.max(4, Math.round(8 * ez)) : 12
     /// Inset below the panel top border — timer / “Act” row (embedded HUD was flush to the edge at 1px).
-    readonly property int mainColTopMargin: embeddedMode ? 14 : 10
-    readonly property int mainColSpacing: embeddedMode ? 6 : 12
+    readonly property int mainColTopMargin: embeddedMode ? Math.max(6, Math.round(14 * ez)) : 10
+    readonly property int mainColSpacing: embeddedMode ? Math.max(4, Math.round(6 * ez)) : 12
     /// Horizontal gap between FOLD / CALL / RAISE (and similar action rows).
-    readonly property int actionRowSpacing: embeddedMode ? 14 : 16
-    readonly property int embeddedTimerRowMinH: 14
+    readonly property int actionRowSpacing: embeddedMode ? Math.max(6, Math.round(14 * ez)) : 16
+    readonly property int embeddedTimerRowMinH: Math.max(18, Math.round(22 * ez))
     /// Uniform inset inside the HUD panel so rows/columns line up (avoid mixing `x: 8` with ad‑hoc widths).
-    readonly property int hudSideMargin: 11
+    readonly property int hudSideMargin: embeddedMode ? Math.max(5, Math.round(11 * ez)) : 11
     /// Used when `embeddedMode` is true; set from `GameScreen` so the panel does not span the table width.
     property real panelWidth: 0
 
@@ -242,7 +262,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         height: mainCol.height + mainColTopMargin + barBottomPad
-        radius: 10
+        radius: game_controls.embeddedMode ? Math.max(6, Math.round(10 * game_controls.ez)) : 10
         color: Theme.headerBg
         border.width: 1
         border.color: Qt.alpha(Theme.gold, 0.25)
@@ -274,7 +294,7 @@ Item {
                 text: game_controls.statusText.length > 0 ? game_controls.statusText : qsTr("Ready.")
                 color: Theme.textPrimary
                 font.family: Theme.fontFamilyUi
-                font.pixelSize: Theme.uiBodyPx
+                font.pixelSize: game_controls.hudBodyPx
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
             }
@@ -282,7 +302,7 @@ Item {
             Column {
                 id: decisionChrome
                 width: parent.width
-                spacing: game_controls.embeddedMode ? 6 : 10
+                spacing: game_controls.embeddedMode ? Math.max(4, Math.round(6 * game_controls.ez)) : 10
                 /// Table + interactive human: keep timer strip so the panel height stays stable. Table + play-as-bot:
                 /// omit the empty strip (Sit out is not shown while bot plays — same as before).
                 visible: game_controls.showTableDecisionChrome
@@ -298,15 +318,16 @@ Item {
                         id: timerRow
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width
-                        spacing: game_controls.embeddedMode ? 14 : 10
+                        spacing: game_controls.embeddedMode ? Math.max(8, Math.round(14 * game_controls.ez)) : 10
 
                         Text {
                         visible: game_controls.humanDecisionActive
                         text: qsTr("Act")
                         color: Theme.hudActionLabel
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiMicroPx
+                        font.pixelSize: game_controls.hudTimerLabelPx
                         font.bold: true
+                        Layout.minimumWidth: visible ? Math.max(26, Math.round(32 * game_controls.ez)) : 0
                         Layout.preferredWidth: visible ? implicitWidth : 0
                     }
 
@@ -314,23 +335,26 @@ Item {
                         visible: game_controls.humanDecisionActive
                         text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
                         color: Theme.seatBorderAct
-                        font.family: Theme.fontFamilyUi
-                        font.pointSize: Theme.uiSmallPx
+                        font.family: Theme.fontFamilyMono
+                        font.pixelSize: game_controls.hudTimerLabelPx + 1
                         font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        Layout.minimumWidth: visible ? Math.max(34, Math.round(40 * game_controls.ez)) : 0
                         Layout.preferredWidth: visible ? implicitWidth : 0
                     }
 
                     GameButton {
                         visible: !game_controls.trainerMode && game_controls.humanDecisionActive
                                 && game_controls.humanMoreTimeAvailable
-                        pillWidth: 76
-                        horizontalPadding: 14
-                        fontSize: Theme.uiHudButtonPt
+                        /// Wide enough for button font “More” — do not cap with `Layout.preferredWidth` (caused “M…” elide).
+                        pillWidth: Math.max(88, Math.round(112 * game_controls.ez))
+                        horizontalPadding: Math.max(14, Math.round(18 * game_controls.ez))
+                        fontSize: game_controls.hudBtnPt
                         text: qsTr("More")
                         buttonColor: Theme.hudActionPanel
                         textColor: Theme.hudActionBright
-                        overrideHeight: 34
-                        Layout.preferredWidth: visible ? 76 : 0
+                        overrideHeight: game_controls.hudActBtnH
+                        Layout.minimumWidth: visible ? Math.max(96, Math.round(122 * game_controls.ez)) : 0
                         onClicked: {
                             if (pageRoot)
                                 pageRoot.buttonClicked("MORE_TIME")
@@ -347,10 +371,13 @@ Item {
                         text: game_controls.statusSubText
                         color: Theme.textSecondary
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiMicroPx
+                        font.pixelSize: game_controls.hudSmallPx
                         horizontalAlignment: Text.AlignRight
                         elide: Text.ElideLeft
-                        Layout.maximumWidth: Math.min(200, parent.width * 0.55)
+                        wrapMode: Text.NoWrap
+                        Layout.minimumWidth: Math.max(72, Math.round(88 * game_controls.ez))
+                        /// Leave room for Act / timer / More — do not claim most of a narrow panel.
+                        Layout.preferredWidth: Math.min(320, Math.max(100, timerRow.width * 0.42))
                     }
 
                     ThemedCheckBox {
@@ -359,11 +386,11 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         text: qsTr("Sit out")
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiMicroPx
-                        topPadding: game_controls.embeddedMode ? 8 : 14
-                        bottomPadding: game_controls.embeddedMode ? 8 : 14
-                        leftPadding: game_controls.embeddedMode ? 8 : 12
-                        rightPadding: game_controls.embeddedMode ? 8 : 12
+                        font.pixelSize: game_controls.hudMicroPx
+                        topPadding: game_controls.embeddedMode ? Math.max(4, Math.round(8 * game_controls.ez)) : 14
+                        bottomPadding: game_controls.embeddedMode ? Math.max(4, Math.round(8 * game_controls.ez)) : 14
+                        leftPadding: game_controls.embeddedMode ? Math.max(6, Math.round(8 * game_controls.ez)) : 12
+                        rightPadding: game_controls.embeddedMode ? Math.max(6, Math.round(8 * game_controls.ez)) : 12
                         checked: game_controls.humanSitOut
                         onToggled: {
                             if (pokerGame) {
@@ -383,8 +410,8 @@ Item {
                     /// Keep the bar’s vertical space on the table HUD even between decisions (timer at 0).
                     visible: game_controls.embeddedMode && game_controls.showTableDecisionChrome
                     width: parent.width
-                    height: 6
-                    padding: 2
+                    height: Math.max(4, Math.round(6 * game_controls.ez))
+                    padding: Math.max(1, Math.round(2 * game_controls.ez))
                     opacity: (game_controls.humanDecisionActive
                             || (game_controls.trainerMode && game_controls.statusSubText.length > 0)) ? 1.0 : 0.35
                     from: 0
@@ -462,8 +489,8 @@ Item {
                             Layout.preferredWidth: 52
                             text: Math.round(raiseSlider.value)
                             color: Theme.focusGold
-                            font.family: Theme.fontFamilyUi
-                            font.pixelSize: Theme.uiBodyPx
+                            font.family: Theme.fontFamilyMono
+                            font.pixelSize: game_controls.hudBodyPx
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                         }
@@ -507,7 +534,8 @@ Item {
                     pillWidth: 76
                     buttonColor: Theme.dangerBg
                     textColor: Theme.dangerText
-                    fontSize: Theme.uiHudButtonPt
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     clickEnabled: game_controls.trainerMode
                             ? (!game_controls.trainerInputLocked && game_controls.facingRaise
                                     && game_controls.decisionSecondsLeft > 0)
@@ -532,7 +560,8 @@ Item {
                     pillWidth: 108
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
-                    fontSize: Theme.uiHudButtonPt
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     clickEnabled: game_controls.trainerMode
                             ? (!game_controls.trainerInputLocked && game_controls.facingRaise
                                     && game_controls.decisionSecondsLeft > 0)
@@ -554,7 +583,8 @@ Item {
                     pillWidth: 88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
-                    fontSize: Theme.uiHudButtonPt
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     clickEnabled: game_controls.trainerMode
                             ? (!game_controls.trainerInputLocked && game_controls.facingRaise
                                     && game_controls.decisionSecondsLeft > 0)
@@ -574,7 +604,8 @@ Item {
                     pillWidth: 76
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
-                    fontSize: Theme.uiHudButtonPt
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     clickEnabled: !game_controls.trainerInputLocked && game_controls.facingRaise
                             && game_controls.decisionSecondsLeft > 0
                     opacity: game_controls.facingRaise ? 1.0 : 0.42
@@ -590,7 +621,8 @@ Item {
                     pillWidth: 108
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
-                    fontSize: Theme.uiHudButtonPt
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     clickEnabled: !game_controls.trainerInputLocked && game_controls.facingRaise
                             && game_controls.decisionSecondsLeft > 0
                     opacity: game_controls.facingRaise ? 1.0 : 0.42
@@ -606,7 +638,8 @@ Item {
                     pillWidth: 88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
-                    fontSize: Theme.uiHudButtonPt
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     clickEnabled: !game_controls.trainerInputLocked && game_controls.facingRaise
                             && game_controls.decisionSecondsLeft > 0
                     opacity: game_controls.facingRaise ? 1.0 : 0.42
@@ -671,8 +704,8 @@ Item {
                             Layout.preferredWidth: 52
                             text: Math.round(bbPreflopSlider.value)
                             color: Theme.focusGold
-                            font.family: Theme.fontFamilyUi
-                            font.pixelSize: Theme.uiBodyPx
+                            font.family: Theme.fontFamilyMono
+                            font.pixelSize: game_controls.hudBodyPx
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                         }
@@ -717,6 +750,8 @@ Item {
                 GameButton {
                     text: qsTr("CHECK")
                     pillWidth: 96
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
                     onClicked: {
@@ -732,6 +767,8 @@ Item {
                             && !game_controls.bbPreflopSizingExpanded
                     text: qsTr("Raise")
                     pillWidth: 96
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
                     onClicked: {
@@ -794,8 +831,8 @@ Item {
                             Layout.preferredWidth: 52
                             text: Math.round(openRaiseSlider.value)
                             color: Theme.focusGold
-                            font.family: Theme.fontFamilyUi
-                            font.pixelSize: Theme.uiBodyPx
+                            font.family: Theme.fontFamilyMono
+                            font.pixelSize: game_controls.hudBodyPx
                             font.bold: true
                             horizontalAlignment: Text.AlignRight
                         }
@@ -836,6 +873,8 @@ Item {
                 GameButton {
                     text: qsTr("CHECK")
                     pillWidth: 88
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
                     onClicked: {
@@ -849,6 +888,8 @@ Item {
                 GameButton {
                     text: qsTr("FOLD")
                     pillWidth: 76
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     buttonColor: Theme.dangerBg
                     textColor: Theme.dangerText
                     onClicked: {
@@ -863,6 +904,8 @@ Item {
                     visible: game_controls.canOpenRaise && !game_controls.openRaiseSizingExpanded
                     text: qsTr("Raise")
                     pillWidth: 88
+                    fontSize: game_controls.hudBtnPt
+                    overrideHeight: game_controls.hudActBtnH
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
                     onClicked: {
@@ -883,10 +926,10 @@ Item {
 
                 GameButton {
                     text: qsTr("Buy back in (%1)").arg(game_controls.buyInChips)
-                    fontSize: Theme.uiHudButtonPt
+                    fontSize: game_controls.hudBtnPt
                     pillWidth: 0
                     horizontalPadding: 16
-                    overrideHeight: 30
+                    overrideHeight: Math.max(24, Math.round(30 * game_controls.ez))
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
                     clickEnabled: game_controls.pokerGame !== null
@@ -910,9 +953,10 @@ Item {
                 visible: !game_controls.trainerMode
                         && !(game_controls.embeddedMode && game_controls.humanDecisionActive)
                 width: parent.width
-                readonly property int statusBannerInnerTopPad: 6
-                implicitHeight: statusTableColumn.implicitHeight + 8 + statusBannerInnerTopPad
-                radius: 6
+                readonly property int statusBannerInnerTopPad: Math.max(4, Math.round(6 * game_controls.ez))
+                implicitHeight: statusTableColumn.implicitHeight + Math.max(6, Math.round(8 * game_controls.ez))
+                        + statusBannerInnerTopPad
+                radius: Math.max(4, Math.round(6 * game_controls.ez))
                 color: Theme.inputBg
                 border.color: Theme.inputBorder
                 border.width: 1
@@ -925,19 +969,21 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
                     anchors.topMargin: parent.statusBannerInnerTopPad
-                    spacing: 6
+                    spacing: Math.max(4, Math.round(6 * game_controls.ez))
 
                     Row {
                         id: winHandVizRow
                         visible: (game_controls.resultBannerCardAssets || []).length > 0
                         width: parent.width
-                        spacing: 6
+                        spacing: Math.max(4, Math.round(6 * game_controls.ez))
 
                         Repeater {
                             model: (game_controls.resultBannerCardAssets || []).length
                             delegate: Card {
-                                width: Theme.resultBannerCardW
-                                height: Theme.resultBannerCardH
+                                width: Math.max(20, Math.round(Theme.resultBannerCardW * game_controls.ez))
+                                height: Math.max(28, Math.round(Theme.resultBannerCardH * game_controls.ez))
+                                /// Embedded HUD `ez` shrinks banner cards — supersample like table board cards.
+                                displayScaleFactor: game_controls.ez
                                 card: (game_controls.resultBannerCardAssets || [])[index]
                                 tableCard: true
                                 instantFace: true
@@ -952,7 +998,7 @@ Item {
                         text: game_controls.statusFullDisplay
                         color: Theme.textPrimary
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiBodyPx
+                        font.pixelSize: game_controls.hudBodyPx
                         wrapMode: Text.WordWrap
                     }
                 }
@@ -964,8 +1010,9 @@ Item {
                         && (game_controls.humanSitOut || game_controls.playingAsBot
                             || game_controls.humanHandText.length > 0)
                 width: parent.width
-                implicitHeight: Math.max(44, handRowLayout.implicitHeight + 16)
-                radius: 6
+                implicitHeight: Math.max(Math.round(44 * game_controls.ez),
+                        handRowLayout.implicitHeight + Math.max(10, Math.round(16 * game_controls.ez)))
+                radius: Math.max(4, Math.round(6 * game_controls.ez))
                 color: Theme.panelElevated
                 border.width: 1
                 border.color: Qt.alpha(Theme.gold, 0.42)
@@ -974,14 +1021,14 @@ Item {
                 RowLayout {
                     id: handRowLayout
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 10
+                    anchors.margins: Math.max(6, Math.round(10 * game_controls.ez))
+                    spacing: Math.max(6, Math.round(10 * game_controls.ez))
 
                     Image {
                         visible: game_controls.humanSitOut
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredWidth: 22
-                        Layout.preferredHeight: 22
+                        Layout.preferredWidth: Math.max(18, Math.round(22 * game_controls.ez))
+                        Layout.preferredHeight: Math.max(18, Math.round(22 * game_controls.ez))
                         fillMode: Image.PreserveAspectFit
                         source: "qrc:/assets/icons/table.svg"
                     }
@@ -992,14 +1039,14 @@ Item {
                         text: qsTr("Sitting out")
                         color: Theme.textSecondary
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiMicroPx
+                        font.pixelSize: game_controls.hudMicroPx
                     }
 
                     Image {
                         visible: game_controls.playingAsBot && !game_controls.humanSitOut
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.preferredWidth: 22
-                        Layout.preferredHeight: 22
+                        Layout.preferredWidth: Math.max(18, Math.round(22 * game_controls.ez))
+                        Layout.preferredHeight: Math.max(18, Math.round(22 * game_controls.ez))
                         fillMode: Image.PreserveAspectFit
                         source: "qrc:/assets/icons/bots.svg"
                     }
@@ -1010,7 +1057,7 @@ Item {
                         text: qsTr("Bot playing")
                         color: Theme.textSecondary
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiMicroPx
+                        font.pixelSize: game_controls.hudMicroPx
                     }
 
                     Text {
@@ -1023,7 +1070,7 @@ Item {
                         text: game_controls.humanHandText
                         color: Theme.focusGold
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiBodyPx
+                        font.pixelSize: game_controls.hudBodyPx
                         font.bold: true
                         wrapMode: Text.NoWrap
                         elide: Text.ElideRight

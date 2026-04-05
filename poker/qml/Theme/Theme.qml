@@ -26,8 +26,15 @@ QtObject {
     readonly property color textSecondary: "#a89890"
     readonly property color textMuted: "#7a7068"
 
-    /// Bundled Oswald (registered in `main.cpp`); also exposed as root-context `appFontFamily`.
+    /// Bundled Google Fonts — registered in `main.cpp` (`appFontFamily*` root-context strings).
+    /// Merriweather — body copy, forms, labels (default app font).
     readonly property string fontFamilyUi: appFontFamily
+    /// Rye — logo / panel & toolbar titles.
+    readonly property string fontFamilyDisplay: appFontFamilyDisplay
+    /// Holtwood One SC — `GameButton` and action chrome.
+    readonly property string fontFamilyButton: appFontFamilyButton
+    /// Roboto Mono — chips, stacks, pot, sliders, monospace fields.
+    readonly property string fontFamilyMono: appFontFamilyMono
 
     readonly property color headerBg: "#141016"
     readonly property color headerRule: "#5c4020"
@@ -89,6 +96,12 @@ QtObject {
         return c[seat]
     }
 
+    /// Scale form/lobby controls: slightly larger on small windows, slightly smaller on very large ones.
+    function compactUiScale(shortSide) {
+        var s = shortSide > 0 ? shortSide : 720
+        return Math.min(1.2, Math.max(0.88, 720 / Math.max(s, 420)))
+    }
+
     /// Hex strings for Canvas2D (`fillStyle` / `strokeStyle`).
     readonly property string chartPlotFill: "#141016"
     readonly property string chartGridLine: "#2a3040"
@@ -123,15 +136,15 @@ QtObject {
     /// Nudge hero seat horizontally from panel center (negative = left) so HUD sits clearly to the side.
     readonly property int trainerDrillSeatCenterOffset: -44
 
-    /// Typography for training copy (large for readability).
-    readonly property int trainerPageHeadlinePt: 22
-    readonly property int trainerSectionPx: 20
-    readonly property int trainerBodyPx: 17
-    readonly property int trainerCaptionPx: 17
-    readonly property int trainerMetricLabelPx: 15
-    readonly property int trainerMetricValuePx: 24
-    readonly property int trainerToolButtonPx: 17
-    readonly property int trainerButtonLabelPx: 19
+    /// Typography for training copy — sized for Merriweather (wider serif; Oswald was condensed so read smaller).
+    readonly property int trainerPageHeadlinePt: 19
+    readonly property int trainerSectionPx: 16
+    readonly property int trainerBodyPx: 14
+    readonly property int trainerCaptionPx: 14
+    readonly property int trainerMetricLabelPx: 12
+    readonly property int trainerMetricValuePx: 20
+    readonly property int trainerToolButtonPx: 14
+    readonly property int trainerButtonLabelPx: 15
     readonly property int trainerColumnSpacing: 14
     readonly property int trainerPanelPadding: 14
     readonly property int trainerPanelRadius: 10
@@ -140,6 +153,17 @@ QtObject {
     readonly property int trainerDrillPanelMaxH: 760
     readonly property int trainerDrillPanelFallbackH: 660
     readonly property real trainerDrillPanelViewportFrac: 0.58
+
+    /// Picks a drill panel height from the scroll viewport so short windows are not forced to 600px+.
+    function trainerDrillPanelHeight(availableScrollHeight) {
+        var h = availableScrollHeight
+        if (h <= 0)
+            return trainerDrillPanelFallbackH
+        var want = Math.round(h * trainerDrillPanelViewportFrac)
+        var minH = Math.min(trainerDrillPanelMinH, Math.max(260, h - 220))
+        var maxH = Math.min(trainerDrillPanelMaxH, Math.max(minH, h - 28))
+        return Math.max(minH, Math.min(maxH, want))
+    }
     /// Embedded `GameControls` must fit FOLD/CALL/RAISE (or CHECK / bet / bet) in one row (~300px + margins).
     readonly property int trainerEmbeddedHudMinWidth: 340
     /// Win-line banner: mini cards beside one-line result text (`GameControls` embedded HUD).
@@ -160,20 +184,20 @@ QtObject {
     readonly property int uiToolBarTitlePt: 18
     /// Lobby chrome chip label + icon (smaller than centered page title).
     readonly property int uiToolBarChromePt: 13
-    readonly property int uiBodyPx: 14
+    readonly property int uiBodyPx: 13
     readonly property int uiSmallPx: 12
     readonly property int uiMicroPx: 11
-    readonly property int uiMonoPx: 13
+    readonly property int uiMonoPx: 12
     /// Lobby framed panel heading (“What would you like to do?”).
-    readonly property int uiLobbyPanelTitlePx: 22
+    readonly property int uiLobbyPanelTitlePx: 18
     /// Nav tiles: title + sub use `pixelSize`; two-line caps; fixed block heights keep every tile aligned.
-    readonly property int uiLobbyNavTileTitlePx: 15
-    readonly property int uiLobbyNavSubPx: 14
+    readonly property int uiLobbyNavTileTitlePx: 14
+    readonly property int uiLobbyNavSubPx: 13
     readonly property real uiLobbyNavTileTitleLineHeight: 1.2
     readonly property real uiLobbyNavTileSubLineHeight: 1.2
     /// Fixed content height for title block (two lines at `titlePx` × line height).
     readonly property int uiLobbyNavTitleBlockH: 36
-    readonly property int uiLobbyNavSubBlockH: 34
+    readonly property int uiLobbyNavSubBlockH: 30
     readonly property int uiLobbyNavTilePadding: 17
     /// Space between icon / title / sub stacks inside a tile.
     readonly property int uiLobbyNavTileStackSpacing: 8
@@ -187,7 +211,7 @@ QtObject {
     readonly property int uiSeatFoldPt: 12
     readonly property int uiSeatStreetPt: 11
     readonly property int uiSeatNamePt: 12
-    readonly property int uiSeatPosPt: 12
+    readonly property int uiSeatPosPt: 13
     readonly property int uiStackPt: 18
     readonly property int uiHudButtonPt: 11
     readonly property int uiChartCanvasPx: 12

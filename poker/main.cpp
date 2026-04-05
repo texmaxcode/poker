@@ -40,19 +40,35 @@ int main(int argc, char *argv[])
     // Matches `texas-holdem-gym.desktop` so shells resolve the taskbar/dock icon (Wayland uses app_id).
     app.setDesktopFileName(QStringLiteral("texas-holdem-gym"));
 
-    // Register bundled Oswald so QML Controls and raw Text inherit the brand typeface (see Theme.fontFamilyUi).
-    QString appFontFamily = QStringLiteral("Oswald");
+    // Bundled Google Fonts — families exposed to QML via Theme (Merriweather UI copy, Rye titles, Holtwood buttons, Roboto Mono numbers).
+    QString appFontFamily = QStringLiteral("Merriweather");
+    QString appFontFamilyDisplay = QStringLiteral("Rye");
+    QString appFontFamilyButton = QStringLiteral("Holtwood One SC");
+    QString appFontFamilyMono = QStringLiteral("Roboto Mono");
     {
-        const int idReg = QFontDatabase::addApplicationFont(QStringLiteral(":/assets/fonts/Oswald-Regular.ttf"));
-        QFontDatabase::addApplicationFont(QStringLiteral(":/assets/fonts/Oswald-Bold.ttf"));
-        if (idReg != -1)
-        {
-            const QStringList fams = QFontDatabase::applicationFontFamilies(idReg);
-            if (!fams.isEmpty())
-                appFontFamily = fams.first();
-        }
+        const auto familyFromQrc = [](const QString &qrcPath) -> QString {
+            const int fid = QFontDatabase::addApplicationFont(qrcPath);
+            if (fid == -1)
+                return QString();
+            const QStringList fams = QFontDatabase::applicationFontFamilies(fid);
+            return fams.isEmpty() ? QString() : fams.first();
+        };
+        const QString merri = familyFromQrc(QStringLiteral(":/assets/fonts/Merriweather-opsz-wdth-wght.ttf"));
+        if (!merri.isEmpty())
+            appFontFamily = merri;
+        const QString rye = familyFromQrc(QStringLiteral(":/assets/fonts/Rye-Regular.ttf"));
+        if (!rye.isEmpty())
+            appFontFamilyDisplay = rye;
+        const QString holt = familyFromQrc(QStringLiteral(":/assets/fonts/HoltwoodOneSC-Regular.ttf"));
+        if (!holt.isEmpty())
+            appFontFamilyButton = holt;
+        const QString mono = familyFromQrc(QStringLiteral(":/assets/fonts/RobotoMono-wght.ttf"));
+        if (!mono.isEmpty())
+            appFontFamilyMono = mono;
+
         QFont f = app.font();
         f.setFamily(appFontFamily);
+        f.setWeight(QFont::Normal);
         f.setPointSizeF(13.0);
         app.setFont(f);
     }
@@ -82,6 +98,9 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/"));
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamily"), appFontFamily);
+    engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyDisplay"), appFontFamilyDisplay);
+    engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyButton"), appFontFamilyButton);
+    engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyMono"), appFontFamilyMono);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerGame"), &poker_game);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerSolver"), &poker_solver);
     engine.rootContext()->setContextProperty(QStringLiteral("toyNashSolver"), &toy_nash_solver);

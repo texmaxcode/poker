@@ -44,8 +44,19 @@ Page {
     readonly property color statsRowAlt: Qt.rgba(1, 1, 1, 0.03)
     readonly property int statsHeaderBodyGap: 8
     readonly property int statsPanelPadding: Theme.trainerPanelPadding + 20
-    readonly property int statsTableColSpacing: 18
-    readonly property int statsPanelsSpacing: 22
+    readonly property int statsTableColSpacing: 10
+    readonly property int statsPanelsSpacing: 16
+    /// Width available to the three top stats panels (viewport minus scroll padding).
+    readonly property real statsTopRowInnerW: Math.max(0, scrollView.availableWidth - scrollView.leftPadding - scrollView.rightPadding)
+    /// ~46% / 27% / 27% target; never let seat panel consume space the two side panels need.
+    readonly property real statsSeatPanelW: {
+        var w = statsPage.statsTopRowInnerW
+        var sp = statsPage.statsPanelsSpacing
+        var sideFloor = 96
+        var maxSeat = w - 2 * sideFloor - 2 * sp
+        return Math.min(620, Math.max(80, Math.min(w * 0.46, maxSeat)))
+    }
+    readonly property real statsSidePanelW: Math.max(72, (statsPage.statsTopRowInnerW - statsPage.statsSeatPanelW - 2 * statsPage.statsPanelsSpacing) / 2)
 
     function formatTimeMs(ms) {
         if (ms === undefined || ms === null || ms <= 0)
@@ -158,7 +169,7 @@ Page {
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
         leftPadding: Theme.uiPagePadding + 8
-        rightPadding: Theme.uiPagePadding + 8
+        rightPadding: Theme.uiPagePadding + 18
         topPadding: Theme.uiScrollViewTopPadding
         bottomPadding: Theme.uiPagePadding + 6
 
@@ -191,11 +202,13 @@ Page {
                     ThemedPanel {
                         panelTitle: qsTr("Seat bankrolls")
                         panelPadding: statsPage.statsPanelPadding
+                        panelExtraPaddingRight: 32
                         panelTitlePixelSize: Theme.trainerSectionPx + 2
                         Layout.alignment: Qt.AlignTop
-                        Layout.fillWidth: true
+                        Layout.fillWidth: false
                         Layout.fillHeight: true
-                        Layout.minimumWidth: 200
+                        Layout.minimumWidth: 260
+                        Layout.preferredWidth: statsPage.statsSeatPanelW
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -208,42 +221,54 @@ Page {
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.leftMargin: 4
+                                Layout.rightMargin: 4
                                 spacing: statsPage.statsTableColSpacing
                                 Label {
                                     text: qsTr("PLAYER")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
                                     Layout.fillWidth: true
-                                    Layout.minimumWidth: 88
+                                    Layout.minimumWidth: 72
                                     elide: Text.ElideRight
                                 }
                                 Label {
                                     text: qsTr("TABLE")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
-                                    Layout.preferredWidth: 72
+                                    Layout.minimumWidth: 56
+                                    Layout.preferredWidth: 68
+                                    Layout.maximumWidth: 102
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
                                     text: qsTr("WALLET")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
-                                    Layout.preferredWidth: 72
+                                    Layout.minimumWidth: 56
+                                    Layout.preferredWidth: 68
+                                    Layout.maximumWidth: 102
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
                                     text: qsTr("TOTAL")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
+                                    Layout.minimumWidth: 56
                                     Layout.preferredWidth: 72
+                                    Layout.maximumWidth: 108
                                     horizontalAlignment: Text.AlignRight
                                 }
                             }
@@ -251,6 +276,8 @@ Page {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 1
+                                Layout.leftMargin: 4
+                                Layout.rightMargin: 4
                                 color: Theme.panelBorder
                                 Layout.topMargin: 2
                                 Layout.bottomMargin: statsPage.statsHeaderBodyGap
@@ -278,36 +305,43 @@ Page {
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: 6
-                                        anchors.rightMargin: 6
+                                        anchors.leftMargin: 4
+                                        anchors.rightMargin: 4
                                         spacing: statsPage.statsTableColSpacing
 
                                         Label {
                                             text: botNames.displayName(modelData.seat !== undefined ? modelData.seat : 0)
                                             Layout.fillWidth: true
-                                            Layout.minimumWidth: 88
+                                            Layout.minimumWidth: 72
                                             color: Theme.colorForSeat(modelData.seat !== undefined ? modelData.seat : 0)
+                                            font.family: Theme.fontFamilyButton
                                             font.pixelSize: statsPage.statsTablePx
                                             font.weight: Font.Bold
                                             elide: Text.ElideRight
                                         }
                                         Label {
                                             text: modelData.stack !== undefined ? ("$" + modelData.stack) : "—"
-                                            Layout.preferredWidth: 72
+                                            Layout.minimumWidth: 56
+                                            Layout.preferredWidth: 68
+                                            Layout.maximumWidth: 102
                                             color: Theme.textSecondary
                                             font.pixelSize: statsPage.statsTablePx
                                             horizontalAlignment: Text.AlignRight
                                         }
                                         Label {
                                             text: modelData.wallet !== undefined ? ("$" + modelData.wallet) : "—"
-                                            Layout.preferredWidth: 72
+                                            Layout.minimumWidth: 56
+                                            Layout.preferredWidth: 68
+                                            Layout.maximumWidth: 102
                                             color: Theme.textSecondary
                                             font.pixelSize: statsPage.statsTablePx
                                             horizontalAlignment: Text.AlignRight
                                         }
                                         Label {
                                             text: modelData.total !== undefined ? ("$" + modelData.total) : "—"
+                                            Layout.minimumWidth: 56
                                             Layout.preferredWidth: 72
+                                            Layout.maximumWidth: 108
                                             color: Theme.gold
                                             font.weight: Font.Bold
                                             font.pixelSize: statsPage.statsTablePx
@@ -324,9 +358,10 @@ Page {
                         panelPadding: statsPage.statsPanelPadding
                         panelTitlePixelSize: Theme.trainerSectionPx + 2
                         Layout.alignment: Qt.AlignTop
-                        Layout.fillWidth: true
+                        Layout.fillWidth: false
                         Layout.fillHeight: true
-                        Layout.minimumWidth: 200
+                        Layout.minimumWidth: 176
+                        Layout.preferredWidth: statsPage.statsSidePanelW
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -352,6 +387,7 @@ Page {
                                 spacing: statsPage.statsTableColSpacing
                                 Label {
                                     text: qsTr("PLAYER")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
@@ -361,6 +397,7 @@ Page {
                                 }
                                 Label {
                                     text: qsTr("BUY-IN")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
@@ -399,6 +436,7 @@ Page {
                                             Layout.fillWidth: true
                                             Layout.minimumWidth: 88
                                             color: Theme.colorForSeat(index)
+                                            font.family: Theme.fontFamilyButton
                                             font.pixelSize: statsPage.statsTablePx
                                             font.weight: Font.Bold
                                             elide: Text.ElideRight
@@ -429,6 +467,7 @@ Page {
                                 }
                                 Button {
                                     text: qsTr("Apply")
+                                    font.family: Theme.fontFamilyButton
                                     font.pixelSize: statsPage.statsTablePx
                                     enabled: !pokerGame.gameInProgress()
                                     onClicked: {
@@ -447,9 +486,10 @@ Page {
                         panelPadding: statsPage.statsPanelPadding
                         panelTitlePixelSize: Theme.trainerSectionPx + 2
                         Layout.alignment: Qt.AlignTop
-                        Layout.fillWidth: true
+                        Layout.fillWidth: false
                         Layout.fillHeight: true
-                        Layout.minimumWidth: 200
+                        Layout.minimumWidth: 176
+                        Layout.preferredWidth: statsPage.statsSidePanelW
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -465,6 +505,7 @@ Page {
                                 spacing: statsPage.statsTableColSpacing
                                 Label {
                                     text: qsTr("RANK")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
@@ -474,6 +515,7 @@ Page {
                                 }
                                 Label {
                                     text: qsTr("PLAYER")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
@@ -483,6 +525,7 @@ Page {
                                 }
                                 Label {
                                     text: qsTr("TOTAL")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
@@ -492,6 +535,7 @@ Page {
                                 }
                                 Label {
                                     text: qsTr("P / L")
+                                    font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
@@ -547,6 +591,7 @@ Page {
                                             Layout.fillWidth: true
                                             Layout.minimumWidth: 88
                                             color: Theme.colorForSeat(modelData.seat !== undefined ? modelData.seat : 0)
+                                            font.family: Theme.fontFamilyButton
                                             font.pixelSize: statsPage.statsTablePx
                                             font.weight: Font.Bold
                                             elide: Text.ElideRight
@@ -582,6 +627,11 @@ Page {
                             }
                         }
                     }
+
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                    }
                 }
 
             ThemedPanel {
@@ -609,6 +659,7 @@ Page {
                                 }
                                 Label {
                                     text: botNames.displayName(index)
+                                    font.family: Theme.fontFamilyButton
                                     font.pixelSize: 13
                                     font.weight: Font.Bold
                                     color: Theme.colorForSeat(index)
@@ -870,6 +921,7 @@ Page {
                                     Label {
                                         Layout.fillWidth: true
                                         wrapMode: Text.WordWrap
+                                        font.family: Theme.fontFamilyDisplay
                                         font.pixelSize: 13
                                         font.bold: true
                                         font.capitalization: Font.AllUppercase
@@ -906,6 +958,7 @@ Page {
                                                     spacing: 0
                                     Label {
                                         text: botNames.displayName(index)
+                                        font.family: Theme.fontFamilyButton
                                         font.pixelSize: Theme.trainerCaptionPx
                                         font.weight: Font.Bold
                                         color: Theme.colorForSeat(index)

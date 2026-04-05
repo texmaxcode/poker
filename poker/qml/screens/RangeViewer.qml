@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
@@ -303,6 +304,8 @@ Page {
 
             Row {
                 spacing: 8
+                readonly property real cardPaintDpr: (Window.window && Window.window.devicePixelRatio > 0)
+                        ? Window.window.devicePixelRatio : 1.0
                 /// Integer `model` + index lookup — Qt 6 `modelData` from JS arrays is unreliable in delegates.
                 Repeater {
                     model: page.tipRow >= 0 && page.tipCol >= 0
@@ -310,11 +313,12 @@ Page {
                     Image {
                         required property int index
                         readonly property var tipCardNames: page.cardFileNamesForCell(page.tipRow, page.tipCol)
-                        width: 56
-                        height: 80
+                        width: 64
+                        height: 92
                         fillMode: Image.Stretch
-                        sourceSize.width: 56
-                        sourceSize.height: 80
+                        mipmap: true
+                        sourceSize.width: Math.max(1, Math.round(64 * parent.cardPaintDpr))
+                        sourceSize.height: Math.max(1, Math.round(92 * parent.cardPaintDpr))
                         asynchronous: true
                         source: {
                             if (index < 0 || index >= tipCardNames.length)
@@ -396,14 +400,6 @@ Page {
                         onClicked: page.goTrainingHome()
                     }
 
-                    Label {
-                        text: qsTr("Opening ranges")
-                        font.pointSize: Theme.trainerPageHeadlinePt
-                        font.bold: true
-                        font.capitalization: Font.AllUppercase
-                        color: Theme.gold
-                    }
-
                     Item { Layout.fillWidth: true }
                 }
 
@@ -468,17 +464,17 @@ Page {
                         Row {
                             spacing: 8
                             Rectangle { width: 10; height: 10; radius: 2; color: page.actRaise }
-                            Label { text: qsTr("Raise"); color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
+                            Label { text: qsTr("Raise"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
                         }
                         Row {
                             spacing: 8
                             Rectangle { width: 10; height: 10; radius: 2; color: page.actCall }
-                            Label { text: qsTr("Call"); color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
+                            Label { text: qsTr("Call"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
                         }
                         Row {
                             spacing: 8
                             Rectangle { width: 10; height: 10; radius: 2; color: page.actFold }
-                            Label { text: qsTr("Fold"); color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
+                            Label { text: qsTr("Fold"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
                         }
                         Item { Layout.fillWidth: true }
                     }

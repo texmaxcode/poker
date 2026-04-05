@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
@@ -223,36 +224,6 @@ Item {
         spacing: 2
 
         RowLayout {
-            visible: root.composite
-            spacing: 10
-            Repeater {
-                model: [
-                    { label: qsTr("Call"), c: root.layerCallColor },
-                    { label: qsTr("Raise"), c: root.layerRaiseColor },
-                    { label: qsTr("Open"), c: root.layerBetColor }
-                ]
-                RowLayout {
-                    spacing: 4
-                    Rectangle {
-                        width: 10
-                        height: 10
-                        radius: 2
-                        color: modelData.c
-                        border.width: root.editLayer === index ? 1 : 0
-                        border.color: Qt.alpha(Theme.chromeLineGold, 0.75)
-                    }
-                    Label {
-                        text: modelData.label
-                        font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiRangeGridLegendPx
-                        color: Theme.textMuted
-                        font.bold: root.editLayer === index
-                    }
-                }
-            }
-        }
-
-        RowLayout {
             spacing: gridGap
             Item {
                 Layout.preferredWidth: labelColW
@@ -458,15 +429,18 @@ Item {
 
             Row {
                 spacing: 8
+                readonly property real cardPaintDpr: (Window.window && Window.window.devicePixelRatio > 0)
+                        ? Window.window.devicePixelRatio : 1.0
                 Repeater {
                     model: root.tipRow >= 0 ? root.cardFileNamesForCell(root.tipRow, root.tipCol) : []
                     Image {
                         required property var modelData
-                        width: 56
-                        height: 80
+                        width: 64
+                        height: 92
                         fillMode: Image.Stretch
-                        sourceSize.width: 56
-                        sourceSize.height: 80
+                        mipmap: true
+                        sourceSize.width: Math.max(1, Math.round(64 * parent.cardPaintDpr))
+                        sourceSize.height: Math.max(1, Math.round(92 * parent.cardPaintDpr))
                         asynchronous: true
                         source: "qrc:/assets/cards/" + modelData
                     }

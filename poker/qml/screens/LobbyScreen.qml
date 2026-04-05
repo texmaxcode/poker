@@ -14,6 +14,17 @@ Page {
 
     readonly property color gold: Theme.gold
 
+    readonly property real lobbyShortSide: Math.min(lobbyPage.width, lobbyPage.height)
+    readonly property real lobbyUiScale: Theme.compactUiScale(lobbyShortSide)
+    readonly property int lobbyNavRowSpacing: Math.max(8, Math.round(Theme.uiLobbyNavRowSpacing * lobbyPage.lobbyUiScale))
+    /// Banner height scales with the actual tile width (5 tiles in a single row).
+    readonly property int lobbyBannerMaxH: {
+        var panPad = Math.max(12, Math.round((Theme.trainerPanelPadding + 4) * lobbyPage.lobbyUiScale))
+        var avail = mainCol.width > 8 ? mainCol.width - 2 * panPad : 280
+        var tileW = Math.max(60, (avail - 4 * lobbyNavRowSpacing) / 5)
+        return Math.max(52, Math.min(160, Math.round(tileW * 0.55)))
+    }
+
     background: BrandedBackground {
         anchors.fill: parent
     }
@@ -59,7 +70,7 @@ Page {
                     Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, lobbyScroll.availableWidth - 40))
                     Layout.maximumWidth: Theme.trainerContentMaxWidth
                     Layout.fillHeight: true
-                    spacing: 16
+                    spacing: Math.max(12, Math.round(16 * lobbyPage.lobbyUiScale))
 
                     Item {
                         Layout.fillHeight: true
@@ -68,14 +79,14 @@ Page {
 
                     Item {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: Math.min(360, lobbyPage.height * 0.38)
-                        Layout.maximumHeight: 460
+                        Layout.preferredHeight: Math.min(420, Math.round(lobbyPage.lobbyShortSide * 0.42))
+                        Layout.maximumHeight: Math.round(Math.min(520, lobbyPage.lobbyShortSide * 0.58))
 
                         Image {
                             id: lobbyLogo
                             anchors.centerIn: parent
-                            width: Math.min(520, parent.width - 24)
-                            height: Math.min(parent.height, width * 0.72)
+                            width: Math.min(Math.round(lobbyPage.lobbyShortSide * 0.84), parent.width - 16)
+                            height: Math.min(parent.height - 8, width * 0.72)
                             fillMode: Image.PreserveAspectFit
                             smooth: true
                             mipmap: true
@@ -98,59 +109,53 @@ Page {
                     ThemedPanel {
                         Layout.fillWidth: true
                         panelTitle: qsTr("What would you like to do?")
-                        panelTitlePixelSize: Theme.uiLobbyPanelTitlePx
-                        panelSectionSpacing: 14
-                        panelPadding: Theme.trainerPanelPadding + 4
+                        panelTitlePixelSize: Math.max(16, Math.round(Theme.uiLobbyPanelTitlePx * lobbyPage.lobbyUiScale))
+                        panelSectionSpacing: Math.max(10, Math.round(14 * lobbyPage.lobbyUiScale))
+                        panelPadding: Math.max(12, Math.round((Theme.trainerPanelPadding + 4) * lobbyPage.lobbyUiScale))
                         panelOpacity: 0.45
                         borderOpacity: 0.45
 
                         RowLayout {
                             id: navTilesRow
                             Layout.fillWidth: true
-                            spacing: Theme.uiLobbyNavRowSpacing
-
+                            spacing: lobbyPage.lobbyNavRowSpacing
                             LobbyNavTile {
-                                title: qsTr("Texas Hold'em")
+                                bannerSource: "qrc:/assets/images/texas_holdem_icn.png"
                                 sub: qsTr("Play hands")
                                 detailTip: qsTr(
                                     "6-max Texas Hold’em table: you and five named bots. "
                                     + "Use the HUD to act; you can sit out and watch bots. Blinds and pot are centered on the felt.")
-                                iconSource: "qrc:/assets/icons/table.svg"
                                 onClicked: lobbyPage.go(1)
                             }
                             LobbyNavTile {
-                                title: qsTr("Bots & ranges")
+                                bannerSource: "qrc:/assets/images/bots_and_ranges.png"
                                 sub: qsTr("Configure bots")
                                 detailTip: qsTr(
                                     "Set stakes and stack, pick a bot archetype per player, and edit 13×13 range grids or paste "
                                     + "text ranges. Reference presets show default charts and full strategy notes on hover there.")
-                                iconSource: "qrc:/assets/icons/bots.svg"
                                 onClicked: lobbyPage.go(2)
                             }
                             LobbyNavTile {
-                                title: qsTr("Solver & equity")
+                                bannerSource: "qrc:/assets/images/solver_and_equity.png"
                                 sub: qsTr("Study tools")
                                 detailTip: qsTr(
                                     "Monte Carlo equity vs a range or exact villain cards, with optional pot-odds and chip-EV. "
                                     + "Helpful for study — not a full multi-street GTO solver.")
-                                iconSource: "qrc:/assets/icons/solver.svg"
                                 onClicked: lobbyPage.go(3)
                             }
                             LobbyNavTile {
-                                title: qsTr("Training")
+                                bannerSource: "qrc:/assets/images/training.png"
                                 sub: qsTr("Practice drills")
                                 detailTip: qsTr(
                                     "Preflop and postflop trainers with immediate feedback, mistake tracking, and progress stats.")
-                                iconSource: "qrc:/assets/icons/home.svg"
                                 onClicked: lobbyPage.go(5)
                             }
                             LobbyNavTile {
-                                title: qsTr("Stats")
+                                bannerSource: "qrc:/assets/images/stats.png"
                                 sub: qsTr("Ranks & charts")
                                 detailTip: qsTr(
                                     "Stack rankings and profit vs baseline, plus a line chart of each player’s total chips after every completed hand. "
                                     + "Set wallet and on-the-table amount on each player’s tab under Bots & ranges.")
-                                iconSource: "qrc:/assets/icons/stats.svg"
                                 onClicked: lobbyPage.go(4)
                             }
                         }
@@ -172,30 +177,35 @@ Page {
 
     component LobbyNavTile: Item {
         id: tileRoot
-        property string title: ""
         property string sub: ""
         property string detailTip: ""
-        property string iconSource: ""
+        property string bannerSource: ""
         signal clicked()
 
-        /// Share the row evenly; `mainCol.width` ignored inner `ThemedPanel` padding and caused overflow.
+        readonly property real _navSubPx: Math.max(11, Math.round(Theme.uiLobbyNavSubPx * lobbyPage.lobbyUiScale))
+        readonly property int _subBlockH: Math.max(26, Math.round(Theme.uiLobbyNavSubBlockH * lobbyPage.lobbyUiScale))
+        readonly property real _tilePad: Math.max(6, Math.round(10 * lobbyPage.lobbyUiScale))
+        readonly property int _tileRadius: Math.max(10, Math.round(14 * lobbyPage.lobbyUiScale))
+
         Layout.fillWidth: true
-        Layout.minimumWidth: 72
-        Layout.maximumWidth: 260
-        Layout.preferredHeight: Theme.uiLobbyNavTileMinHeight
+        Layout.minimumWidth: Math.max(64, Math.round(72 * lobbyPage.lobbyUiScale))
+        implicitHeight: tileColumn.implicitHeight + 2 * _tilePad
+        Layout.preferredHeight: implicitHeight
+        Layout.minimumHeight: Math.max(120, Math.round(128 * lobbyPage.lobbyUiScale))
 
         Rectangle {
             id: tileFace
-            anchors.fill: parent
-            radius: 14
+            width: parent.width
+            height: tileColumn.implicitHeight + 2 * tileRoot._tilePad
+            radius: tileRoot._tileRadius
             clip: true
             gradient: Gradient {
                 GradientStop {
                     position: 0
-                    color: Qt.lighter(Theme.hudBg0, 1.1)
+                    color: Qt.lighter(Theme.hudBg0, 1.06)
                 }
                 GradientStop {
-                    position: 0.45
+                    position: 0.5
                     color: Theme.hudBg0
                 }
                 GradientStop {
@@ -203,60 +213,46 @@ Page {
                     color: Qt.tint(Theme.hudBg1, "#55301a22")
                 }
             }
-            border.width: navMa.containsMouse || navMa.pressed ? 2 : 1
+            border.width: navMa.containsMouse || navMa.pressed
+                    ? Math.max(2, Math.round(2 * lobbyPage.lobbyUiScale))
+                    : Math.max(1, Math.round(1 * lobbyPage.lobbyUiScale))
             border.color: navMa.containsMouse
                     ? Qt.lighter(Theme.chromeLineGold, 1.15)
                     : Qt.alpha(Theme.chromeLine, 0.85)
 
             ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: Theme.uiLobbyNavTilePadding
-                spacing: Theme.uiLobbyNavTileStackSpacing
+                id: tileColumn
+                x: tileRoot._tilePad
+                y: tileRoot._tilePad
+                width: parent.width - 2 * tileRoot._tilePad
+                spacing: Math.max(4, Math.round(Theme.uiLobbyNavTileStackSpacing * lobbyPage.lobbyUiScale))
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.uiLobbyNavIconPx
-                    Layout.maximumHeight: Theme.uiLobbyNavIconPx
+                    Layout.preferredHeight: lobbyPage.lobbyBannerMaxH
+                    Layout.maximumHeight: lobbyPage.lobbyBannerMaxH
                     Image {
-                        anchors.centerIn: parent
-                        width: Theme.uiLobbyNavIconPx
-                        height: Theme.uiLobbyNavIconPx
+                        id: bannerImg
+                        anchors.fill: parent
                         fillMode: Image.PreserveAspectFit
-                        source: tileRoot.iconSource
-                        opacity: navMa.containsMouse ? 1 : 0.88
+                        source: tileRoot.bannerSource
+                        smooth: true
+                        mipmap: true
+                        asynchronous: true
+                        opacity: navMa.containsMouse ? 1 : 0.94
                     }
                 }
 
                 Item {
                     Layout.fillWidth: true
-                    Layout.minimumHeight: Theme.uiLobbyNavTitleBlockH
-                    Layout.maximumHeight: Theme.uiLobbyNavTitleBlockH
+                    Layout.minimumHeight: tileRoot._subBlockH
+                    Layout.maximumHeight: tileRoot._subBlockH
                     Text {
                         anchors.fill: parent
-                        text: title
-                        color: Qt.lighter(lobbyPage.gold, navMa.containsMouse ? 1.04 : 1.0)
-                        font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiLobbyNavTileTitlePx
-                        font.bold: true
-                        font.capitalization: Font.AllUppercase
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignTop
-                        lineHeight: Theme.uiLobbyNavTileTitleLineHeight
-                    }
-                }
-                Item {
-                    Layout.fillWidth: true
-                    Layout.minimumHeight: Theme.uiLobbyNavSubBlockH
-                    Layout.maximumHeight: Theme.uiLobbyNavSubBlockH
-                    Text {
-                        anchors.fill: parent
-                        text: sub
+                        text: tileRoot.sub
                         color: Theme.textSecondary
                         font.family: Theme.fontFamilyUi
-                        font.pixelSize: Theme.uiLobbyNavSubPx
+                        font.pixelSize: tileRoot._navSubPx
                         font.weight: Font.Medium
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
@@ -301,8 +297,47 @@ Page {
             onClicked: tileRoot.clicked()
         }
 
-        ToolTip.visible: navMa.containsMouse && detailTip.length > 0
-        ToolTip.delay: 800
-        ToolTip.text: detailTip
+        /// Squarer panel + larger offset than the default rounded tooltip (avoids ScrollView clip).
+        ToolTip {
+            id: lobbyDetailTip
+            parent: Overlay.overlay
+            modal: false
+            focus: false
+            delay: 800
+            text: tileRoot.detailTip
+            visible: navMa.containsMouse && tileRoot.detailTip.length > 0
+
+            readonly property real _gap: Math.max(22, Math.round(30 * lobbyPage.lobbyUiScale))
+            readonly property real _maxW: 420
+
+            width: Math.min(_maxW, Math.max(168, tileRoot.width * 2.6))
+            padding: Math.max(10, Math.round(14 * lobbyPage.lobbyUiScale))
+
+            x: {
+                const gx = tileRoot.mapToItem(Overlay.overlay, 0, 0).x
+                const cx = gx + (tileRoot.width - width) * 0.5
+                const ov = Overlay.overlay
+                if (!ov || ov.width < 16)
+                    return cx
+                return Math.max(8, Math.min(cx, ov.width - width - 8))
+            }
+            y: tileRoot.mapToItem(Overlay.overlay, 0, 0).y - height - _gap
+
+            background: Rectangle {
+                color: Theme.panelElevated
+                border.color: Qt.alpha(Theme.chromeLineGold, 0.55)
+                border.width: 1
+                radius: Math.max(3, Math.round(5 * lobbyPage.lobbyUiScale))
+            }
+
+            contentItem: Text {
+                text: lobbyDetailTip.text
+                wrapMode: Text.WordWrap
+                color: Theme.textPrimary
+                font.family: Theme.fontFamilyUi
+                font.pixelSize: Math.max(12, Math.round(Theme.trainerCaptionPx * lobbyPage.lobbyUiScale))
+                width: lobbyDetailTip.availableWidth
+            }
+        }
     }
 }

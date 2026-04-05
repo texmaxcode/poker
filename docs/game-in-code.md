@@ -94,6 +94,12 @@ The **table HUD** shows one **combined** pot during the hand (and resets after t
 
 ---
 
+## Desktop UI (QML)
+
+Rules above describe the **engine**. The **Qt Quick** shell (fonts, minimum window size, lobby layout, floating HUD beside the human seat, setup/stats/solver forms) is summarized in **[architecture.md](architecture.md)** under *Application shell*, *UI layout and styling*, and the QML structure table.
+
+---
+
 ## Tests
 
 - `poker/poker/tests/test_*.cpp` — Boost.Test (`Test_poker`): cards/deck, game smoke, hand eval, equity, range matrix, side pots, bots, SQLite persistence. Build with `BUILD_TESTING=ON`; run `ctest -R poker.unit -V` or `./build/poker/poker/tests/Test_poker --log_level=test_suite`.

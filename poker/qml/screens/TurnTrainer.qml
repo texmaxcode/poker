@@ -11,6 +11,8 @@ Page {
 
     property StackLayout stackLayout: null
 
+    readonly property int trainerControlColumns: scrollView.availableWidth < 480 ? 2 : 4
+
     property string statusLine: qsTr("Starting…")
     property string board0: ""
     property string board1: ""
@@ -294,20 +296,14 @@ Page {
                         onClicked: page.goTrainingHome()
                     }
 
-                    Label {
-                        text: qsTr("Turn (BTN vs BB)")
-                        color: Theme.gold
-                        font.pointSize: Theme.trainerPageHeadlinePt
-                        font.bold: true
-                        font.capitalization: Font.AllUppercase
-                    }
-
                     Item { Layout.fillWidth: true }
                 }
 
-                RowLayout {
+                GridLayout {
                     Layout.fillWidth: true
-                    spacing: 14
+                    rowSpacing: 10
+                    columnSpacing: 12
+                    columns: page.trainerControlColumns
 
                     Label {
                         text: qsTr("Delay")
@@ -316,8 +312,9 @@ Page {
                     }
                     SpinBox {
                         id: delaySecSpin
-                        Layout.preferredWidth: Theme.trainerSpinBoxWidth
                         font.pixelSize: Theme.trainerCaptionPx
+                        Layout.fillWidth: page.trainerControlColumns <= 2
+                        Layout.preferredWidth: page.trainerControlColumns >= 4 ? Theme.trainerSpinBoxWidth : implicitWidth
                         from: 1
                         to: 120
                         editable: true
@@ -335,8 +332,9 @@ Page {
                     }
                     SpinBox {
                         id: timeLimitSpin
-                        Layout.preferredWidth: Theme.trainerSpinBoxWidth
                         font.pixelSize: Theme.trainerCaptionPx
+                        Layout.fillWidth: page.trainerControlColumns <= 2
+                        Layout.preferredWidth: page.trainerControlColumns >= 4 ? Theme.trainerSpinBoxWidth : implicitWidth
                         from: 5
                         to: 120
                         editable: true
@@ -346,8 +344,6 @@ Page {
                         valueFromText: function (t) { return parseInt(t, 10) }
                         onValueModified: trainingStore.trainerDecisionSeconds = value
                     }
-
-                    Item { Layout.fillWidth: true }
                 }
 
                 Connections {
@@ -363,11 +359,7 @@ Page {
                 Rectangle {
                     id: drillPanel
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Math.max(Theme.trainerDrillPanelMinH,
-                            Math.min(Theme.trainerDrillPanelMaxH,
-                                scrollView.availableHeight > 0
-                                    ? scrollView.availableHeight * Theme.trainerDrillPanelViewportFrac
-                                    : Theme.trainerDrillPanelFallbackH))
+                    Layout.preferredHeight: Theme.trainerDrillPanelHeight(scrollView.availableHeight)
                     radius: Theme.trainerPanelRadius
                     color: Qt.alpha(Theme.panel, 0.35)
                     border.width: 1
@@ -379,12 +371,27 @@ Page {
                         anchors.fill: parent
                         anchors.margins: 2
 
+                        readonly property int seatReserve: 220
+                        readonly property real seatScale: {
+                            var h = drillPanel.height
+                            if (h <= 0)
+                                return 1.0
+                            return Math.min(1.0, Math.max(0.48, (h - seatReserve) / 300))
+                        }
+
+                        readonly property int turnStripIntrinsic: 4 * Theme.trainerFlopBoardCardWidth
+                                + 3 * Theme.trainerDrillHudSpacing
+                        readonly property real boardStripScale: Math.min(1.0, Math.max(0.28,
+                                (drillArea.width - 20) / Math.max(1, turnStripIntrinsic)))
+                        readonly property int drillCardW: Math.max(32, Math.round(Theme.trainerFlopBoardCardWidth * boardStripScale))
+                        readonly property int drillCardH: Math.max(48, Math.round(Theme.trainerFlopBoardCardHeight * boardStripScale))
+                        readonly property int drillCardGap: Math.max(3, Math.round(Theme.trainerDrillHudSpacing * boardStripScale))
+                        readonly property int turnBoardStripWidth: 4 * drillCardW + 3 * drillCardGap
+
                         readonly property Item humanSeat: trainerSeatWrap
                         /// Same formula as `Game.qml` table HUD (seat is nested in a layout — use `mapFromItem` below).
                         readonly property real hudPanelW: Math.min(400, Math.max(Theme.trainerEmbeddedHudMinWidth,
                                 drillArea.width * 0.36))
-                        readonly property int turnBoardStripWidth: 4 * Theme.trainerFlopBoardCardWidth
-                                + 3 * Theme.trainerDrillHudSpacing
 
                         ColumnLayout {
                             id: flopDrillStack
@@ -411,8 +418,9 @@ Page {
                                         anchors.centerIn: parent
                                         text: qsTr("Pot $%1").arg(Math.round(page.trainerPotShown))
                                         color: Theme.gold
-                                        font.family: Theme.fontFamilyUi
-                                        font.pixelSize: Theme.trainerCaptionPx
+                                        font.family: Theme.fontFamilyMono
+                                        font.pixelSize: Math.max(10, Math.round(Theme.trainerCaptionPx
+                                                * Math.max(0.85, drillArea.boardStripScale)))
                                         font.bold: true
 
                                         transform: Scale {
@@ -427,35 +435,39 @@ Page {
 
                                 Row {
                                     id: flopBoardRow
-                                    spacing: Theme.trainerDrillHudSpacing
+                                    spacing: drillArea.drillCardGap
                                     width: drillArea.turnBoardStripWidth
                                     Card {
-                                        width: Theme.trainerFlopBoardCardWidth
-                                        height: Theme.trainerFlopBoardCardHeight
+                                        width: drillArea.drillCardW
+                                        height: drillArea.drillCardH
+                                        displayScaleFactor: drillArea.boardStripScale
                                         card: board0
                                         flipped: true
                                         tableCard: true
                                         instantFace: true
                                     }
                                     Card {
-                                        width: Theme.trainerFlopBoardCardWidth
-                                        height: Theme.trainerFlopBoardCardHeight
+                                        width: drillArea.drillCardW
+                                        height: drillArea.drillCardH
+                                        displayScaleFactor: drillArea.boardStripScale
                                         card: board1
                                         flipped: true
                                         tableCard: true
                                         instantFace: true
                                     }
                                     Card {
-                                        width: Theme.trainerFlopBoardCardWidth
-                                        height: Theme.trainerFlopBoardCardHeight
+                                        width: drillArea.drillCardW
+                                        height: drillArea.drillCardH
+                                        displayScaleFactor: drillArea.boardStripScale
                                         card: board2
                                         flipped: true
                                         tableCard: true
                                         instantFace: true
                                     }
                                     Card {
-                                        width: Theme.trainerFlopBoardCardWidth
-                                        height: Theme.trainerFlopBoardCardHeight
+                                        width: drillArea.drillCardW
+                                        height: drillArea.drillCardH
+                                        displayScaleFactor: drillArea.boardStripScale
                                         card: board3
                                         flipped: true
                                         tableCard: true
@@ -471,19 +483,20 @@ Page {
 
                             Item {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 312
-                                Layout.minimumHeight: 312
+                                Layout.preferredHeight: Math.max(180, Math.round(312 * drillArea.seatScale))
+                                Layout.minimumHeight: Math.max(160, Math.round(200 * drillArea.seatScale))
                                 Layout.bottomMargin: 4
 
                                 Item {
                                     id: trainerSeatWrap
-                                    width: 218
-                                    height: 312
+                                    width: Math.round(218 * drillArea.seatScale)
+                                    height: Math.round(312 * drillArea.seatScale)
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.horizontalCenterOffset: Theme.trainerDrillSeatCenterOffset
+                                    anchors.horizontalCenterOffset: Math.round(Theme.trainerDrillSeatCenterOffset * drillArea.seatScale)
 
                                 Player {
                                     anchors.fill: parent
+                                    uiScale: drillArea.seatScale
                                     seatIndex: 0
                                     name: qsTr("You")
                                     position: "BTN"

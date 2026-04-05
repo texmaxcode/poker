@@ -28,6 +28,20 @@ Item {
 
     readonly property color gold: Theme.gold
 
+    /// From `GameScreen.tableArea.tableScale` — matches seat/orbit scaling on small windows.
+    property real centerScale: 1.0
+
+    readonly property real _rowW: 5 * Theme.boardCardWidth + 4 * 6
+    /// Shrink pot + board when narrow **or** vertically tight (wide+short windows were width-only before).
+    readonly property real widthScale: Math.min(1.0, (width - 32) / table_container._rowW)
+    readonly property real heightScale: Math.min(1.0, Math.max(0.32, height / 280))
+    readonly property real boardRowScale: Math.min(widthScale, heightScale) * centerScale
+
+    readonly property real _tableShort: Math.min(table_container.width, table_container.height)
+    /// Pot bar + typography: same shrink as the board on tight layouts, but can grow past 1× on large table areas (bar was width-capped at 340px before).
+    readonly property real potHudScale: Math.max(0.38, Math.min(1.42,
+            boardRowScale * Math.min(1.4, Math.max(0.9, _tableShort / 780.0))))
+
     /// Animated display value (counts toward current pot)
     property int potShown: 0
     property int _prevPotForBump: 0
@@ -55,17 +69,22 @@ Item {
 
     Column {
         id: col
-        spacing: 18
+        spacing: Math.max(10, Math.round(18 * Math.max(table_container.boardRowScale,
+                table_container.potHudScale * 0.92)))
         anchors.centerIn: parent
 
         Rectangle {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
-            width: Math.min(340, Math.max(260, table_container.width * 0.38))
-            height: Math.max(64, potHudInner.implicitHeight + 20)
-            radius: 14
+            readonly property real _pw: table_container.width
+            /// Compact pot strip: narrower than board row; scales with table width without dominating.
+            width: Math.max(140, Math.min(Math.max(248, Math.round(_pw * 0.19)),
+                    Math.min(_pw * 0.72, _pw - 24)))
+            height: Math.max(Math.round(28 * table_container.potHudScale),
+                             potHudInner.implicitHeight + Math.round(8 * table_container.potHudScale))
+            radius: Math.max(5, Math.round(11 * table_container.potHudScale))
             color: Theme.hudBg1
-            border.width: 2
+            border.width: Math.max(1, Math.round(2 * table_container.potHudScale))
             border.color: Theme.hudBorder
             clip: true
 
@@ -83,21 +102,21 @@ Item {
             Column {
                 id: potHudInner
                 anchors.centerIn: parent
-                spacing: 4
-                width: parent.width - 12
+                spacing: Math.max(2, Math.round(4 * table_container.potHudScale))
+                width: parent.width - Math.max(8, Math.round(10 * table_container.potHudScale))
 
                 Row {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 10
+                    spacing: Math.max(8, Math.round(10 * table_container.potHudScale))
 
                     Text {
                         id: potValueText
                         anchors.verticalCenter: parent.verticalCenter
                         text: "$" + Math.round(table_container.potShown)
                         color: gold
-                        font.family: Theme.fontFamilyUi
+                        font.family: Theme.fontFamilyMono
                         font.bold: true
-                        font.pointSize: Theme.uiPotMainPt
+                        font.pointSize: Math.max(12, Math.round(Theme.uiPotMainPt * table_container.potHudScale))
                         horizontalAlignment: Text.AlignHCenter
 
                         transform: Scale {
@@ -114,9 +133,9 @@ Item {
                         visible: table_container.showToCallHint
                         text: qsTr("·")
                         color: Theme.textMuted
-                        font.family: Theme.fontFamilyUi
+                        font.family: Theme.fontFamilyMono
                         font.bold: true
-                        font.pointSize: Theme.uiPotSepPt
+                        font.pointSize: Math.max(8, Math.round(Theme.uiPotSepPt * table_container.potHudScale))
                     }
 
                     Text {
@@ -124,9 +143,9 @@ Item {
                         visible: table_container.showToCallHint
                         text: qsTr("Call $%1").arg(table_container.facingNeedChips)
                         color: Theme.focusGold
-                        font.family: Theme.fontFamilyUi
+                        font.family: Theme.fontFamilyMono
                         font.bold: true
-                        font.pointSize: Theme.uiPotCallPt
+                        font.pointSize: Math.max(9, Math.round(Theme.uiPotCallPt * table_container.potHudScale))
                     }
                 }
             }
@@ -168,30 +187,47 @@ Item {
             }
         }
 
-        Row {
-            id: cardRow
-            spacing: 6
+        /// `scale` does not shrink layout bounds — clip to scaled size so the column does not reserve 564px on narrow tables.
+        Item {
+            id: boardCluster
+            readonly property real s: table_container.boardRowScale
+            readonly property real rowW: 5 * Theme.boardCardWidth + 4 * 6
+            width: Math.ceil(rowW * s + 8)
+            height: Math.ceil(Theme.boardCardHeight * s + 8)
             anchors.horizontalCenter: parent.horizontalCenter
 
-            TableBoardCard {
-                card: table_container.board0
-                staggerIndex: 0
-            }
-            TableBoardCard {
-                card: table_container.board1
-                staggerIndex: 1
-            }
-            TableBoardCard {
-                card: table_container.board2
-                staggerIndex: 2
-            }
-            TableBoardCard {
-                card: table_container.board3
-                staggerIndex: 3
-            }
-            TableBoardCard {
-                card: table_container.board4
-                staggerIndex: 4
+            Row {
+                id: cardRow
+                anchors.centerIn: parent
+                spacing: 6
+                scale: boardCluster.s
+                transformOrigin: Item.Center
+
+                TableBoardCard {
+                    boardScale: table_container.boardRowScale
+                    card: table_container.board0
+                    staggerIndex: 0
+                }
+                TableBoardCard {
+                    boardScale: table_container.boardRowScale
+                    card: table_container.board1
+                    staggerIndex: 1
+                }
+                TableBoardCard {
+                    boardScale: table_container.boardRowScale
+                    card: table_container.board2
+                    staggerIndex: 2
+                }
+                TableBoardCard {
+                    boardScale: table_container.boardRowScale
+                    card: table_container.board3
+                    staggerIndex: 3
+                }
+                TableBoardCard {
+                    boardScale: table_container.boardRowScale
+                    card: table_container.board4
+                    staggerIndex: 4
+                }
             }
         }
     }

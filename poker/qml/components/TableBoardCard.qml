@@ -10,17 +10,12 @@ Item {
 
     property string card: ""
     property int staggerIndex: 0
+    /// From `Table.boardRowScale` — row uses `scale` &lt; 1; Card raster must compensate.
+    property real boardScale: 1.0
 
     property bool faceVisible: false
 
     opacity: 0
-
-    Card {
-        id: inner
-        anchors.fill: parent
-        card: root.card
-        tableCard: root.faceVisible
-    }
 
     transform: Scale {
         id: sc
@@ -28,6 +23,15 @@ Item {
         origin.y: root.height * 0.5
         xScale: 0.88
         yScale: 0.88
+    }
+
+    Card {
+        id: inner
+        anchors.fill: parent
+        card: root.card
+        tableCard: root.faceVisible
+        /// Omit deal `Scale` here — binding `sc.xScale` would re-raster every animation frame.
+        displayScaleFactor: root.boardScale
     }
 
     SequentialAnimation {

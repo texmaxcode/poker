@@ -19,6 +19,19 @@ Page {
 
     property string strategyPopupTitle: ""
     property string strategyPopupBody: ""
+    /// Shown from the "?" next to Engine parameters (same popup as strategy help).
+    readonly property string engineParamsHelpText: qsTr(
+            "These numbers tune the bot heuristic that turns chart weights and hand strength into fold / call / raise decisions. "
+            + "They are not a GTO solver; they adjust aggression and how tightly the bot sticks to its ranges.\n\n")
+            + qsTr("Preflop exponent — Curves how strongly the bot follows the 13×13 chart weights. Above 1 favors high-weight cells; below 1 flattens toward mixed play.\n\n")
+            + qsTr("Postflop exponent — Same idea after the flop, using the engine’s hand-strength score instead of the chart.\n\n")
+            + qsTr("Facing raise bonus — Added to the base tendency to continue with a raise or re-raise after an opponent has raised.\n\n")
+            + qsTr("Facing raise tight × — Multiplier on that tendency (below 1 plays tighter vs raises).\n\n")
+            + qsTr("Open raise bonus — Adjusts how often the bot stabs or opens when checked to postflop.\n\n")
+            + qsTr("Open raise tight × — Multiplier on that open / probe tendency.\n\n")
+            + qsTr("BB check-raise bonus — Extra weight for check-raising from the big blind preflop.\n\n")
+            + qsTr("BB check-raise tight × — Multiplier on BB check-raise frequency.\n\n")
+            + qsTr("Tap Set to apply. The engine clamps values to safe ranges.")
     /// True while `playAsBotCheck.checked` is assigned from the engine — `toggled` must not write back.
     property bool _syncingPlayAsBot: false
     /// True while `slowBotsCheck.checked` is assigned from `pokerGame.botSlowActions` — avoid spurious writes.
@@ -28,14 +41,14 @@ Page {
     property bool _syncingSlowBots: true
     /// False until first frame after sync so `onCheckedChanged` does not overwrite `interactiveHuman` on startup.
     property bool playAsBotUserInputEnabled: false
-    /// Collapsed: “Range text…” only; expanded: compact row (textarea + Apply/Full), then hide after apply.
+    /// Collapsed: “Range as text” only; expanded: compact row (textarea + Apply/Full), then hide after apply.
     property bool rangeTextEditorOpen: false
 
     function persistSave() {
         pokerGame.savePersistedSettings()
         const w = ApplicationWindow.window
         if (w && typeof w.showAppToast === "function")
-            w.showAppToast(qsTr("Settings saved."))
+            w.showAppToast(qsTr("Settings saved"))
     }
 
     function openStrategyLogPopup(title, body) {
@@ -70,6 +83,7 @@ Page {
 
             Label {
                 text: setup.strategyPopupTitle
+                font.family: Theme.fontFamilyDisplay
                 font.bold: true
                 font.capitalization: Font.AllUppercase
                 font.pointSize: Theme.trainerSectionPx
@@ -91,7 +105,7 @@ Page {
                     width: strategyLogScroll.availableWidth
                     readOnly: true
                     wrapMode: TextArea.Wrap
-                    font.family: "monospace"
+                    font.family: Theme.fontFamilyMono
                     font.pixelSize: Theme.uiMonoPx
                     color: Theme.textPrimary
                     text: setup.strategyPopupBody
@@ -108,6 +122,7 @@ Page {
 
             Button {
                 text: qsTr("Close")
+                font.family: Theme.fontFamilyButton
                 Layout.alignment: Qt.AlignRight
                 onClicked: strategyLogPopup.close()
             }
@@ -319,6 +334,7 @@ Page {
 
                                 Label {
                                     text: botNames.displayName(index + 1)
+                                    font.family: Theme.fontFamilyButton
                                     font.pixelSize: Theme.trainerCaptionPx
                                     font.weight: Font.ExtraBold
                                     color: Theme.colorForSeat(index + 1)
@@ -338,6 +354,7 @@ Page {
                         Layout.fillWidth: true
                         Layout.topMargin: 8
                         text: qsTr("Game settings")
+                        font.family: Theme.fontFamilyDisplay
                         font.bold: true
                         font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerCaptionPx
@@ -347,7 +364,7 @@ Page {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 18
+                        spacing: 10
 
                         RowLayout {
                             spacing: 4
@@ -400,14 +417,11 @@ Page {
                                 Layout.maximumWidth: 120
                             }
                         }
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.minimumWidth: 8
-                        }
                         RangeActionButton {
                             text: qsTr("Apply stakes")
                             fillCol: Qt.tint(Theme.panelElevated, "#42c9a227")
                             borderCol: Theme.goldMuted
+                            Layout.leftMargin: 4
                             onClicked: {
                                 pokerGame.configure(sbSpin.value, bbSpin.value, streetSpin.value,
                                         pokerGame.configuredStartStack())
@@ -436,6 +450,7 @@ Page {
             TabBar {
                 id: seatTabBar
                 Layout.fillWidth: true
+                font.family: Theme.fontFamilyButton
                 font.pixelSize: Theme.trainerCaptionPx
 
                 TabButton {
@@ -497,6 +512,7 @@ Page {
                     Label {
                         Layout.fillWidth: true
                         text: botNames.displayName(setup.selectedSeat)
+                        font.family: Theme.fontFamilyButton
                         font.weight: Font.ExtraBold
                         font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerSectionPx
@@ -633,6 +649,7 @@ Page {
                     Label {
                         Layout.topMargin: 4
                         text: qsTr("Strategy selection")
+                        font.family: Theme.fontFamilyDisplay
                         font.bold: true
                         font.capitalization: Font.AllUppercase
                         font.pixelSize: Theme.trainerSectionPx
@@ -694,13 +711,42 @@ Page {
                     }
 
                     ThemedPanel {
-                        panelTitle: qsTr("Engine parameters")
+                        panelTitle: ""
                         visible: selectedSeat >= 1 || setup.humanSeatAutoplay
                         Layout.fillWidth: true
 
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: Theme.uiGroupInnerSpacing
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Engine parameters")
+                                    font.family: Theme.fontFamilyDisplay
+                                    font.bold: true
+                                    font.capitalization: Font.AllUppercase
+                                    font.pixelSize: Theme.trainerSectionPx
+                                    font.letterSpacing: 0.5
+                                    color: Theme.sectionTitle
+                                    wrapMode: Text.WordWrap
+                                }
+                                GameButton {
+                                    style: "form"
+                                    formFlat: true
+                                    text: qsTr("?")
+                                    formBold: true
+                                    formFontPixelSize: Theme.trainerCaptionPx
+                                    textColor: Theme.textSecondary
+                                    padH: 10
+                                    overrideHeight: 30
+                                    onClicked: setup.openStrategyLogPopup(
+                                            qsTr("Engine parameters"),
+                                            setup.engineParamsHelpText)
+                                }
+                            }
 
                             GridLayout {
                                 columns: 2
@@ -790,60 +836,120 @@ Page {
                                 }
                             }
 
-                            Button {
-                                text: qsTr("Apply parameters")
-                                font.pixelSize: Theme.trainerCaptionPx
+                            GameButton {
+                                Layout.alignment: Qt.AlignLeft
+                                style: "form"
+                                text: qsTr("Set")
+                                textColor: Theme.textSecondary
+                                formBold: false
+                                formFontPixelSize: Theme.trainerCaptionPx
+                                formBackgroundColor: Qt.tint(Theme.panelElevated, "#10101010")
+                                padH: 22
+                                overrideHeight: 34
                                 onClicked: setup.applyParamFields()
                             }
                         }
                     }
+                }
+            }
+
+            ThemedPanel {
+                visible: showFullRangeEditor
+                Layout.fillWidth: true
+                panelTitle: qsTr("Hand ranges")
+                panelOpacity: 0.5
+                borderOpacity: 0.5
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.uiGroupInnerSpacing
 
                     TabBar {
                         id: rangeLayerTab
-                        visible: showFullRangeEditor
                         Layout.fillWidth: true
+                        font.family: Theme.fontFamilyButton
                         font.pixelSize: Theme.trainerCaptionPx
+
                         TabButton {
+                            id: callLayerTabBtn
                             text: qsTr("Call")
                             font.bold: true
+                            topPadding: 10
+                            bottomPadding: 10
+                            leftPadding: 14
+                            rightPadding: 14
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: 7
+                                color: rangeLayerTab.currentIndex === 0
+                                        ? Qt.tint(Theme.panelElevated, Qt.alpha(Theme.rangeLayerCallSubdued, 0.92))
+                                        : Qt.tint(Theme.panel, Qt.alpha(Theme.rangeLayerCallSubdued, 0.28))
+                                border.width: rangeLayerTab.currentIndex === 0 ? 1 : 0
+                                border.color: Qt.alpha(Theme.rangeLayerCall, 0.6)
+                            }
                             contentItem: Label {
                                 text: parent.text
-                                font.family: parent.font.family
-                                font.pixelSize: parent.font.pixelSize
-                                font.weight: parent.font.weight
-                                font.bold: parent.font.bold
-                                font.italic: parent.font.italic
+                                font.family: Theme.fontFamilyButton
+                                font.pixelSize: Theme.trainerCaptionPx
+                                font.weight: Font.Bold
                                 font.capitalization: Font.AllUppercase
+                                color: rangeLayerTab.currentIndex === 0 ? Theme.textPrimary : Theme.textMuted
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
                         }
                         TabButton {
+                            id: raiseLayerTabBtn
                             text: qsTr("Raise")
                             font.bold: true
+                            topPadding: 10
+                            bottomPadding: 10
+                            leftPadding: 14
+                            rightPadding: 14
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: 7
+                                color: rangeLayerTab.currentIndex === 1
+                                        ? Qt.tint(Theme.panelElevated, Qt.alpha(Theme.rangeLayerRaiseSubdued, 0.92))
+                                        : Qt.tint(Theme.panel, Qt.alpha(Theme.rangeLayerRaiseSubdued, 0.28))
+                                border.width: rangeLayerTab.currentIndex === 1 ? 1 : 0
+                                border.color: Qt.alpha(Theme.rangeLayerRaise, 0.55)
+                            }
                             contentItem: Label {
                                 text: parent.text
-                                font.family: parent.font.family
-                                font.pixelSize: parent.font.pixelSize
-                                font.weight: parent.font.weight
-                                font.bold: parent.font.bold
-                                font.italic: parent.font.italic
+                                font.family: Theme.fontFamilyButton
+                                font.pixelSize: Theme.trainerCaptionPx
+                                font.weight: Font.Bold
                                 font.capitalization: Font.AllUppercase
+                                color: rangeLayerTab.currentIndex === 1 ? Theme.textPrimary : Theme.textMuted
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
                         }
                         TabButton {
+                            id: openLayerTabBtn
                             text: qsTr("Open")
                             font.bold: true
+                            topPadding: 10
+                            bottomPadding: 10
+                            leftPadding: 14
+                            rightPadding: 14
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: 7
+                                color: rangeLayerTab.currentIndex === 2
+                                        ? Qt.tint(Theme.panelElevated, Qt.alpha(Theme.rangeLayerOpenSubdued, 0.92))
+                                        : Qt.tint(Theme.panel, Qt.alpha(Theme.rangeLayerOpenSubdued, 0.28))
+                                border.width: rangeLayerTab.currentIndex === 2 ? 1 : 0
+                                border.color: Qt.alpha(Theme.rangeLayerOpen, 0.55)
+                            }
                             contentItem: Label {
                                 text: parent.text
-                                font.family: parent.font.family
-                                font.pixelSize: parent.font.pixelSize
-                                font.weight: parent.font.weight
-                                font.bold: parent.font.bold
-                                font.italic: parent.font.italic
+                                font.family: Theme.fontFamilyButton
+                                font.pixelSize: Theme.trainerCaptionPx
+                                font.weight: Font.Bold
                                 font.capitalization: Font.AllUppercase
+                                color: rangeLayerTab.currentIndex === 2 ? Theme.textPrimary : Theme.textMuted
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -862,7 +968,6 @@ Page {
 
                     RangeGrid {
                         id: rng
-                        visible: showFullRangeEditor
                         seatIndex: setup.selectedSeat
                         composite: true
                         editLayer: rangeLayerTab.currentIndex
@@ -871,10 +976,10 @@ Page {
                     }
 
                     RangeActionButton {
-                        visible: showFullRangeEditor && !setup.rangeTextEditorOpen
+                        visible: !setup.rangeTextEditorOpen
                         Layout.topMargin: 4
                         compact: true
-                        text: qsTr("Range text…")
+                        text: qsTr("Range as text")
                         fillCol: Qt.tint(Theme.panelElevated, "#32c9a21a")
                         borderCol: Theme.goldMuted
                         onClicked: setup.rangeTextEditorOpen = true
@@ -882,7 +987,6 @@ Page {
 
                     Item {
                         id: rangeTextExpandHost
-                        visible: showFullRangeEditor
                         Layout.fillWidth: true
                         implicitHeight: setup.rangeTextEditorOpen ? rangeTextEditRow.implicitHeight : 0
                         clip: true
@@ -952,6 +1056,7 @@ Page {
                 text: qsTr("Reload from engine")
                 Layout.alignment: Qt.AlignLeft
                 flat: true
+                font.family: Theme.fontFamilyButton
                 font.pixelSize: Theme.trainerCaptionPx
                 onClicked: reloadSeatEditor()
             }
@@ -972,7 +1077,7 @@ Page {
         }
     }
 
-    /// Setup action chips (Apply / Full / Range text…).
+    /// Setup action chips (Apply / Full / Range as text).
     component RangeActionButton: Button {
         id: rangeActBtn
         property color fillCol: Theme.panelElevated
@@ -981,6 +1086,7 @@ Page {
 
         flat: false
         focusPolicy: Qt.NoFocus
+        font.family: Theme.fontFamilyButton
         font.pixelSize: compact ? Theme.trainerCaptionPx : Theme.trainerButtonLabelPx
         font.bold: true
         leftPadding: compact ? 14 : 22

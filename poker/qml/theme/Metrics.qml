@@ -5,8 +5,9 @@ import QtQuick
 QtObject {
     readonly property int windowWidthDefault: 1400
     readonly property int windowHeightDefault: 900
-    readonly property int windowMinWidth: 720
-    readonly property int windowMinHeight: 560
+    /// Minimum window — table + floating HUD beside seat 0 validated at this size.
+    readonly property int windowMinWidth: 1280
+    readonly property int windowMinHeight: 720
 
     /// Header strip with Lobby button + page title (ApplicationWindow `header`).
     readonly property int toolbarHeight: 58

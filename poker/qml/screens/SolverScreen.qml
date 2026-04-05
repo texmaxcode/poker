@@ -20,9 +20,13 @@ Page {
     property bool equitySummaryIsError: false
     property bool nashResultIsError: false
 
-    readonly property int solverFieldFontPx: Theme.trainerCaptionPx - 2
-    readonly property int solverFieldPadH: 13
-    readonly property int solverFieldPadV: 9
+    readonly property real solverUiScale: Theme.compactUiScale(Math.min(solverPage.width, solverPage.height))
+    readonly property int solverFormGridCols: scroll.availableWidth < 500 ? 1 : 2
+    readonly property int solverFieldFontPx: Math.max(12, Math.round((Theme.trainerCaptionPx - 2) * solverUiScale))
+    readonly property int solverFieldPadH: Math.max(10, Math.round(13 * solverUiScale))
+    readonly property int solverFieldPadV: Math.max(7, Math.round(9 * solverUiScale))
+    readonly property int solverLabelPx: Math.max(12, Math.round(Theme.formLabelPx * solverUiScale))
+    readonly property bool solverNashStacked: scroll.availableWidth < 560
 
     function applySavedSolver(m) {
         if (m.hero1 !== undefined && m.hero1.length > 0)
@@ -83,6 +87,7 @@ Page {
 
             Label {
                 text: qsTr("Simulation log")
+                font.family: Theme.fontFamilyDisplay
                 font.bold: true
                 font.capitalization: Font.AllUppercase
                 font.pixelSize: Theme.trainerSectionPx
@@ -103,7 +108,7 @@ Page {
                     width: logScroll.availableWidth
                     readOnly: true
                     wrapMode: TextArea.Wrap
-                    font.family: "monospace"
+                    font.family: Theme.fontFamilyMono
                     font.pixelSize: Theme.uiMonoPx
                     color: Theme.textPrimary
                     text: solverPage.lastFullLog
@@ -119,6 +124,7 @@ Page {
 
             Button {
                 text: qsTr("Close")
+                font.family: Theme.fontFamilyButton
                 Layout.alignment: Qt.AlignRight
                 onClicked: fullLogPopup.close()
             }
@@ -253,22 +259,26 @@ Page {
                 ThemedPanel {
                     Layout.fillWidth: true
                     panelTitle: qsTr("Hand & board")
+                    panelTitlePixelSize: Math.max(16, Math.round(Theme.trainerSectionPx * solverPage.solverUiScale))
+                    panelPadding: Math.max(12, Math.round(Theme.trainerPanelPadding * solverPage.solverUiScale))
 
                     ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
+                    Layout.fillWidth: true
+                    spacing: 0
 
                         GridLayout {
                             Layout.fillWidth: true
-                            columns: 2
-                            columnSpacing: Theme.formColGap
-                            rowSpacing: Theme.formRowSpacing
+                            columns: solverPage.solverFormGridCols
+                            columnSpacing: Math.max(8, Math.round(Theme.formColGap * solverPage.solverUiScale))
+                            rowSpacing: Math.max(8, Math.round(Theme.formRowSpacing * solverPage.solverUiScale))
 
                         Label {
                             text: qsTr("Hero card 1")
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            Layout.maximumWidth: 120
-                            font.pixelSize: Theme.formLabelPx
+                            Layout.alignment: solverPage.solverFormGridCols === 1
+                                    ? (Qt.AlignLeft | Qt.AlignVCenter)
+                                    : (Qt.AlignRight | Qt.AlignVCenter)
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1 ? 99999 : Math.round(140 * solverPage.solverUiScale)
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         TextField {
                             id: h1
@@ -279,13 +289,20 @@ Page {
                             rightPadding: solverPage.solverFieldPadH
                             topPadding: solverPage.solverFieldPadV
                             bottomPadding: solverPage.solverFieldPadV
-                            Layout.maximumWidth: 112
-                            implicitWidth: 112
+                            Layout.fillWidth: solverPage.solverFormGridCols === 1
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1
+                                    ? 99999
+                                    : Math.round(120 * solverPage.solverUiScale)
+                            implicitWidth: solverPage.solverFormGridCols === 1
+                                    ? 160
+                                    : Math.round(112 * solverPage.solverUiScale)
                         }
                         Label {
                             text: qsTr("Hero card 2")
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            font.pixelSize: Theme.formLabelPx
+                            Layout.alignment: solverPage.solverFormGridCols === 1
+                                    ? (Qt.AlignLeft | Qt.AlignVCenter)
+                                    : (Qt.AlignRight | Qt.AlignVCenter)
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         TextField {
                             id: h2
@@ -296,13 +313,20 @@ Page {
                             rightPadding: solverPage.solverFieldPadH
                             topPadding: solverPage.solverFieldPadV
                             bottomPadding: solverPage.solverFieldPadV
-                            Layout.maximumWidth: 112
-                            implicitWidth: 112
+                            Layout.fillWidth: solverPage.solverFormGridCols === 1
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1
+                                    ? 99999
+                                    : Math.round(120 * solverPage.solverUiScale)
+                            implicitWidth: solverPage.solverFormGridCols === 1
+                                    ? 160
+                                    : Math.round(112 * solverPage.solverUiScale)
                         }
                         Label {
                             text: qsTr("Board (optional)")
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            font.pixelSize: Theme.formLabelPx
+                            Layout.alignment: solverPage.solverFormGridCols === 1
+                                    ? (Qt.AlignLeft | Qt.AlignVCenter)
+                                    : (Qt.AlignRight | Qt.AlignVCenter)
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         TextField {
                             id: brd
@@ -314,12 +338,16 @@ Page {
                             topPadding: solverPage.solverFieldPadV
                             bottomPadding: solverPage.solverFieldPadV
                             Layout.fillWidth: true
-                            Layout.maximumWidth: 560
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1
+                                    ? 99999
+                                    : Math.round(560 * solverPage.solverUiScale)
                         }
                         Label {
                             text: qsTr("Villain range")
-                            Layout.alignment: Qt.AlignRight | Qt.AlignTop
-                            font.pixelSize: Theme.formLabelPx
+                            Layout.alignment: solverPage.solverFormGridCols === 1
+                                    ? (Qt.AlignLeft | Qt.AlignTop)
+                                    : (Qt.AlignRight | Qt.AlignTop)
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         TextField {
                             id: vrange
@@ -331,15 +359,20 @@ Page {
                             topPadding: solverPage.solverFieldPadV
                             bottomPadding: solverPage.solverFieldPadV
                             Layout.fillWidth: true
-                            Layout.maximumWidth: 560
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1
+                                    ? 99999
+                                    : Math.round(560 * solverPage.solverUiScale)
                         }
                         Label {
                             text: qsTr("Villain exact")
-                            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                            font.pixelSize: Theme.formLabelPx
+                            Layout.alignment: solverPage.solverFormGridCols === 1
+                                    ? (Qt.AlignLeft | Qt.AlignVCenter)
+                                    : (Qt.AlignRight | Qt.AlignVCenter)
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         RowLayout {
-                            spacing: 8
+                            spacing: Math.max(6, Math.round(8 * solverPage.solverUiScale))
+                            Layout.fillWidth: solverPage.solverFormGridCols === 1
                             TextField {
                                 id: ve1
                                 placeholderText: "Qs"
@@ -348,8 +381,9 @@ Page {
                                 rightPadding: solverPage.solverFieldPadH
                                 topPadding: solverPage.solverFieldPadV
                                 bottomPadding: solverPage.solverFieldPadV
-                                Layout.preferredWidth: 96
-                                implicitWidth: 96
+                                Layout.fillWidth: solverPage.solverFormGridCols === 1
+                                Layout.preferredWidth: Math.round(96 * solverPage.solverUiScale)
+                                implicitWidth: Math.round(96 * solverPage.solverUiScale)
                             }
                             TextField {
                                 id: ve2
@@ -359,8 +393,9 @@ Page {
                                 rightPadding: solverPage.solverFieldPadH
                                 topPadding: solverPage.solverFieldPadV
                                 bottomPadding: solverPage.solverFieldPadV
-                                Layout.preferredWidth: 96
-                                implicitWidth: 96
+                                Layout.fillWidth: solverPage.solverFormGridCols === 1
+                                Layout.preferredWidth: Math.round(96 * solverPage.solverUiScale)
+                                implicitWidth: Math.round(96 * solverPage.solverUiScale)
                             }
                             Item {
                                 Layout.fillWidth: true
@@ -373,6 +408,8 @@ Page {
                 ThemedPanel {
                     Layout.fillWidth: true
                     panelTitle: qsTr("Simulation & pot odds")
+                    panelTitlePixelSize: Math.max(16, Math.round(Theme.trainerSectionPx * solverPage.solverUiScale))
+                    panelPadding: Math.max(12, Math.round(Theme.trainerPanelPadding * solverPage.solverUiScale))
 
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -380,14 +417,16 @@ Page {
 
                         GridLayout {
                             Layout.fillWidth: true
-                            columns: 2
-                            columnSpacing: Theme.formColGap
-                            rowSpacing: Theme.formRowSpacing
+                            columns: solverPage.solverFormGridCols
+                            columnSpacing: Math.max(8, Math.round(Theme.formColGap * solverPage.solverUiScale))
+                            rowSpacing: Math.max(8, Math.round(Theme.formRowSpacing * solverPage.solverUiScale))
 
                         Label {
                             text: qsTr("Iterations")
-                            Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                            font.pixelSize: Theme.formLabelPx
+                            Layout.alignment: solverPage.solverFormGridCols === 1
+                                    ? (Qt.AlignLeft | Qt.AlignVCenter)
+                                    : (Qt.AlignLeft | Qt.AlignVCenter)
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         SpinBox {
                             id: iters
@@ -396,13 +435,17 @@ Page {
                             value: 40000
                             stepSize: 1000
                             editable: true
-                            Layout.maximumWidth: 200
-                            implicitWidth: 200
+                            font.pixelSize: solverPage.solverLabelPx
+                            Layout.fillWidth: solverPage.solverFormGridCols === 1
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1
+                                    ? 99999
+                                    : Math.round(220 * solverPage.solverUiScale)
+                            implicitWidth: Math.round(200 * solverPage.solverUiScale)
                         }
                         Label {
                             text: qsTr("Pot before call")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                            font.pixelSize: Theme.formLabelPx
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         SpinBox {
                             id: potSpin
@@ -410,13 +453,17 @@ Page {
                             to: 100000
                             value: 100
                             editable: true
-                            Layout.maximumWidth: 200
-                            implicitWidth: 200
+                            font.pixelSize: solverPage.solverLabelPx
+                            Layout.fillWidth: solverPage.solverFormGridCols === 1
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1
+                                    ? 99999
+                                    : Math.round(220 * solverPage.solverUiScale)
+                            implicitWidth: Math.round(200 * solverPage.solverUiScale)
                         }
                         Label {
                             text: qsTr("To call")
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                            font.pixelSize: Theme.formLabelPx
+                            font.pixelSize: solverPage.solverLabelPx
                         }
                         SpinBox {
                             id: callSpin
@@ -424,8 +471,12 @@ Page {
                             to: 100000
                             value: 50
                             editable: true
-                            Layout.maximumWidth: 200
-                            implicitWidth: 200
+                            font.pixelSize: solverPage.solverLabelPx
+                            Layout.fillWidth: solverPage.solverFormGridCols === 1
+                            Layout.maximumWidth: solverPage.solverFormGridCols === 1
+                                    ? 99999
+                                    : Math.round(220 * solverPage.solverUiScale)
+                            implicitWidth: Math.round(200 * solverPage.solverUiScale)
                         }
                         }
                     }
@@ -433,12 +484,14 @@ Page {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.trainerColumnSpacing
+                    spacing: Math.max(10, Math.round(Theme.trainerColumnSpacing * solverPage.solverUiScale))
 
                     Button {
                         id: runSimBtn
                         text: qsTr("Run simulation")
-                        Layout.preferredWidth: 200
+                        font.family: Theme.fontFamilyButton
+                        font.pixelSize: Math.max(12, Math.round(Theme.trainerButtonLabelPx * solverPage.solverUiScale))
+                        Layout.preferredWidth: Math.round(200 * solverPage.solverUiScale)
                         highlighted: true
                         enabled: !solverPage.simRunning
                         onClicked: {
@@ -463,15 +516,15 @@ Page {
                     BusyIndicator {
                         visible: solverPage.simRunning
                         running: solverPage.simRunning
-                        Layout.preferredWidth: 40
-                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: Math.round(40 * solverPage.solverUiScale)
+                        Layout.preferredHeight: Math.round(40 * solverPage.solverUiScale)
                     }
 
                     Label {
                         visible: solverPage.simRunning
                         text: qsTr("Working…")
                         color: Theme.focusGold
-                        font.pixelSize: Theme.trainerCaptionPx
+                        font.pixelSize: Math.max(12, Math.round(Theme.trainerCaptionPx * solverPage.solverUiScale))
                     }
 
                     Item {
@@ -482,6 +535,8 @@ Page {
                 ThemedPanel {
                     Layout.fillWidth: true
                     panelTitle: qsTr("Results")
+                    panelTitlePixelSize: Math.max(16, Math.round(Theme.trainerSectionPx * solverPage.solverUiScale))
+                    panelPadding: Math.max(12, Math.round(Theme.trainerPanelPadding * solverPage.solverUiScale))
 
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -494,7 +549,7 @@ Page {
                             wrapMode: Text.Wrap
                             color: solverPage.equitySummaryIsError ? Theme.dangerText : Theme.textSecondary
                             font.family: Theme.fontFamilyUi
-                            font.pixelSize: Theme.trainerBodyPx
+                            font.pixelSize: Math.max(13, Math.round(Theme.trainerBodyPx * solverPage.solverUiScale))
                             lineHeight: Theme.bodyLineHeight
                             HoverHandler {
                                 id: summaryHover
@@ -509,13 +564,15 @@ Page {
                             spacing: 8
 
                             Button {
-                                text: qsTr("Full log…")
+                                text: qsTr("Full log")
+                                font.family: Theme.fontFamilyButton
                                 enabled: solverPage.lastFullLog.length > 0
                                 onClicked: fullLogPopup.open()
                             }
 
                             Button {
-                                text: qsTr("Copy log")
+                                text: qsTr("Copy")
+                                font.family: Theme.fontFamilyButton
                                 enabled: solverPage.lastFullLog.length > 0
                                 onClicked: {
                                     clipBuffer.text = solverPage.lastFullLog
@@ -535,6 +592,8 @@ Page {
                 ThemedPanel {
                     Layout.fillWidth: true
                     panelTitle: qsTr("Nash solver (CFR+) — toy games")
+                    panelTitlePixelSize: Math.max(16, Math.round(Theme.trainerSectionPx * solverPage.solverUiScale))
+                    panelPadding: Math.max(12, Math.round(Theme.trainerPanelPadding * solverPage.solverUiScale))
 
                     ColumnLayout {
                         Layout.fillWidth: true
@@ -547,17 +606,21 @@ Page {
                                   + qsTr("but on tiny games so it runs locally.")
                             wrapMode: Text.Wrap
                             color: Theme.textSecondary
-                            font.pixelSize: Theme.trainerBodyPx
+                            font.pixelSize: Math.max(13, Math.round(Theme.trainerBodyPx * solverPage.solverUiScale))
                             lineHeight: Theme.bodyLineHeight
                         }
 
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: 10
+                            columns: solverPage.solverNashStacked ? 1 : 4
+                            columnSpacing: 10
+                            rowSpacing: 10
 
                             ComboBox {
                                 id: nashGame
-                                Layout.preferredWidth: 220
+                                Layout.fillWidth: solverPage.solverNashStacked
+                                font.pixelSize: solverPage.solverLabelPx
+                                Layout.preferredWidth: solverPage.solverNashStacked ? implicitWidth : Math.round(220 * solverPage.solverUiScale)
                                 model: [qsTr("Kuhn (3-card)"), qsTr("Leduc (toy Hold'em)")]
                                 currentIndex: 0
                             }
@@ -569,12 +632,18 @@ Page {
                                 value: 5000
                                 stepSize: 100
                                 editable: true
-                                Layout.maximumWidth: 220
-                                implicitWidth: 220
+                                font.pixelSize: solverPage.solverLabelPx
+                                Layout.fillWidth: solverPage.solverNashStacked
+                                Layout.maximumWidth: solverPage.solverNashStacked
+                                        ? 99999
+                                        : Math.round(220 * solverPage.solverUiScale)
+                                implicitWidth: Math.round(220 * solverPage.solverUiScale)
                             }
 
                             Button {
                                 text: qsTr("Run CFR+")
+                                font.family: Theme.fontFamilyButton
+                                font.pixelSize: Math.max(12, Math.round(Theme.trainerButtonLabelPx * solverPage.solverUiScale))
                                 highlighted: true
                                 enabled: !solverPage.simRunning && !toyNashSolver.solveRunning()
                                 onClicked: {
@@ -592,20 +661,18 @@ Page {
                             BusyIndicator {
                                 visible: toyNashSolver.solveRunning() || solverPage.simRunning
                                 running: visible
-                                Layout.preferredWidth: 32
-                                Layout.preferredHeight: 32
+                                Layout.preferredWidth: Math.round(32 * solverPage.solverUiScale)
+                                Layout.preferredHeight: Math.round(32 * solverPage.solverUiScale)
                             }
-
-                            Item { Layout.fillWidth: true }
                         }
 
                         TextArea {
                             Layout.fillWidth: true
-                            Layout.minimumHeight: 150
+                            Layout.minimumHeight: Math.max(120, Math.round(150 * solverPage.solverUiScale))
                             readOnly: true
                             wrapMode: TextArea.Wrap
-                            font.family: "monospace"
-                            font.pixelSize: Theme.uiMonoPx
+                            font.family: Theme.fontFamilyMono
+                            font.pixelSize: Math.max(11, Math.round(Theme.uiMonoPx * solverPage.solverUiScale))
                             color: solverPage.nashResultIsError ? Theme.dangerText : Theme.textPrimary
                             text: solverPage.nashSummaryText + "\n\n" + solverPage.nashDetailText
                             background: Rectangle {

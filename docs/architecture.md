@@ -21,8 +21,19 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 ## Application shell
 
-- **`poker/main.cpp`** sets `QCoreApplication` organization/name (used by the INI fallback), calls **`AppStateSqlite::init()`**, creates **`game`**, **`loadPersistedSettings()`**, optionally **`seedMissingPersistedSettings()`** when the store is open but core keys are absent, then **`PokerSolver`**, **`ToyNashSolver`**, **`TrainingStore`**, **`TrainingController`**, **`SessionStore`**, and exposes **`pokerGame`**, **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`**, **`trainingStore`**, **`trainer`**, and **`appFontFamily`** to QML. **`aboutToQuit`** calls **`savePersistedSettings()`** on the game.
-- The UI entry is **`qrc:/Main.qml`**: an `ApplicationWindow` with a **stack** of pages (lobby, table, bot/range setup, solver/equity, bankroll/stats, training hub, preflop trainer, flop trainer). Fonts and the header/toolbar live on the window.
+- **`poker/main.cpp`** sets `QCoreApplication` organization/name (used by the INI fallback), calls **`AppStateSqlite::init()`**, creates **`game`**, **`loadPersistedSettings()`**, optionally **`seedMissingPersistedSettings()`** when the store is open but core keys are absent, then **`PokerSolver`**, **`ToyNashSolver`**, **`TrainingStore`**, **`TrainingController`**, **`SessionStore`**, and exposes **`pokerGame`**, **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`**, **`trainingStore`**, **`trainer`**, and bundled-font family strings to QML: **`appFontFamily`** (Merriweather — UI body), **`appFontFamilyDisplay`** (Rye — titles), **`appFontFamilyButton`** (Holtwood One SC — buttons / seat names), **`appFontFamilyMono`** (Roboto Mono — stacks, pot, sliders). Fonts are loaded from **`application.qrc`** via `QFontDatabase::addApplicationFont`; the app default `QFont` uses the UI family. **`aboutToQuit`** calls **`savePersistedSettings()`** on the game.
+- The UI entry is **`qrc:/Main.qml`**: an `ApplicationWindow` with a **stack** of pages (lobby, table, bot/range setup, solver/equity, bankroll/stats, training hub, preflop–river trainers, range viewer). **`Metrics.qml`** defines **`windowMinWidth` / `windowMinHeight`** (currently **1280×720**), default window size, and toolbar/HUD geometry tokens; the window applies those as **`minimumWidth` / `minimumHeight`**. Fonts and the header/toolbar live on the window; **`Theme.qml`** maps the four `appFontFamily*` context properties to **`fontFamilyUi`**, **`fontFamilyDisplay`**, **`fontFamilyButton`**, **`fontFamilyMono`** plus colors, spacing, and trainer/table tokens.
+
+## UI layout and styling (QML)
+
+- **`Theme/Theme.qml`** (singleton) — palette, semantic text colors, **`compactUiScale(shortSide)`** for scroll pages, trainer typography tokens, card sizes, range-grid colors, section title color.
+- **`theme/Metrics.qml`** (singleton) — window chrome dimensions, HUD button heights, minimum window size (see above).
+- **`BrandedBackground.qml`** — full-page charcoal/burgundy **gradient** + light **film grain** (`Canvas`); no separate vignette overlay (assets may still ship `bg_vignette.svg` for optional use).
+- **`ThemedPanel.qml`** — framed panels with **uppercase** section titles in **`Theme.fontFamilyDisplay`** (Rye).
+- **Lobby** — **`LobbyScreen.qml`**: logo + **`ThemedPanel`** with **five nav tiles in one row** (banner art + subtitle); content width is capped by **`Theme.trainerContentMaxWidth`** with side gutters.
+- **Table** — **`GameScreen.qml`**: six **`Player`** seats on an oval; **`GameControls`** is **not** full-width docked by default — it uses **`embeddedMode: true`**, **`panelWidth`** from **`tableArea.hudPanelW`**, and is positioned beside **seat 0** (bottom-aligned to the hero seat when there is horizontal room; otherwise stacked/centered per **`hudStacked`**). **`tableArea.tableScale`** shrinks the felt and seats on short viewports.
+- **Buttons** — **`GameButton.qml`** implements HUD, toolbar chrome, form, and chip styles; standard **`Button`** / **`TabBar`** in setup/solver/stats use **`Theme.fontFamilyButton`** where styled explicitly. **`SizingPresetBar`** preset chips use the button font.
+- **Trainer / solver / stats** — scroll views with **`ThemedPanel`** sections; solver and setup use **`GridLayout`** / forms; stats use **`ThemedPanel`** + tables and a **Canvas** bankroll chart.
 - After **`QQmlApplicationEngine::load()`**, a short **`QTimer::singleShot`** finds the table **`Page`** by **`objectName: "game_screen"`**, calls **`game::setRootObject()`** on it, then **`beginNewHand()`** so the first hand starts only when the table is ready. The engine does **not** use `Game.qml` as the root object.
 
 ## Persistence
@@ -72,8 +83,8 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 | File / area | Role |
 |-------------|------|
 | **`Main.qml`** | Shell: navigation, **`pokerGame`** / **`pokerSolver`** / **`trainer`** bindings |
-| **`screens/LobbyScreen.qml`** | Entry: logo + tiles to table, setup, solver, training, stats |
-| **`screens/GameScreen.qml`** | Table layout, **`game_screen`**, **`Player`** delegates, **`GameControls`** |
+| **`screens/LobbyScreen.qml`** | Entry: logo + single-row nav tiles to table, setup, solver, training, stats |
+| **`screens/GameScreen.qml`** | Table layout, **`game_screen`**, **`Player`** delegates, floating **`GameControls`** beside seat 0 |
 | **`components/GameControls.qml`**, **`components/SizingPresetBar.qml`** | Fold / call / raise / check / bet, timers, sit-out; Min / ⅓ / ½ / ⅔ / Pot / All presets |
 | **`components/Table.qml`** | Pot HUD (with call amount), community board cards |
 | **`screens/SetupScreen.qml`**, **`screens/SolverScreen.qml`** | Ranges, strategies, solver/equity UI |
@@ -82,7 +93,7 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 | **`components/GameButton.qml`** | Shared **`hud` / `chrome` / `form` / `chip`** buttons (toolbar, HUD, trainers) |
 | **`PokerUi/qmldir`** | QML module registering **`components/`** and **`screens/`** types |
 
-Bundled training JSON lives under **`poker/qml/assets/training/`** (e.g. `preflop_ranges_v1.json`, `spots_v1.json`). Assets are embedded via **`application.qrc`**.
+Bundled training JSON lives under **`poker/qml/assets/training/`** (e.g. `preflop_ranges_v1.json`, `spots_v1.json`). Fonts and images are embedded via **`application.qrc`** (~30 QML files under **`poker/qml/`** plus **`Main.qml`**).
 
 ## Game behavior (what the code does)
 

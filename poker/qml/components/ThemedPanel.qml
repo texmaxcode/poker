@@ -15,6 +15,8 @@ Rectangle {
     property int panelSectionSpacing: -1
     /// Inset from the chrome border to title + body (default matches training panels).
     property int panelPadding: Theme.trainerPanelPadding
+    /// Extra inset on the right only (e.g. dense stats tables). `0` = symmetric padding.
+    property int panelExtraPaddingRight: 0
 
     Layout.fillWidth: true
     clip: true
@@ -32,13 +34,17 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: root.panelPadding
+        anchors.leftMargin: root.panelPadding
+        anchors.topMargin: root.panelPadding
+        anchors.bottomMargin: root.panelPadding
+        anchors.rightMargin: root.panelPadding + root.panelExtraPaddingRight
         spacing: root.panelSectionSpacing >= 0 ? root.panelSectionSpacing : Theme.uiGroupInnerSpacing
 
         Label {
             visible: root.panelTitle.length > 0
             Layout.fillWidth: true
             text: root.panelTitle
+            font.family: Theme.fontFamilyDisplay
             font.bold: true
             font.capitalization: Font.AllUppercase
             font.pixelSize: root.panelTitlePixelSize

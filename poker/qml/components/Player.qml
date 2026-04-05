@@ -86,7 +86,8 @@ Item {
     readonly property int cardRowH: Math.round(Theme.holeCardHeight * _s)
     readonly property int streetRowH: Math.max(18, Math.round(26 * _s))
     readonly property int nameRowH: Math.max(28, Math.round(40 * _s))
-    readonly property int posBox: Math.max(28, Math.round(40 * _s))
+    /// Wide enough for “UTG” / “CO” / dealer chip without clipping Merriweather.
+    readonly property int posBox: Math.max(34, Math.round(46 * _s))
     readonly property int thinkSlotH: Math.max(8, Math.round(12 * _s))
     readonly property int stackRowH: Math.max(22, Math.round(30 * _s))
 
@@ -191,6 +192,8 @@ Item {
                         Card {
                             width: root.cardW
                             height: root.cardH
+                            /// Match `TableBoardCard` / board row: supersample SVGs when `uiScale` &lt; 1 so holes stay as crisp as board.
+                            displayScaleFactor: root._s
                             card: root.first_card
                             flipped: root.show_cards && root.first_card.length > 0
                             dealEpoch: root.handEpoch
@@ -200,6 +203,7 @@ Item {
                         Card {
                             width: root.cardW
                             height: root.cardH
+                            displayScaleFactor: root._s
                             card: root.second_card
                             flipped: root.show_cards && root.second_card.length > 0
                             dealEpoch: root.handEpoch
@@ -309,7 +313,7 @@ Item {
                         anchors.margins: Math.max(3, Math.round(6 * _s))
                         text: root.name
                         color: root.nameTextColor
-                        font.family: Theme.fontFamilyUi
+                        font.family: Theme.fontFamilyButton
                         font.pointSize: Math.max(8, Theme.uiSeatNamePt * _s)
                         font.weight: Font.ExtraBold
                         elide: Text.ElideRight
@@ -421,7 +425,7 @@ Item {
                         anchors.centerIn: parent
                         text: "$" + root.stackDisplay
                         color: Theme.textPrimary
-                        font.family: Theme.fontFamilyUi
+                        font.family: Theme.fontFamilyMono
                         font.pointSize: Math.max(10, Theme.uiStackPt * _s)
                         font.bold: true
                     }

@@ -7,8 +7,10 @@ Button {
     id: root
     flat: false
     focusPolicy: Qt.NoFocus
+    font.family: Theme.fontFamilyButton
     font.pixelSize: Theme.trainerCaptionPx
-    font.bold: true
+    font.bold: false
+    font.weight: Font.Normal
     leftPadding: 16
     rightPadding: 16
     topPadding: 8

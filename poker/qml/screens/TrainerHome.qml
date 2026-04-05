@@ -82,6 +82,7 @@ Page {
                         Label {
                             Layout.fillWidth: true
                             text: qsTr("Training progress")
+                            font.family: Theme.fontFamilyDisplay
                             font.bold: true
                             font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
@@ -125,6 +126,7 @@ Page {
                                     Text {
                                         text: qsTr("DECISIONS")
                                         color: Theme.textMuted
+                                        font.family: Theme.fontFamilyDisplay
                                         font.pixelSize: Theme.trainerMetricLabelPx
                                         font.letterSpacing: 1
                                     }
@@ -148,10 +150,11 @@ Page {
                                     Text {
                                         text: qsTr("ACCURACY")
                                         color: Theme.textMuted
+                                        font.family: Theme.fontFamilyDisplay
                                         font.pixelSize: Theme.trainerMetricLabelPx
                                         font.letterSpacing: 1
                                     }
-                                    Text { text: progressCol.accPct.toFixed(1) + "%"; color: Theme.gold; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                                    Text { text: progressCol.accPct.toFixed(1) + "%"; color: Theme.gold; font.family: Theme.fontFamilyMono; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
 
@@ -171,10 +174,11 @@ Page {
                                     Text {
                                         text: qsTr("EV LOST")
                                         color: Theme.textMuted
+                                        font.family: Theme.fontFamilyDisplay
                                         font.pixelSize: Theme.trainerMetricLabelPx
                                         font.letterSpacing: 1
                                     }
-                                    Text { text: progressCol.totalEv.toFixed(3) + " bb"; color: Theme.gold; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
+                                    Text { text: progressCol.totalEv.toFixed(3) + " bb"; color: Theme.gold; font.family: Theme.fontFamilyMono; font.bold: true; font.pixelSize: Theme.trainerMetricValuePx }
                                 }
                             }
                         }
@@ -211,6 +215,7 @@ Page {
                         Label {
                             Layout.fillWidth: true
                             text: qsTr("How scoring works")
+                            font.family: Theme.fontFamilyDisplay
                             font.bold: true
                             font.capitalization: Font.AllUppercase
                             font.pixelSize: Theme.trainerSectionPx
@@ -221,12 +226,8 @@ Page {
                             Layout.fillWidth: true
                             wrapMode: Text.WordWrap
                             text: qsTr(
-                                "Each action has a target frequency for that exact hand or spot (from the JSON strategy). Your pick is graded from that frequency:\n"
-                                + "• Correct — frequency is at least 70%\n"
-                                + "• Mix — between 5% and 70% (reasonable part of a mixed strategy)\n"
-                                + "• Wrong — below 5%\n\n"
-                                + "Preflop: weights come from the 13×13 chart for your position and mode. The “best” line is whichever action has the highest weight for this hand.\n\n"
-                                + "Flop: each option has a model EV in big blinds; EV loss is how far below the best EV your choice is. That loss is summed in your progress.")
+                                "Grades use the loaded strategy: Correct if your action’s frequency is ≥70%; Mix if 5–70%; Wrong if below 5%. "
+                                + "Preflop uses the 13×13 chart for seat and mode. Postflop, EV loss (bb below the best line) is tracked in your progress.")
                             color: Theme.textSecondary
                             font.pixelSize: Theme.trainerBodyPx
                             lineHeight: Theme.bodyLineHeight
@@ -308,44 +309,6 @@ Page {
                             fontSize: Theme.uiHudButtonPt
                             overrideHeight: 34
                             onClicked: page.go(10)
-                        }
-                    }
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: comingCol.implicitHeight + 2 * Theme.trainerPanelPadding
-                    radius: Theme.trainerPanelRadius
-                    color: Qt.alpha(Theme.panel, 0.55)
-                    border.width: 1
-                    border.color: Qt.alpha(Theme.chromeLine, 0.55)
-
-                    ColumnLayout {
-                        id: comingCol
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: Theme.trainerPanelPadding
-                        spacing: 8
-
-                        Label {
-                            Layout.fillWidth: true
-                            text: qsTr("Coming next")
-                            color: Theme.sectionTitle
-                            font.bold: true
-                            font.capitalization: Font.AllUppercase
-                            font.pixelSize: Theme.trainerSectionPx
-                            font.letterSpacing: 0.5
-                        }
-                        Label {
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                            text: qsTr(
-                                "Roadmap: more positions and sizings, deeper solver-linked data, and optional play vs a bot. "
-                                + "Opening ranges (reference) live under Ranges. Current drills use bundled example strategies — replace the JSON to train your own charts.")
-                            color: Theme.textSecondary
-                            font.pixelSize: Theme.trainerBodyPx
-                            lineHeight: Theme.bodyLineHeight
                         }
                     }
                 }

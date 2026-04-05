@@ -108,74 +108,119 @@ Page {
         anchors.fill: parent
     }
 
+    /// Floating HUD beside seat 0 — bottom-aligned to the hero seat’s right edge when space allows.
+    readonly property bool hudBottomDock: false
+
     Item {
-        id: tableArea
+        id: gameRoot
         z: 1
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
+        anchors.fill: parent
 
-        readonly property point feltCenter: Qt.point(width / 2, height / 2)
+        Item {
+            id: tableArea
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: game_screen.hudBottomDock ? game_controls.top : parent.bottom
 
-        /// Layout is authored for ~900px short side; scale down so six seats fit without overlap.
-        readonly property real tableScale: Math.min(1.0, Math.min(width, height) / 900.0)
-        readonly property real seatHalfW: 109 * tableScale
-        readonly property real seatHalfH: 156 * tableScale
-        readonly property real seatGap: 10 * tableScale
-        readonly property real maxLayoutOvalW: Math.max(260 * tableScale,
-                                                        width - 4 * seatHalfW - 2 * seatGap - 28 * tableScale)
-        readonly property real maxLayoutOvalH: Math.max(200 * tableScale,
-                                                        height - 4 * seatHalfH - 2 * seatGap - 40 * tableScale)
-        readonly property real layoutOvalW: Math.min(Math.min(width * 0.99, height * 1.36), maxLayoutOvalW)
-        readonly property real layoutOvalH: Math.min(Math.min(height * 0.76, width * 0.48), maxLayoutOvalH)
-        readonly property real feltBleedW: Math.max(360 * tableScale, width * 0.22)
-        readonly property real feltBleedH: Math.max(280 * tableScale, height * 0.24)
-        readonly property real feltOvalW: Math.min(layoutOvalW + feltBleedW, width - 8)
-        readonly property real feltOvalH: Math.min(layoutOvalH + feltBleedH, height - 8)
-        readonly property real orbitRxRaw: layoutOvalW * 0.5 + seatGap + seatHalfW
-        readonly property real orbitRyRaw: layoutOvalH * 0.5 + seatGap + seatHalfH
-        readonly property real orbitRx: Math.min(orbitRxRaw, (width * 0.5 - seatHalfW - 12 * tableScale) / 0.866)
-        readonly property real orbitRy: Math.min(orbitRyRaw, (height * 0.5 - seatHalfH - 12 * tableScale) / 0.866)
+            readonly property point feltCenter: Qt.point(width / 2, height / 2)
 
-        TableFelt {
-            z: 0
-            anchors.fill: parent
-            feltOvalW: tableArea.feltOvalW
-            feltOvalH: tableArea.feltOvalH
-        }
+            readonly property real shortSide: Math.min(width, height)
+            /// Layout authored for ~1024px short side — scale down earlier so seats + orbit fit narrow windows.
+            readonly property real tableScale: Math.min(1.0, shortSide / 1024.0)
+            readonly property real edgeMargin: Math.max(4, Math.round(10 * tableScale))
+            readonly property real seatHalfW: 109 * tableScale
+            readonly property real seatHalfH: 156 * tableScale
+            readonly property real seatGap: 10 * tableScale
+            /// Pull corner seats slightly inward on small viewports (was fixed 1.09).
+            readonly property real cornerBoost: 1.0 + 0.09 * Math.min(1.0, tableScale * 1.15)
+            readonly property real maxLayoutOvalW: Math.max(240 * tableScale,
+                    width - 4 * seatHalfW - 2 * seatGap - 36 * tableScale - 2 * edgeMargin)
+            readonly property real maxLayoutOvalH: Math.max(180 * tableScale,
+                    height - 4 * seatHalfH - 2 * seatGap - 48 * tableScale - 2 * edgeMargin)
+            readonly property real layoutOvalW: Math.min(Math.min(width * 0.98, height * 1.32), maxLayoutOvalW)
+            readonly property real layoutOvalH: Math.min(Math.min(height * 0.74, width * 0.46), maxLayoutOvalH)
+            readonly property real feltBleedW: Math.max(320 * tableScale, width * 0.2)
+            readonly property real feltBleedH: Math.max(260 * tableScale, height * 0.22)
+            readonly property real feltOvalW: Math.min(layoutOvalW + feltBleedW, width - 8)
+            readonly property real feltOvalH: Math.min(layoutOvalH + feltBleedH, height - 8)
+            readonly property real orbitRxRaw: layoutOvalW * 0.5 + seatGap + seatHalfW
+            readonly property real orbitRyRaw: layoutOvalH * 0.5 + seatGap + seatHalfH
+            readonly property real orbitRx: Math.min(orbitRxRaw, (width * 0.5 - seatHalfW - 14 * tableScale - edgeMargin) / 0.866)
+            readonly property real orbitRy: Math.min(orbitRyRaw, (height * 0.5 - seatHalfH - 14 * tableScale - edgeMargin) / 0.866)
 
-        Table {
-            id: table
-            z: 3
-            anchors.fill: parent
-            pot_amount: game_screen.pot
-            actingSeat: game_screen.actingSeat
-            decisionSecondsLeft: game_screen.decisionSecondsLeft
-            facingNeedChips: game_screen.facingNeedChips
-            humanSittingOut: game_screen.humanSittingOut
-            board0: game_screen.board0
-            board1: game_screen.board1
-            board2: game_screen.board2
-            board3: game_screen.board3
-            board4: game_screen.board4
-        }
+            /// Gap between hero seat and HUD (must match `GameControls` floatHud gap).
+            readonly property real hudSeatGap: 10
+            /// Embedded HUD width — grows with window, shrinks so the panel never overlaps seat 1 / seat 5.
+            readonly property real hudPanelW: {
+                var w = tableArea.width
+                var em = tableArea.edgeMargin
+                var ss = tableArea.shortSide
+                var g = hudSeatGap
+                var target = Math.min(520, Math.max(200, Math.round(w * 0.30 + ss * 0.10)))
+                var cap = w - 2 * em
+                var hs = humanSeat
+                if (hs) {
+                    var pr = hs.x + hs.width + g
+                    cap = Math.min(cap, w - em - pr)
+                    var s1 = seatRepeater.count > 1 ? seatRepeater.itemAt(1) : null
+                    if (s1 && s1.x > pr + 8) {
+                        var toSeat1 = s1.x - g - pr
+                        if (toSeat1 >= 0)
+                            cap = Math.min(cap, toSeat1)
+                    }
+                    var s5 = seatRepeater.count > 5 ? seatRepeater.itemAt(5) : null
+                    if (s5) {
+                        var toSeat5 = hs.x - 2 * g - s5.x - s5.width
+                        if (toSeat5 >= 0)
+                            cap = Math.min(cap, toSeat5)
+                    }
+                }
+                return Math.max(120, Math.min(target, cap))
+            }
 
-        Repeater {
-            id: seatRepeater
-            z: 2
-            model: 6
-            delegate: Item {
+            TableFelt {
+                z: 0
+                anchors.fill: parent
+                feltOvalW: tableArea.feltOvalW
+                feltOvalH: tableArea.feltOvalH
+            }
+
+            Table {
+                id: table
+                z: 3
+                anchors.fill: parent
+                centerScale: tableArea.tableScale
+                pot_amount: game_screen.pot
+                actingSeat: game_screen.actingSeat
+                decisionSecondsLeft: game_screen.decisionSecondsLeft
+                facingNeedChips: game_screen.facingNeedChips
+                humanSittingOut: game_screen.humanSittingOut
+                board0: game_screen.board0
+                board1: game_screen.board1
+                board2: game_screen.board2
+                board3: game_screen.board3
+                board4: game_screen.board4
+            }
+
+            Repeater {
+                id: seatRepeater
+                z: 2
+                model: 6
+                delegate: Item {
                 id: seatWrap
                 required property int index
                 width: Math.round(218 * tableArea.tableScale)
                 height: Math.round(312 * tableArea.tableScale)
                 readonly property real angle: Math.PI / 2 - index * 2 * Math.PI / 6
-                readonly property real cornerBoost: (index === 1 || index === 2 || index === 4 || index === 5) ? 1.09 : 1.0
-                readonly property real scx: tableArea.feltCenter.x + tableArea.orbitRx * Math.cos(angle) * cornerBoost
-                readonly property real scy: tableArea.feltCenter.y + tableArea.orbitRy * Math.sin(angle) * cornerBoost
-                x: scx - width / 2
-                y: scy - height / 2
+                readonly property real cornerMul: (index === 1 || index === 2 || index === 4 || index === 5)
+                        ? tableArea.cornerBoost : 1.0
+                readonly property real scx: tableArea.feltCenter.x + tableArea.orbitRx * Math.cos(angle) * cornerMul
+                readonly property real scy: tableArea.feltCenter.y + tableArea.orbitRy * Math.sin(angle) * cornerMul
+                x: Math.min(tableArea.width - width - tableArea.edgeMargin,
+                            Math.max(tableArea.edgeMargin, scx - width / 2))
+                y: Math.min(tableArea.height - height - tableArea.edgeMargin,
+                            Math.max(tableArea.edgeMargin, scy - height / 2))
 
                 Player {
                     anchors.fill: parent
@@ -215,36 +260,68 @@ Page {
                                 || game_screen.pokerGameAccess.interactiveHuman)
                     handEpoch: game_screen.handSeq
                 }
+                }
+            }
+
+            readonly property Item humanSeat: seatRepeater.count > 0 ? seatRepeater.itemAt(0) : null
+            /// True when the HUD cannot sit beside the hero seat without overlapping — center above/between seats.
+            readonly property bool hudStacked: {
+                if (game_screen.hudBottomDock)
+                    return false
+                var hs = humanSeat
+                if (!hs)
+                    return false
+                var w = hudPanelW
+                var g = tableArea.hudSeatGap
+                var rightOk = hs.x + hs.width + g + w <= width - edgeMargin
+                var leftOk = hs.x - g - w >= edgeMargin
+                return !rightOk && !leftOk
             }
         }
 
-        readonly property Item humanSeat: seatRepeater.count > 0 ? seatRepeater.itemAt(0) : null
-        readonly property real hudPanelW: Math.min(400, Math.max(Theme.trainerEmbeddedHudMinWidth, width * 0.36))
-
         GameControls {
             id: game_controls
+            parent: gameRoot
             z: 20
-            embeddedMode: true
+            embeddedMode: !game_screen.hudBottomDock
             visible: true
             panelWidth: tableArea.hudPanelW
-            x: {
+
+            readonly property real floatHudX: {
+                var m = tableArea.edgeMargin
+                if (tableArea.hudStacked)
+                    return Math.max(m, (tableArea.width - game_controls.width) * 0.5)
                 var hs = tableArea.humanSeat
                 if (!hs)
-                    return 8
-                var gap = 8
-                var w = tableArea.hudPanelW
+                    return m
+                var gap = tableArea.hudSeatGap
+                var w = game_controls.width
                 var placeRight = hs.x + hs.width + gap
-                if (placeRight + w <= tableArea.width - 6)
+                if (placeRight + w <= tableArea.width - m)
                     return placeRight
-                return Math.max(6, hs.x - w - gap)
+                return Math.max(m, hs.x - w - gap)
             }
-            y: {
+            readonly property real floatHudY: {
+                var m = tableArea.edgeMargin
                 var hs = tableArea.humanSeat
                 if (!hs)
                     return 0
+                var maxY = tableArea.height - game_controls.height - m
+                if (tableArea.hudStacked) {
+                    var above = hs.y - game_controls.height - 10
+                    return Math.max(m, Math.min(above, maxY))
+                }
                 var ideal = hs.y + hs.height - game_controls.height
-                return Math.min(Math.max(6, ideal), tableArea.height - game_controls.height - 6)
+                return Math.min(Math.max(m, ideal), maxY)
             }
+
+            anchors.left: game_screen.hudBottomDock ? parent.left : undefined
+            anchors.right: game_screen.hudBottomDock ? parent.right : undefined
+            anchors.bottom: game_screen.hudBottomDock ? parent.bottom : undefined
+
+            x: game_screen.hudBottomDock ? 0 : floatHudX
+            y: game_screen.hudBottomDock ? 0 : floatHudY
+
             pageRoot: game_screen
             statusText: game_screen.statusText
             resultBannerCardAssets: game_screen.resultBannerCardAssets
@@ -268,11 +345,12 @@ Page {
             pokerGame: game_screen.pokerGameAccess
             humanCanBuyBackIn: game_screen.humanCanBuyBackIn
             buyInChips: game_screen.buyInChips
+            hudScale: tableArea.tableScale
         }
 
         MouseArea {
             z: 19
-            anchors.fill: parent
+            anchors.fill: gameRoot
             visible: game_controls.sizingDialogOpen
             onClicked: {
                 game_controls.raiseSizingExpanded = false

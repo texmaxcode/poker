@@ -40,6 +40,9 @@ ApplicationWindow {
     minimumWidth: Metrics.windowMinWidth
     minimumHeight: Metrics.windowMinHeight
 
+    /// Shrink header chrome proportionally — 700px short-side → scale 1.0; smaller windows get compact chrome.
+    readonly property real chromeScale: Math.min(1.0, Math.min(width, height) / 700.0)
+
     title: qsTr("Texas Hold'em Gym")
     color: Theme.bgWindow
 
@@ -73,7 +76,7 @@ ApplicationWindow {
 
     header: ToolBar {
         visible: stack.currentIndex > 0
-        implicitHeight: Metrics.toolbarHeight
+        implicitHeight: Math.max(40, Math.round(Metrics.toolbarHeight * win.chromeScale))
 
         background: Rectangle {
             color: Theme.headerBg
@@ -87,45 +90,88 @@ ApplicationWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: Metrics.toolbarMarginH + 4
-            anchors.rightMargin: Metrics.toolbarMarginH + 4
-            anchors.topMargin: Metrics.toolbarMarginV
-            anchors.bottomMargin: Metrics.toolbarMarginV
-            spacing: 8
+            anchors.leftMargin: Math.max(6, Math.round((Metrics.toolbarMarginH + 4) * win.chromeScale))
+            anchors.rightMargin: Math.max(6, Math.round((Metrics.toolbarMarginH + 4) * win.chromeScale))
+            anchors.topMargin: Math.max(4, Math.round(Metrics.toolbarMarginV * win.chromeScale))
+            anchors.bottomMargin: Math.max(4, Math.round(Metrics.toolbarMarginV * win.chromeScale))
+            spacing: Math.max(6, Math.round(8 * win.chromeScale))
 
-            GameButton {
-                id: backBtn
-                Layout.alignment: Qt.AlignVCenter
-                style: "chrome"
-                text: qsTr("Lobby")
-                iconSource: "qrc:/assets/icons/home.svg"
-                chromeFontFamily: Theme.fontFamilyUi
-                clickEnabled: true
-                onClicked: stack.currentIndex = 0
+            /// Lobby — left third
+            Item {
+                Layout.fillWidth: true
+                Layout.minimumWidth: backBtn.implicitWidth
+
+                GameButton {
+                    id: backBtn
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    style: "chrome"
+                    chromeScale: win.chromeScale
+                    overrideHeight: Math.max(26, Math.round(Metrics.toolbarChromeHeight * win.chromeScale))
+                    text: qsTr("Lobby")
+                    iconSource: "qrc:/assets/icons/home.svg"
+                    chromeFontFamily: Theme.fontFamilyButton
+                    clickEnabled: true
+                    onClicked: stack.currentIndex = 0
+                }
             }
 
+            /// Page title — center column
             Label {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 80
                 Layout.fillHeight: true
                 Layout.alignment: Qt.AlignVCenter
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                font.family: Theme.fontFamilyUi
+                font.family: Theme.fontFamilyDisplay
                 font.bold: true
                 font.capitalization: Font.AllUppercase
-                font.pointSize: Theme.uiToolBarTitlePt
+                font.pointSize: Math.max(11, Math.round(Theme.uiToolBarTitlePt * win.chromeScale))
                 font.letterSpacing: 1
                 color: Theme.gold
                 text: headerTitleForIndex(stack.currentIndex)
             }
 
+            /// Transient status (e.g. “Settings saved.”) — right third, opposite Lobby
             Item {
-                width: backBtn.width
+                Layout.fillWidth: true
+                Layout.minimumWidth: backBtn.implicitWidth
+
+                Rectangle {
+                    id: toastChip
+                    visible: win.appToastText.length > 0
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: toastBarLabel.implicitHeight + Math.max(10, Math.round(12 * win.chromeScale))
+                    width: Math.min(420, Math.max(toastBarLabel.implicitWidth + Math.max(20, Math.round(28 * win.chromeScale)),
+                            Math.max(26, Math.round(Metrics.toolbarChromeHeight * win.chromeScale)) * 2))
+                    radius: Math.max(8, Math.round(10 * win.chromeScale))
+                    color: Qt.tint(Theme.panelElevated, Qt.alpha(Theme.gold, 0.07))
+                    border.width: 1
+                    border.color: Qt.alpha(Theme.chromeLineGold, 0.45)
+
+                    Label {
+                        id: toastBarLabel
+                        anchors.centerIn: parent
+                        width: Math.min(400, parent.width - Math.max(16, Math.round(22 * win.chromeScale)))
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 2
+                        text: win.appToastText
+                        color: Theme.goldMuted
+                        font.family: Theme.fontFamilyButton
+                        font.weight: Font.Medium
+                        font.pixelSize: Math.max(13, Math.round((Theme.trainerCaptionPx + 1) * win.chromeScale))
+                        font.letterSpacing: 0.35
+                    }
+                }
             }
         }
     }
 
-    /// Ephemeral toast (top-right). No reserved space when empty — only the bubble is shown.
+    /// Ephemeral message shown in the header opposite the Lobby button (`toastChip`).
     property string appToastText: ""
     function showAppToast(msg) {
         win.appToastText = msg
@@ -137,33 +183,6 @@ ApplicationWindow {
         interval: 2600
         repeat: false
         onTriggered: win.appToastText = ""
-    }
-
-    /// Above page content, under the toolbar when it is visible.
-    Rectangle {
-        parent: win.contentItem
-        z: 10000
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.rightMargin: 10
-        anchors.topMargin: win.header.visible ? win.header.height + 2 : 6
-        width: 400
-        height: visible ? toastLabel.implicitHeight + 18 : 0
-        visible: win.appToastText.length > 0
-        radius: 10
-        color: Theme.panelElevated
-        border.width: 1
-        border.color: Theme.chromeLineGold
-        Label {
-            id: toastLabel
-            anchors.centerIn: parent
-            width: 380
-            wrapMode: Text.WordWrap
-            text: win.appToastText
-            color: Theme.textPrimary
-            font.family: Theme.fontFamilyUi
-            font.pixelSize: Theme.trainerCaptionPx
-        }
     }
 
     function headerTitleForIndex(idx) {

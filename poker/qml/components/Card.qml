@@ -1,10 +1,34 @@
 import QtQuick
+import QtQuick.Window
 import Theme 1.0
 
 Flipable {
     id: flipable
     width: Theme.boardCardWidth
     height: Theme.boardCardHeight
+
+    /// SVGs rasterize at `sourceSize`; match physical pixels so cards stay sharp on HiDPI.
+    readonly property real paintDpr: {
+        var w = flipable.Window.window
+        return (w && w.devicePixelRatio > 0) ? w.devicePixelRatio : 1.0
+    }
+    /// Extra shrink from **parent** transforms only (e.g. board `Row` `scale` &lt; 1, HUD `ez` on a full-size card item).
+    /// Combined with `layoutShrink` so hole cards and banner minis get supersampling even when this stays 1.
+    property real displayScaleFactor: 1.0
+    /// vs reference board footprint — smaller items (holes, result banner, drills) need higher `_rasterMul`.
+    readonly property real layoutShrink: {
+        if (flipable.width < 1 || flipable.height < 1)
+            return 1.0
+        return Math.min(flipable.width / Theme.boardCardWidth, flipable.height / Theme.boardCardHeight)
+    }
+    readonly property real _rasterMul: {
+        var f = Math.min(flipable.layoutShrink, flipable.displayScaleFactor)
+        if (f >= 0.995)
+            return 1.0
+        return Math.min(3.5, 1.0 / Math.max(f, 0.17))
+    }
+    /// Light extra raster for HiDPI / `smooth` sampling — keeps hole + banner faces crisp without huge textures.
+    readonly property real _sharpBoost: 1.14
 
     property bool flipped: false
     property string card: "spades_ace.svg"
@@ -19,9 +43,11 @@ Flipable {
         source: "qrc:/assets/cards/blue2.svg"
         anchors.fill: parent
         fillMode: Image.Stretch
-        /// Rasterize SVGs at widget size so the art fills the rect (avoids letterboxing from aspect fit).
-        sourceSize.width: Math.max(1, Math.round(flipable.width))
-        sourceSize.height: Math.max(1, Math.round(flipable.height))
+        /// Mipmaps soften minified SVGs; board row uses `scale` &lt; 1.
+        mipmap: false
+        smooth: true
+        sourceSize.width: Math.max(1, Math.ceil(flipable.width * flipable.paintDpr * flipable._rasterMul * flipable._sharpBoost))
+        sourceSize.height: Math.max(1, Math.ceil(flipable.height * flipable.paintDpr * flipable._rasterMul * flipable._sharpBoost))
     }
     back: Image {
         source: (card.length === 0)
@@ -29,8 +55,10 @@ Flipable {
                 : ("qrc:/assets/cards/" + card)
         anchors.fill: parent
         fillMode: Image.Stretch
-        sourceSize.width: Math.max(1, Math.round(flipable.width))
-        sourceSize.height: Math.max(1, Math.round(flipable.height))
+        mipmap: false
+        smooth: true
+        sourceSize.width: Math.max(1, Math.ceil(flipable.width * flipable.paintDpr * flipable._rasterMul * flipable._sharpBoost))
+        sourceSize.height: Math.max(1, Math.ceil(flipable.height * flipable.paintDpr * flipable._rasterMul * flipable._sharpBoost))
     }
 
     transform: Rotation {

@@ -15,11 +15,13 @@ Button {
     property color buttonColor: Theme.panelBorder
     property color textColor: Theme.textPrimary
     property int fontSize: Fonts.hudButtonPt
-    property bool boldFont: true
+    property bool boldFont: false
     property int pillWidth: 0
     /// Horizontal inset for label (not `horizontalPadding` — that name is FINAL on `Control`).
     property int padH: 24
     property int overrideHeight: -1
+    /// Toolbar chrome only: scales icon + label with the window (`Main.qml`).
+    property real chromeScale: 1.0
     property bool formFlat: false
     property int formFontPixelSize: -1
     property bool formBold: false
@@ -28,9 +30,13 @@ Button {
     /// Maps to `enabled` (not named `interactive` — reserved on some Controls versions).
     property bool clickEnabled: true
 
-    readonly property string _fontFamily: {
-        var f = Theme.fontFamilyUi
-        return (f !== undefined && f !== null && String(f).length > 0) ? String(f) : "sans-serif"
+    readonly property string _buttonTypeface: {
+        var f = Theme.fontFamilyButton
+        return (f !== undefined && f !== null && String(f).length > 0) ? String(f) : Theme.fontFamilyUi
+    }
+    readonly property string _monoTypeface: {
+        var f = Theme.fontFamilyMono
+        return (f !== undefined && f !== null && String(f).length > 0) ? String(f) : "monospace"
     }
 
     flat: true
@@ -60,7 +66,7 @@ Button {
         if (overrideHeight >= 0)
             return overrideHeight
         if (style === "chrome")
-            return Metrics.toolbarChromeHeight
+            return Math.max(26, Math.round(Metrics.toolbarChromeHeight * chromeScale))
         if (style === "form")
             return Metrics.hudButtonHeight
         if (style === "chip")
@@ -79,8 +85,8 @@ Button {
             id: crIcon
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: Metrics.iconToolbarChrome
-            height: Metrics.iconToolbarChrome
+            width: Math.max(16, Math.round(Metrics.iconToolbarChrome * root.chromeScale))
+            height: Math.max(16, Math.round(Metrics.iconToolbarChrome * root.chromeScale))
             source: root.iconSource
         }
         Text {
@@ -89,9 +95,10 @@ Button {
             anchors.leftMargin: 6
             anchors.verticalCenter: parent.verticalCenter
             text: root.text
-            font.bold: true
-            font.pointSize: Theme.uiToolBarChromePt
-            font.family: root.chromeFontFamily.length > 0 ? root.chromeFontFamily : root._fontFamily
+            font.bold: false
+            font.weight: Font.Normal
+            font.pointSize: Math.max(10, Math.round(Theme.uiToolBarChromePt * root.chromeScale))
+            font.family: root.chromeFontFamily.length > 0 ? root.chromeFontFamily : root._buttonTypeface
         }
     }
 
@@ -117,8 +124,9 @@ Button {
                     return root.formFontPixelSize >= 0 ? root.formFontPixelSize : Fonts.formCaptionPt
                 return root.fontSize
             }
-            font.bold: root.style === "chip" ? true : (root.style === "form" ? root.formBold : root.boldFont)
-            font.family: root._fontFamily
+            font.bold: root.style === "form" ? root.formBold : root.boldFont
+            font.weight: root.style === "chip" ? Font.Medium : Font.Normal
+            font.family: root.style === "chip" ? root._monoTypeface : root._buttonTypeface
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
@@ -135,8 +143,8 @@ Button {
                 id: chIcon
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                width: Metrics.iconToolbarChrome
-                height: Metrics.iconToolbarChrome
+                width: Math.max(16, Math.round(Metrics.iconToolbarChrome * root.chromeScale))
+                height: Math.max(16, Math.round(Metrics.iconToolbarChrome * root.chromeScale))
                 source: root.iconSource
                 opacity: root.clickEnabled ? 1 : 0.45
                 fillMode: Image.PreserveAspectFit
@@ -147,9 +155,10 @@ Button {
                 anchors.leftMargin: 6
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.text
-                font.bold: true
-                font.pointSize: Theme.uiToolBarChromePt
-                font.family: root.chromeFontFamily.length > 0 ? root.chromeFontFamily : root._fontFamily
+                font.bold: false
+                font.weight: Font.Normal
+                font.pointSize: Math.max(10, Math.round(Theme.uiToolBarChromePt * root.chromeScale))
+                font.family: root.chromeFontFamily.length > 0 ? root.chromeFontFamily : root._buttonTypeface
                 color: root.pressed ? Theme.fire : (root.hovered ? Theme.gold : Theme.textPrimary)
                 elide: Text.ElideRight
             }

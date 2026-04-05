@@ -1,11 +1,12 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import Theme 1.0
 
 /// Shared Min / ⅓ / ½ / ⅔ / Pot / All chips for raise (facing) vs open-raise sliders.
-Row {
+GridLayout {
     id: root
-    spacing: Theme.sizingPresetBarSpacing
+    width: parent ? parent.width : implicitWidth
 
     required property var hud
     required property Slider slider
@@ -13,6 +14,23 @@ Row {
     property string flavor: "raise"
     /// Called after a preset updates the slider (e.g. submit bet/raise in the parent HUD).
     property var afterPreset: null
+
+    /// One row when wide enough; two rows × three on narrow embedded HUD so chips stay tappable.
+    readonly property int presetColumns: root.width >= 300 ? 6 : 3
+    readonly property real presetScale: {
+        var w = root.width
+        var ws = (w > 1) ? Math.min(1.0, Math.max(0.66, w / 330.0)) : 1.0
+        if (hud && hud.embeddedMode && hud.ez > 0)
+            ws = Math.min(ws, Math.max(0.78, hud.ez))
+        return ws
+    }
+    readonly property int presetH: Math.max(26, Math.round(Theme.sizingPresetButtonHeight * presetScale))
+    readonly property int labelPxMicro: Math.max(8, Math.round(Theme.uiMicroPx * presetScale))
+    readonly property int labelPxFrac: Math.max(9, Math.round(Theme.uiSizingPresetPt * presetScale))
+
+    columns: presetColumns
+    rowSpacing: Math.max(3, Math.round(5 * presetScale))
+    columnSpacing: Math.max(3, Math.round(Theme.sizingPresetBarSpacing * presetScale))
 
     function clampToSlider(v) {
         var lo = slider.from
@@ -112,55 +130,54 @@ Row {
         model: [
             {
                 label: qsTr("Min"),
-                w: 44,
                 kind: "min"
             },
             {
                 label: qsTr("⅓"),
-                w: 38,
                 kind: "third"
             },
             {
                 label: qsTr("½"),
-                w: 38,
                 kind: "half"
             },
             {
                 label: qsTr("⅔"),
-                w: 38,
                 kind: "twothirds"
             },
             {
                 label: qsTr("Pot"),
-                w: 44,
                 kind: "pot"
             },
             {
                 label: qsTr("All"),
-                w: 44,
                 kind: "all"
             }
         ]
 
         delegate: Item {
             required property var modelData
-            width: modelData.w
-            height: Theme.sizingPresetButtonHeight
+            Layout.fillWidth: true
+            Layout.minimumWidth: 22
+            Layout.preferredHeight: root.presetH
 
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: 1
-                radius: 6
+                radius: Math.max(4, Math.round(6 * root.presetScale))
                 color: Theme.hudActionPanel
                 opacity: presetMa.pressed ? 0.72 : (presetMa.containsMouse ? 0.88 : 1)
 
                 Text {
                     anchors.centerIn: parent
+                    width: parent.width - 4
+                    horizontalAlignment: Text.AlignHCenter
                     text: modelData.label
                     color: Theme.textPrimary
-                    font.family: Theme.fontFamilyUi
-                    font.pointSize: (modelData.kind === "min" || modelData.kind === "pot" || modelData.kind === "all") ? Theme.uiMicroPx : Theme.uiSizingPresetPt
+                    font.family: Theme.fontFamilyButton
+                    font.pixelSize: (modelData.kind === "min" || modelData.kind === "pot" || modelData.kind === "all")
+                            ? root.labelPxMicro : root.labelPxFrac
                     font.bold: true
+                    elide: Text.ElideNone
                 }
             }
 

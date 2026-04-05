@@ -11,6 +11,10 @@ Page {
 
     property StackLayout stackLayout: null
 
+    /// Responsive grid for Delay / Time / Pos / Mode (2, 4, or 8 columns).
+    readonly property int trainerControlColumns: scrollView.availableWidth < 520 ? 2
+            : (scrollView.availableWidth < 800 ? 4 : 8)
+
     property string position: "BTN"
     property string mode: "open"
     property string card1: ""
@@ -311,20 +315,14 @@ Page {
                         onClicked: page.goTrainingHome()
                     }
 
-                    Label {
-                        text: qsTr("Preflop")
-                        font.pointSize: Theme.trainerPageHeadlinePt
-                        font.bold: true
-                        font.capitalization: Font.AllUppercase
-                        color: Theme.gold
-                    }
-
                     Item { Layout.fillWidth: true }
                 }
 
-                RowLayout {
+                GridLayout {
                     Layout.fillWidth: true
-                    spacing: 14
+                    rowSpacing: 10
+                    columnSpacing: 12
+                    columns: page.trainerControlColumns
 
                     Label {
                         text: qsTr("Delay")
@@ -333,8 +331,9 @@ Page {
                     }
                     SpinBox {
                         id: delaySecSpin
-                        Layout.preferredWidth: Theme.trainerSpinBoxWidth
                         font.pixelSize: Theme.trainerCaptionPx
+                        Layout.fillWidth: page.trainerControlColumns <= 4
+                        Layout.preferredWidth: page.trainerControlColumns >= 8 ? Theme.trainerSpinBoxWidth : implicitWidth
                         from: 1
                         to: 120
                         editable: true
@@ -352,8 +351,9 @@ Page {
                     }
                     SpinBox {
                         id: timeLimitSpin
-                        Layout.preferredWidth: Theme.trainerSpinBoxWidth
                         font.pixelSize: Theme.trainerCaptionPx
+                        Layout.fillWidth: page.trainerControlColumns <= 4
+                        Layout.preferredWidth: page.trainerControlColumns >= 8 ? Theme.trainerSpinBoxWidth : implicitWidth
                         from: 5
                         to: 120
                         editable: true
@@ -372,7 +372,8 @@ Page {
                     ComboBox {
                         id: posPick
                         font.pixelSize: Theme.trainerCaptionPx
-                        Layout.preferredWidth: 112
+                        Layout.fillWidth: page.trainerControlColumns <= 4
+                        Layout.preferredWidth: page.trainerControlColumns >= 8 ? 112 : implicitWidth
                         enabled: !page.inputLocked && !page.assetLoadFailed
                         model: ["UTG", "CO", "BTN", "SB", "BB"]
                         currentIndex: model.indexOf(page.position)
@@ -393,7 +394,8 @@ Page {
                     ComboBox {
                         id: modePick
                         font.pixelSize: Theme.trainerCaptionPx
-                        Layout.preferredWidth: 120
+                        Layout.fillWidth: page.trainerControlColumns <= 4
+                        Layout.preferredWidth: page.trainerControlColumns >= 8 ? 120 : implicitWidth
                         enabled: !page.inputLocked && !page.assetLoadFailed
                         model: ["open"]
                         currentIndex: 0
@@ -404,8 +406,6 @@ Page {
                             page.nextQuestion()
                         }
                     }
-
-                    Item { Layout.fillWidth: true }
                 }
 
                 Connections {
@@ -421,11 +421,7 @@ Page {
                 Rectangle {
                     id: drillPanel
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Math.max(Theme.trainerDrillPanelMinH,
-                            Math.min(Theme.trainerDrillPanelMaxH,
-                                scrollView.availableHeight > 0
-                                    ? scrollView.availableHeight * Theme.trainerDrillPanelViewportFrac
-                                    : Theme.trainerDrillPanelFallbackH))
+                    Layout.preferredHeight: Theme.trainerDrillPanelHeight(scrollView.availableHeight)
                     radius: Theme.trainerPanelRadius
                     color: Qt.alpha(Theme.panel, 0.35)
                     border.width: 1
@@ -436,6 +432,14 @@ Page {
                         id: drillArea
                         anchors.fill: parent
                         anchors.margins: 2
+
+                        readonly property int seatReserve: 120
+                        readonly property real seatScale: {
+                            var h = drillPanel.height
+                            if (h <= 0)
+                                return 1.0
+                            return Math.min(1.0, Math.max(0.48, (h - seatReserve) / 300))
+                        }
 
                         readonly property Item humanSeat: trainerSeatWrap
                         /// Same formula as `Game.qml` table HUD (seat is nested in a layout — use `mapFromItem` below).
@@ -462,7 +466,7 @@ Page {
                                     anchors.centerIn: parent
                                     text: qsTr("Pot $%1").arg(Math.round(page.trainerPotShown))
                                     color: Theme.gold
-                                    font.family: Theme.fontFamilyUi
+                                    font.family: Theme.fontFamilyMono
                                     font.pixelSize: Theme.trainerCaptionPx
                                     font.bold: true
 
@@ -483,19 +487,20 @@ Page {
 
                             Item {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 312
-                                Layout.minimumHeight: 312
+                                Layout.preferredHeight: Math.max(180, Math.round(312 * drillArea.seatScale))
+                                Layout.minimumHeight: Math.max(160, Math.round(200 * drillArea.seatScale))
                                 Layout.bottomMargin: 4
 
                                 Item {
                                     id: trainerSeatWrap
-                                    width: 218
-                                    height: 312
+                                    width: Math.round(218 * drillArea.seatScale)
+                                    height: Math.round(312 * drillArea.seatScale)
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.horizontalCenterOffset: Theme.trainerDrillSeatCenterOffset
+                                    anchors.horizontalCenterOffset: Math.round(Theme.trainerDrillSeatCenterOffset * drillArea.seatScale)
 
                                 Player {
                                     anchors.fill: parent
+                                    uiScale: drillArea.seatScale
                                     seatIndex: 0
                                     name: qsTr("You")
                                     position: page.position
