@@ -1,7 +1,7 @@
 import QtQuick
 import Theme 1.0
 
-/// Dark charcoal + burgundy wash, vignette, and fine grain (logo-adjacent mood).
+/// Dark charcoal + burgundy wash, soft edge darkening, and fine film grain.
 Item {
     id: root
 

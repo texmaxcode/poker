@@ -91,7 +91,7 @@ cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
-This runs the **`poker.smoke`** test (`Test_poker` executable).
+This runs the **`poker.unit`** test (`Test_poker` executable).
 
 ## Convenience script (`build.sh`)
 

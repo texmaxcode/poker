@@ -17,6 +17,8 @@ Rectangle {
     property int panelPadding: Theme.trainerPanelPadding
     /// Extra inset on the right only (e.g. dense stats tables). `0` = symmetric padding.
     property int panelExtraPaddingRight: 0
+    /// When non-zero, title row is at least this tall so side-by-side panels align (stats tables).
+    property int panelTitleMinHeight: 0
 
     Layout.fillWidth: true
     clip: true
@@ -43,6 +45,7 @@ Rectangle {
         Label {
             visible: root.panelTitle.length > 0
             Layout.fillWidth: true
+            Layout.preferredHeight: Math.max(implicitHeight, root.panelTitleMinHeight)
             text: root.panelTitle
             font.family: Theme.fontFamilyDisplay
             font.bold: true
@@ -51,6 +54,7 @@ Rectangle {
             font.letterSpacing: 0.5
             color: Theme.sectionTitle
             wrapMode: Text.WordWrap
+            verticalAlignment: Text.AlignTop
         }
 
         ColumnLayout {

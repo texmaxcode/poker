@@ -167,8 +167,9 @@ QtObject {
     /// Embedded `GameControls` must fit FOLD/CALL/RAISE (or CHECK / bet / bet) in one row (~300px + margins).
     readonly property int trainerEmbeddedHudMinWidth: 340
     /// Win-line banner: mini cards beside one-line result text (`GameControls` embedded HUD).
-    readonly property int resultBannerCardW: 40
-    readonly property int resultBannerCardH: 58
+    /// Showdown strip in HUD status — slightly larger than before; aspect ~1 : 1.45 (hole cards).
+    readonly property int resultBannerCardW: 44
+    readonly property int resultBannerCardH: 64
     readonly property int trainerSpinBoxWidth: 140
 
     /// Lobby / setup / stats / solver / training scroll pages (not the in-game table/HUD).
@@ -192,18 +193,19 @@ QtObject {
     readonly property int uiLobbyPanelTitlePx: 18
     /// Nav tiles: title + sub use `pixelSize`; two-line caps; fixed block heights keep every tile aligned.
     readonly property int uiLobbyNavTileTitlePx: 14
-    readonly property int uiLobbyNavSubPx: 13
+    readonly property int uiLobbyNavSubPx: 14
     readonly property real uiLobbyNavTileTitleLineHeight: 1.2
     readonly property real uiLobbyNavTileSubLineHeight: 1.2
     /// Fixed content height for title block (two lines at `titlePx` × line height).
     readonly property int uiLobbyNavTitleBlockH: 36
-    readonly property int uiLobbyNavSubBlockH: 30
-    readonly property int uiLobbyNavTilePadding: 17
+    /// Sub block must fit two wrapped lines at `uiLobbyNavSubPx` × `uiLobbyNavTileSubLineHeight` (display fonts are wide).
+    readonly property int uiLobbyNavSubBlockH: 40
+    readonly property int uiLobbyNavTilePadding: 19
     /// Space between icon / title / sub stacks inside a tile.
     readonly property int uiLobbyNavTileStackSpacing: 8
     /// Gap between lobby nav tiles (lobby nav row).
     readonly property int uiLobbyNavRowSpacing: 20
-    readonly property int uiLobbyNavTileMinHeight: 168
+    readonly property int uiLobbyNavTileMinHeight: 176
     readonly property int uiLobbyNavIconPx: 40
     readonly property int uiPotMainPt: 22
     readonly property int uiPotSepPt: 18

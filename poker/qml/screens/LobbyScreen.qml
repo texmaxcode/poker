@@ -19,7 +19,7 @@ Page {
     readonly property int lobbyNavRowSpacing: Math.max(8, Math.round(Theme.uiLobbyNavRowSpacing * lobbyPage.lobbyUiScale))
     /// Banner height scales with the actual tile width (5 tiles in a single row).
     readonly property int lobbyBannerMaxH: {
-        var panPad = Math.max(12, Math.round((Theme.trainerPanelPadding + 4) * lobbyPage.lobbyUiScale))
+        var panPad = Math.max(14, Math.round((Theme.trainerPanelPadding + 6) * lobbyPage.lobbyUiScale))
         var avail = mainCol.width > 8 ? mainCol.width - 2 * panPad : 280
         var tileW = Math.max(60, (avail - 4 * lobbyNavRowSpacing) / 5)
         return Math.max(52, Math.min(160, Math.round(tileW * 0.55)))
@@ -111,7 +111,7 @@ Page {
                         panelTitle: qsTr("What would you like to do?")
                         panelTitlePixelSize: Math.max(16, Math.round(Theme.uiLobbyPanelTitlePx * lobbyPage.lobbyUiScale))
                         panelSectionSpacing: Math.max(10, Math.round(14 * lobbyPage.lobbyUiScale))
-                        panelPadding: Math.max(12, Math.round((Theme.trainerPanelPadding + 4) * lobbyPage.lobbyUiScale))
+                        panelPadding: Math.max(14, Math.round((Theme.trainerPanelPadding + 6) * lobbyPage.lobbyUiScale))
                         panelOpacity: 0.45
                         borderOpacity: 0.45
 
@@ -182,16 +182,16 @@ Page {
         property string bannerSource: ""
         signal clicked()
 
-        readonly property real _navSubPx: Math.max(11, Math.round(Theme.uiLobbyNavSubPx * lobbyPage.lobbyUiScale))
-        readonly property int _subBlockH: Math.max(26, Math.round(Theme.uiLobbyNavSubBlockH * lobbyPage.lobbyUiScale))
-        readonly property real _tilePad: Math.max(6, Math.round(10 * lobbyPage.lobbyUiScale))
+        readonly property real _navSubPx: Math.max(12, Math.round(Theme.uiLobbyNavSubPx * lobbyPage.lobbyUiScale))
+        readonly property int _subBlockH: Math.max(32, Math.round(Theme.uiLobbyNavSubBlockH * lobbyPage.lobbyUiScale))
+        readonly property real _tilePad: Math.max(8, Math.round(Theme.uiLobbyNavTilePadding * lobbyPage.lobbyUiScale))
         readonly property int _tileRadius: Math.max(10, Math.round(14 * lobbyPage.lobbyUiScale))
 
         Layout.fillWidth: true
-        Layout.minimumWidth: Math.max(64, Math.round(72 * lobbyPage.lobbyUiScale))
+        Layout.minimumWidth: Math.max(72, Math.round(82 * lobbyPage.lobbyUiScale))
         implicitHeight: tileColumn.implicitHeight + 2 * _tilePad
         Layout.preferredHeight: implicitHeight
-        Layout.minimumHeight: Math.max(120, Math.round(128 * lobbyPage.lobbyUiScale))
+        Layout.minimumHeight: Math.max(128, Math.round(Theme.uiLobbyNavTileMinHeight * lobbyPage.lobbyUiScale))
 
         Rectangle {
             id: tileFace
@@ -251,12 +251,12 @@ Page {
                         anchors.fill: parent
                         text: tileRoot.sub
                         color: Theme.textSecondary
-                        font.family: Theme.fontFamilyUi
+                        font.family: Theme.fontFamilyButton
                         font.pixelSize: tileRoot._navSubPx
-                        font.weight: Font.Medium
+                        font.weight: Font.Normal
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
-                        elide: Text.ElideRight
+                        elide: Text.ElideNone
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignTop
                         lineHeight: Theme.uiLobbyNavTileSubLineHeight

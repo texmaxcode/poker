@@ -26,6 +26,8 @@ Item {
     readonly property real ez: embeddedMode
             ? Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0))))
             : 1.0
+    /// Matches `Player` `uiScale` / embedded `ez`: table `hudScale` + short-window boost. Used for showdown banner mini-cards (`Card.displayScaleFactor`) so SVG raster tracks hole cards.
+    readonly property real bannerRasterScale: Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0))))
 
     readonly property int hudBtnPt: Math.max(9, Math.round(Theme.uiHudButtonPt * ez))
     readonly property int hudActBtnH: Math.max(26, Math.round(34 * ez))
@@ -975,19 +977,35 @@ Item {
                         id: winHandVizRow
                         visible: (game_controls.resultBannerCardAssets || []).length > 0
                         width: parent.width
-                        spacing: Math.max(4, Math.round(6 * game_controls.ez))
+                        spacing: Math.max(6, Math.round(8 * game_controls.ez))
 
                         Repeater {
                             model: (game_controls.resultBannerCardAssets || []).length
-                            delegate: Card {
-                                width: Math.max(20, Math.round(Theme.resultBannerCardW * game_controls.ez))
-                                height: Math.max(28, Math.round(Theme.resultBannerCardH * game_controls.ez))
-                                /// Embedded HUD `ez` shrinks banner cards — supersample like table board cards.
-                                displayScaleFactor: game_controls.ez
-                                card: (game_controls.resultBannerCardAssets || [])[index]
-                                tableCard: true
-                                instantFace: true
-                                flipped: true
+                            delegate: Item {
+                                readonly property real _br: game_controls.bannerRasterScale
+                                readonly property real _cw: Math.max(22, Math.round(Theme.resultBannerCardW * _br))
+                                readonly property real _ch: Math.max(30, Math.round(Theme.resultBannerCardH * _br))
+                                width: _cw
+                                height: _ch
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: Math.max(4, Math.round(6 * _br))
+                                    color: Qt.alpha(Theme.panelElevated, 0.92)
+                                    border.width: 1
+                                    border.color: Qt.alpha(Theme.chromeLineGold, 0.38)
+                                    clip: true
+                                }
+                                Card {
+                                    z: 1
+                                    anchors.fill: parent
+                                    anchors.margins: Math.max(1, Math.round(2 * _br))
+                                    displayScaleFactor: game_controls.bannerRasterScale
+                                    card: (game_controls.resultBannerCardAssets || [])[index]
+                                    tableCard: true
+                                    instantFace: true
+                                    flipped: true
+                                }
                             }
                         }
                     }

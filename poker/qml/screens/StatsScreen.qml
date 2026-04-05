@@ -19,8 +19,9 @@ Page {
     }
 
     readonly property var lineColors: Theme.chartLineColors
-    readonly property int chartPadL: 28
-    readonly property int chartPadR: 8
+    /// Inset inside chart canvas — keep in sync with table row `Layout.leftMargin` (~4) + room for y-axis labels.
+    readonly property int chartPadL: 20
+    readonly property int chartPadR: 10
     readonly property int chartPadT: 10
     readonly property int chartPadB: 36
 
@@ -43,11 +44,15 @@ Page {
     readonly property int statsRowH: 36
     readonly property color statsRowAlt: Qt.rgba(1, 1, 1, 0.03)
     readonly property int statsHeaderBodyGap: 8
+    /// Table cell inset from panel body — matches chart `chartPadL` intent (axis labels use canvas x≈4).
+    readonly property int statsTableContentInset: 4
     readonly property int statsPanelPadding: Theme.trainerPanelPadding + 20
     readonly property int statsTableColSpacing: 10
     readonly property int statsPanelsSpacing: 16
-    /// Width available to the three top stats panels (viewport minus scroll padding).
-    readonly property real statsTopRowInnerW: Math.max(0, scrollView.availableWidth - scrollView.leftPadding - scrollView.rightPadding)
+    /// Two-line cap for display titles — keeps the three top panels’ table headers on one horizontal line.
+    readonly property int statsPanelTitleMinH: Math.round((Theme.trainerSectionPx + 2) * 2.35)
+    /// Width for the top stats row + chart — `ScrollView.availableWidth` is already inside horizontal padding.
+    readonly property real statsTopRowInnerW: Math.max(0, scrollView.availableWidth)
     /// ~46% / 27% / 27% target; never let seat panel consume space the two side panels need.
     readonly property real statsSeatPanelW: {
         var w = statsPage.statsTopRowInnerW
@@ -168,8 +173,8 @@ Page {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        leftPadding: Theme.uiPagePadding + 8
-        rightPadding: Theme.uiPagePadding + 18
+        leftPadding: Theme.uiPagePadding + 12
+        rightPadding: Theme.uiPagePadding + 12
         topPadding: Theme.uiScrollViewTopPadding
         bottomPadding: Theme.uiPagePadding + 6
 
@@ -193,6 +198,23 @@ Page {
                     lineHeight: Theme.bodyLineHeight
                 }
 
+                /// Blinds live here so the three panels share the same body layout (table rows stay aligned).
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    visible: !statsPage.statsDataError
+
+                    Label {
+                        text: qsTr("Blinds: $%1 / $%2").arg(pokerGame.configuredSmallBlind()).arg(pokerGame.configuredBigBlind())
+                                + (statsPage.uiRevision * 0)
+                        font.pixelSize: statsPage.statsTablePx
+                        color: Theme.textSecondary
+                    }
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                }
+
             /// Plain row (no nested ScrollView): a horizontal ScrollView was stealing vertical wheel from the page scroll.
             RowLayout {
                 id: statsTablesRow
@@ -204,6 +226,7 @@ Page {
                         panelPadding: statsPage.statsPanelPadding
                         panelExtraPaddingRight: 32
                         panelTitlePixelSize: Theme.trainerSectionPx + 2
+                        panelTitleMinHeight: statsPage.statsPanelTitleMinH
                         Layout.alignment: Qt.AlignTop
                         Layout.fillWidth: false
                         Layout.fillHeight: true
@@ -221,8 +244,8 @@ Page {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                Layout.leftMargin: 4
-                                Layout.rightMargin: 4
+                                Layout.leftMargin: statsPage.statsTableContentInset
+                                Layout.rightMargin: statsPage.statsTableContentInset
                                 spacing: statsPage.statsTableColSpacing
                                 Label {
                                     text: qsTr("PLAYER")
@@ -276,8 +299,8 @@ Page {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 1
-                                Layout.leftMargin: 4
-                                Layout.rightMargin: 4
+                                Layout.leftMargin: statsPage.statsTableContentInset
+                                Layout.rightMargin: statsPage.statsTableContentInset
                                 color: Theme.panelBorder
                                 Layout.topMargin: 2
                                 Layout.bottomMargin: statsPage.statsHeaderBodyGap
@@ -305,8 +328,8 @@ Page {
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: 4
-                                        anchors.rightMargin: 4
+                                        anchors.leftMargin: statsPage.statsTableContentInset
+                                        anchors.rightMargin: statsPage.statsTableContentInset
                                         spacing: statsPage.statsTableColSpacing
 
                                         Label {
@@ -357,6 +380,7 @@ Page {
                         panelTitle: qsTr("Stakes & buy-ins")
                         panelPadding: statsPage.statsPanelPadding
                         panelTitlePixelSize: Theme.trainerSectionPx + 2
+                        panelTitleMinHeight: statsPage.statsPanelTitleMinH
                         Layout.alignment: Qt.AlignTop
                         Layout.fillWidth: false
                         Layout.fillHeight: true
@@ -370,20 +394,12 @@ Page {
                             Item {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: statsPage.statsTableTopSlotH
-                                Label {
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    wrapMode: Text.WordWrap
-                                    text: qsTr("Blinds: $%1 / $%2").arg(pokerGame.configuredSmallBlind()).arg(pokerGame.configuredBigBlind())
-                                            + (statsPage.uiRevision * 0)
-                                    font.pixelSize: statsPage.statsTablePx
-                                    color: Theme.textSecondary
-                                }
                             }
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.leftMargin: statsPage.statsTableContentInset
+                                Layout.rightMargin: statsPage.statsTableContentInset
                                 spacing: statsPage.statsTableColSpacing
                                 Label {
                                     text: qsTr("PLAYER")
@@ -410,6 +426,8 @@ Page {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 1
+                                Layout.leftMargin: statsPage.statsTableContentInset
+                                Layout.rightMargin: statsPage.statsTableContentInset
                                 color: Theme.panelBorder
                                 Layout.topMargin: 2
                                 Layout.bottomMargin: statsPage.statsHeaderBodyGap
@@ -427,8 +445,8 @@ Page {
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: 6
-                                        anchors.rightMargin: 6
+                                        anchors.leftMargin: statsPage.statsTableContentInset
+                                        anchors.rightMargin: statsPage.statsTableContentInset
                                         spacing: statsPage.statsTableColSpacing
 
                                         Label {
@@ -485,8 +503,9 @@ Page {
                         panelTitle: qsTr("Leaderboard")
                         panelPadding: statsPage.statsPanelPadding
                         panelTitlePixelSize: Theme.trainerSectionPx + 2
+                        panelTitleMinHeight: statsPage.statsPanelTitleMinH
                         Layout.alignment: Qt.AlignTop
-                        Layout.fillWidth: false
+                        Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.minimumWidth: 176
                         Layout.preferredWidth: statsPage.statsSidePanelW
@@ -502,6 +521,8 @@ Page {
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.leftMargin: statsPage.statsTableContentInset
+                                Layout.rightMargin: statsPage.statsTableContentInset
                                 spacing: statsPage.statsTableColSpacing
                                 Label {
                                     text: qsTr("RANK")
@@ -548,6 +569,8 @@ Page {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 1
+                                Layout.leftMargin: statsPage.statsTableContentInset
+                                Layout.rightMargin: statsPage.statsTableContentInset
                                 color: Theme.panelBorder
                                 Layout.topMargin: 2
                                 Layout.bottomMargin: statsPage.statsHeaderBodyGap
@@ -576,8 +599,8 @@ Page {
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: 6
-                                        anchors.rightMargin: 6
+                                        anchors.leftMargin: statsPage.statsTableContentInset
+                                        anchors.rightMargin: statsPage.statsTableContentInset
                                         spacing: statsPage.statsTableColSpacing
 
                                         Label {
@@ -627,11 +650,6 @@ Page {
                             }
                         }
                     }
-
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
-                    }
                 }
 
             ThemedPanel {
@@ -645,6 +663,8 @@ Page {
 
                     RowLayout {
                         Layout.fillWidth: true
+                        Layout.leftMargin: statsPage.statsTableContentInset
+                        Layout.rightMargin: statsPage.statsTableContentInset
                         spacing: 16
                         Repeater {
                             model: 6

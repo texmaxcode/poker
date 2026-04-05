@@ -302,7 +302,7 @@ QString game::format_showdown_payout_lines_from_gains(const std::array<int, kMax
         QString hand_name = winning_hand_label(s);
         if (hand_name.isEmpty())
             hand_name = QStringLiteral("—");
-        lines.append(QStringLiteral("%1 wins $%2 holding %3 on %4 with %5.")
+        lines.append(QStringLiteral("%1 $%2 with %3 on %4, %5")
                          .arg(seat_display_name(s))
                          .arg(stack_gain[static_cast<size_t>(s)])
                          .arg(hole_cards_display(s))
@@ -332,7 +332,7 @@ int game::banner_seat_from_showdown_gains(const std::array<int, kMaxPlayers> &st
 
 QString game::fold_win_status_line(int seat, int pot_chips) const
 {
-    return QStringLiteral("%1 wins $%2 with %3 Everybody folded.")
+    return QStringLiteral("%1 $%2 with %3 FOLDFEST.")
         .arg(seat_display_name(seat))
         .arg(pot_chips)
         .arg(hole_cards_display(seat));

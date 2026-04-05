@@ -11,7 +11,7 @@
 - **Lobby & table** — configurable blinds and stacks; human vs bots; sit-out; timed decisions; pot + call indicator; Min / ⅓ / ½ / ⅔ / Pot / All bet-sizing presets.
 - **Bots & ranges** — per-seat bot style and editable opening ranges (matrix / text); per-seat **buy-in** capped at **100× big blind**, with excess bankroll **off the table** (see [Game in code](docs/game-in-code.md)).
 - **Solver & equity** — Monte Carlo equity vs a range or exact villain cards, with optional pot-odds and chip-EV (work is off the UI thread where applicable); toy Nash (Kuhn-style) solver for study.
-- **Training** — **Preflop** and **Flop** drills with strategy-based grading, progress stats (accuracy, EV loss in bb), and configurable auto-advance delay.
+- **Training** — **Preflop** through **river** drills with strategy-based grading, progress stats (accuracy, EV loss in bb), and configurable auto-advance delay.
 - **Bankroll & stats** — seat stacks, off-table bankroll, leaderboard, and bankroll-over-time chart after each completed hand.
 - **Core engine** — full hand from deal through showdown: blinds, streets, betting order, hand evaluation (best five of seven), side-pot–aware payouts. Details: **[Game in code](docs/game-in-code.md)**.
 
@@ -71,10 +71,10 @@ Table stakes, per-seat bot strategy and range text (exported form), per-seat **b
 
 | Document | Contents |
 |----------|----------|
-| [docs/building.md](docs/building.md) | Full dependency list, configure variables, OS notes, Qt commercial / license service env, tests, card assets script |
-| [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, tests |
-| [docs/game-in-code.md](docs/game-in-code.md) | NLHE as implemented: blinds, clockwise button/action/deal order, streets, side pots, stake cap, bankroll |
-| [docs/mvp-trainer-roadmap.md](docs/mvp-trainer-roadmap.md) | Trainer roadmap (see status note at top of that file if present) |
+| [docs/building.md](docs/building.md) | Dependencies, CMake configure, tests, card assets script, troubleshooting |
+| [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, persistence |
+| [docs/game-in-code.md](docs/game-in-code.md) | NLHE as implemented: blinds, streets, side pots, stake cap, bankroll |
+| [docs/next-steps.md](docs/next-steps.md) | Engineering backlog (performance, refactors, future features) |
 
 ## Tests
 

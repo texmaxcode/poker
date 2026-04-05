@@ -28,10 +28,10 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 - **`Theme/Theme.qml`** (singleton) — palette, semantic text colors, **`compactUiScale(shortSide)`** for scroll pages, trainer typography tokens, card sizes, range-grid colors, section title color.
 - **`theme/Metrics.qml`** (singleton) — window chrome dimensions, HUD button heights, minimum window size (see above).
-- **`BrandedBackground.qml`** — full-page charcoal/burgundy **gradient** + light **film grain** (`Canvas`); no separate vignette overlay (assets may still ship `bg_vignette.svg` for optional use).
+- **`BrandedBackground.qml`** — full-page charcoal/burgundy **gradient** + light **film grain** (`Canvas`).
 - **`ThemedPanel.qml`** — framed panels with **uppercase** section titles in **`Theme.fontFamilyDisplay`** (Rye).
 - **Lobby** — **`LobbyScreen.qml`**: logo + **`ThemedPanel`** with **five nav tiles in one row** (banner art + subtitle); content width is capped by **`Theme.trainerContentMaxWidth`** with side gutters.
-- **Table** — **`GameScreen.qml`**: six **`Player`** seats on an oval; **`GameControls`** is **not** full-width docked by default — it uses **`embeddedMode: true`**, **`panelWidth`** from **`tableArea.hudPanelW`**, and is positioned beside **seat 0** (bottom-aligned to the hero seat when there is horizontal room; otherwise stacked/centered per **`hudStacked`**). **`tableArea.tableScale`** shrinks the felt and seats on short viewports.
+- **Table** — **`GameScreen.qml`**: six **`Player`** seats on an oval; **`GameControls`** uses **`embeddedMode: !hudBottomDock`**. By default **`hudBottomDock`** is **false**, so the HUD is a floating panel beside **seat 0** (`panelWidth` from **`tableArea.hudPanelW`**, position from **`floatHudX` / `floatHudY`**, **`hudStacked`** when narrow). If **`hudBottomDock`** is **true**, the HUD spans the bottom of the table area. **`tableArea.tableScale`** shrinks the felt and seats on short viewports.
 - **Buttons** — **`GameButton.qml`** implements HUD, toolbar chrome, form, and chip styles; standard **`Button`** / **`TabBar`** in setup/solver/stats use **`Theme.fontFamilyButton`** where styled explicitly. **`SizingPresetBar`** preset chips use the button font.
 - **Trainer / solver / stats** — scroll views with **`ThemedPanel`** sections; solver and setup use **`GridLayout`** / forms; stats use **`ThemedPanel`** + tables and a **Canvas** bankroll chart.
 - After **`QQmlApplicationEngine::load()`**, a short **`QTimer::singleShot`** finds the table **`Page`** by **`objectName: "game_screen"`**, calls **`game::setRootObject()`** on it, then **`beginNewHand()`** so the first hand starts only when the table is ready. The engine does **not** use `Game.qml` as the root object.
@@ -102,6 +102,6 @@ Blinds (including **heads-up**), **clockwise** button rotation and action/deal o
 ## Tests
 
 - **`poker/poker/tests/test_*.cpp`** — **Boost.Test** (`Test_poker`): split by area (`test_smoke_game_engine`, `test_hand_evaluation`, `test_persistence_sqlite`, etc.); see `poker/poker/tests/CMakeLists.txt` and the Tests section in the repo **`README.md`**.
-- **`poker/poker/tests/CMakeLists.txt`** registers **`poker.smoke`** via **`add_test`** when **`BUILD_TESTING`** is on.
+- **`poker/poker/tests/CMakeLists.txt`** registers **`poker.unit`** via **`add_test`** when **`BUILD_TESTING`** is on.
 
 The **`poker`** library links **Qt::Qml** so MOC’d types used from tests stay consistent with the app’s Qt linkage.
