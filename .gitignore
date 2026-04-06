@@ -40,7 +40,9 @@ ui_*.h
 *.qmlc
 *.jsc
 Makefile*
+# Ignore stray *build-* temp files, but not packaging scripts (build-release.*, build-appimage.sh, …)
 *build-*
+!poker/packaging/**/*
 *.qm
 *.prl
 
