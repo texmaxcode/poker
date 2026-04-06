@@ -67,24 +67,38 @@ function Find-QtRoot {
 
 function Get-ExePath {
     param([string]$Root)
-    # Visual Studio generator: Release output may be poker\Release\ or poker\x64\Release\ (toolset/arch).
+    # Visual Studio multi-config: exe may be under poker\Release\, poker\x64\Release\, or CMake/MSBuild may
+    # place it under top-level Release\, bin\, etc. Prefer Release over Debug when multiple exist.
     $candidates = @(
         (Join-Path $Root "poker\Release\Poker.exe"),
         (Join-Path $Root "poker\x64\Release\Poker.exe"),
+        (Join-Path $Root "Poker\Release\Poker.exe"),
+        (Join-Path $Root "Poker\x64\Release\Poker.exe"),
         (Join-Path $Root "poker\RelWithDebInfo\Poker.exe"),
         (Join-Path $Root "poker\x64\RelWithDebInfo\Poker.exe"),
+        (Join-Path $Root "Release\Poker.exe"),
+        (Join-Path $Root "x64\Release\Poker.exe"),
+        (Join-Path $Root "bin\Release\Poker.exe"),
         (Join-Path $Root "poker\Poker.exe")
     )
     foreach ($c in $candidates) {
         if (Test-Path -LiteralPath $c) { return $c }
     }
-    $pokerDir = Join-Path $Root "poker"
-    if (Test-Path -LiteralPath $pokerDir) {
-        $found = Get-ChildItem -LiteralPath $pokerDir -Filter "Poker.exe" -Recurse -File -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-        if ($found) { return $found.FullName }
+    if (-not (Test-Path -LiteralPath $Root)) {
+        throw "Build directory does not exist: $Root — build Release first."
     }
-    throw "Poker.exe not found under $Root — build Release first."
+    # Last resort: any Poker.exe under the build tree (-Filter with -Recurse is unreliable in Windows PowerShell).
+    $all = @(Get-ChildItem -LiteralPath $Root -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ieq "Poker.exe" })
+    if ($all.Count -eq 0) {
+        Write-Host "==> Debug: listing top-level of build dir $Root"
+        Get-ChildItem -LiteralPath $Root -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "     $($_.Name)" }
+        throw "Poker.exe not found under $Root — build Release first."
+    }
+    $release = $all | Where-Object { $_.FullName -match '\\Release\\' -or $_.FullName -match '\\RelWithDebInfo\\' }
+    if ($release) {
+        return ($release | Select-Object -First 1).FullName
+    }
+    return $all[0].FullName
 }
 
 $QtInstall = Find-QtRoot
