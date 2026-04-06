@@ -454,9 +454,12 @@ Page {
                         readonly property int seatReserve: 220
                         readonly property real seatScale: {
                             var h = drillPanel.height
-                            if (h <= 0)
+                            var w = drillArea.width
+                            if (h <= 0 || w <= 0)
                                 return 1.0
-                            return Math.min(1.0, Math.max(0.48, (h - seatReserve) / 300))
+                            var fromH = Math.min(1.0, Math.max(0.48, (h - seatReserve) / 300))
+                            var fromW = Math.min(1.0, Math.max(0.48, (w - 16) / 232))
+                            return Math.min(fromH, fromW)
                         }
 
                         ColumnLayout {
@@ -520,7 +523,8 @@ Page {
 
                                 Item {
                                     id: trainerSeatWrap
-                                    width: Math.round(218 * drillArea.seatScale)
+                                    width: Math.min(Math.round(218 * drillArea.seatScale),
+                                            parent.width > 0 ? parent.width : 99999)
                                     height: Math.round(312 * drillArea.seatScale)
                                     anchors.horizontalCenter: parent.horizontalCenter
 

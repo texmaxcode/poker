@@ -277,6 +277,8 @@ void GamePersistence::loadPersistedSettings()
     game_.setBotSlowActions(AppStateSqlite::value(QStringLiteral("v1/botSlowActions"), false).toBool());
     game_.setWinningHandShowMs(
         clamp_int(AppStateSqlite::value(QStringLiteral("v1/winningHandShowMs"), 5000).toInt(), 500, 60000));
+    game_.setBotDecisionDelaySec(
+        clamp_int(AppStateSqlite::value(QStringLiteral("v1/botDecisionDelaySec"), 2).toInt(), 1, 30));
     for (int s = 1; s < game::kMaxPlayers; ++s)
     {
         const bool def = true;
@@ -325,6 +327,7 @@ void GamePersistence::writePersistedSettingsImpl(bool onlyIfMissingKeys) const
     put(QStringLiteral("v1/humanSitOut"), game_.human_sitting_out_);
     put(QStringLiteral("v1/interactiveHuman"), game_.interactive_human_);
     put(QStringLiteral("v1/botSlowActions"), game_.bot_slow_actions_);
+    put(QStringLiteral("v1/botDecisionDelaySec"), game_.bot_decision_delay_sec_);
     put(QStringLiteral("v1/winningHandShowMs"), game_.winning_hand_show_ms_);
     for (int s = 1; s < game::kMaxPlayers; ++s)
         put(QStringLiteral("v1/seat%1/participating").arg(s),

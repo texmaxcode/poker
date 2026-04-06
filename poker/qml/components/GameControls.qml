@@ -16,6 +16,8 @@ Item {
 
     /// When true, use compact timer row instead of full-width status row.
     property bool embeddedMode: false
+    /// When true, FOLD/CALL/RAISE + raise sizing emit `trainerAction` instead of `pokerGame` (must be above `trainerDockScale`).
+    property bool trainerMode: false
     /// Set from `GameScreen` (`tableArea.tableScale`) so the embedded HUD shrinks with the table.
     property real hudScale: 1.0
     /// Embedded HUD scale: follows table + a small boost from window short side so chrome stays readable on 720p-class windows.
@@ -26,12 +28,43 @@ Item {
     readonly property real ez: embeddedMode
             ? Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0))))
             : 1.0
+    /// Full-width trainer dock: shrink buttons / spacing on narrow columns (min window / small drill panel).
+    readonly property real trainerDockScale: {
+        if (!trainerMode || embeddedMode)
+            return 1.0
+        var w = game_controls.width
+        if (w <= 0)
+            return 0.82
+        return Math.min(1.0, Math.max(0.58, w / 380.0))
+    }
+    /// Trainer full-width dock: scaled pill targets so FOLD/CALL/RAISE fit narrow panels.
+    readonly property int actPill76: (trainerMode && !embeddedMode)
+            ? Math.max(52, Math.round(76 * trainerDockScale)) : 76
+    readonly property int actPill88: (trainerMode && !embeddedMode)
+            ? Math.max(56, Math.round(88 * trainerDockScale)) : 88
+    readonly property int actPill108: (trainerMode && !embeddedMode)
+            ? Math.max(64, Math.round(108 * trainerDockScale)) : 108
     /// Matches `Player` `uiScale` / embedded `ez`: table `hudScale` + short-window boost. Used for showdown banner mini-cards (`Card.displayScaleFactor`) so SVG raster tracks hole cards.
     readonly property real bannerRasterScale: Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0))))
 
-    readonly property int hudBtnPt: Math.max(9, Math.round(Theme.uiHudButtonPt * ez))
-    readonly property int hudActBtnH: Math.max(26, Math.round(34 * ez))
-    readonly property int hudBodyPx: Math.max(10, Math.round(Theme.uiBodyPx * ez))
+    readonly property int hudBtnPt: {
+        var base = Math.max(9, Math.round(Theme.uiHudButtonPt * ez))
+        if (trainerMode && !embeddedMode)
+            return Math.max(8, Math.round(base * trainerDockScale))
+        return base
+    }
+    readonly property int hudActBtnH: {
+        var base = Math.max(26, Math.round(34 * ez))
+        if (trainerMode && !embeddedMode)
+            return Math.max(22, Math.round(base * trainerDockScale))
+        return base
+    }
+    readonly property int hudBodyPx: {
+        var base = Math.max(10, Math.round(Theme.uiBodyPx * ez))
+        if (trainerMode && !embeddedMode)
+            return Math.max(9, Math.round(base * trainerDockScale))
+        return base
+    }
     readonly property int hudMicroPx: Math.max(8, Math.round(Theme.uiMicroPx * ez))
     readonly property int hudSmallPx: Math.max(9, Math.round(Theme.uiSmallPx * ez))
     /// Timer row (“Act”, seconds) — slightly larger than micro copy for legibility.
@@ -42,7 +75,13 @@ Item {
     readonly property int mainColTopMargin: embeddedMode ? Math.max(6, Math.round(14 * ez)) : 10
     readonly property int mainColSpacing: embeddedMode ? Math.max(4, Math.round(6 * ez)) : 12
     /// Horizontal gap between FOLD / CALL / RAISE (and similar action rows).
-    readonly property int actionRowSpacing: embeddedMode ? Math.max(6, Math.round(14 * ez)) : 16
+    readonly property int actionRowSpacing: {
+        if (embeddedMode)
+            return Math.max(6, Math.round(14 * ez))
+        if (trainerMode)
+            return Math.max(3, Math.round(12 * trainerDockScale))
+        return 16
+    }
     readonly property int embeddedTimerRowMinH: Math.max(18, Math.round(22 * ez))
     /// Uniform inset inside the HUD panel so rows/columns line up (avoid mixing `x: 8` with ad‑hoc widths).
     readonly property int hudSideMargin: embeddedMode ? Math.max(5, Math.round(11 * ez)) : 11
@@ -78,8 +117,6 @@ Item {
     property bool humanCanBuyBackIn: false
     property int buyInChips: 100
 
-    /// When true, FOLD/CALL/RAISE + raise sizing emit `trainerAction` instead of `pokerGame`.
-    property bool trainerMode: false
     /// With `trainerMode`, use flop drill actions (CHECK / Bet 33% / Bet 75%) instead of FOLD/CALL/RAISE.
     property bool trainerFlopStreet: false
     /// Disables actions (e.g. trainer auto-advance) while keeping the HUD visible.
@@ -110,6 +147,12 @@ Item {
 
     /// Seat 0 is played by engine bots (vs interactive human actions).
     readonly property bool playingAsBot: pokerGame !== null && !engineHumanInteractive
+    /// Act / countdown / bar live on `Player` street row when embedded or in trainers — avoid duplicate chrome.
+    readonly property bool showHudActTimerRow: game_controls.humanDecisionActive
+            && !game_controls.trainerMode && !game_controls.embeddedMode
+    /// “More” time stays in the panel beside the seat when embedded (`showHudActTimerRow` is off there).
+    readonly property bool showMoreTimeButton: game_controls.humanMoreTimeAvailable && game_controls.humanDecisionActive
+            && !game_controls.trainerMode
 
     readonly property bool humanDecisionActive: trainerMode
             ? (!trainerInputLocked && decisionSecondsLeft > 0)
@@ -325,7 +368,7 @@ Item {
                         spacing: game_controls.embeddedMode ? Math.max(8, Math.round(14 * game_controls.ez)) : 10
 
                         Text {
-                        visible: game_controls.humanDecisionActive
+                        visible: game_controls.showHudActTimerRow
                         text: qsTr("Act")
                         color: Theme.hudActionLabel
                         font.family: Theme.fontFamilyUi
@@ -336,7 +379,7 @@ Item {
                     }
 
                     Text {
-                        visible: game_controls.humanDecisionActive
+                        visible: game_controls.showHudActTimerRow
                         text: qsTr("%1s").arg(game_controls.decisionSecondsLeft)
                         color: Theme.seatBorderAct
                         font.family: Theme.fontFamilyMono
@@ -348,8 +391,7 @@ Item {
                     }
 
                     GameButton {
-                        visible: !game_controls.trainerMode && game_controls.humanDecisionActive
-                                && game_controls.humanMoreTimeAvailable
+                        visible: game_controls.showMoreTimeButton
                         /// Wide enough for button font “More” — do not cap with `Layout.preferredWidth` (caused “M…” elide).
                         pillWidth: Math.max(88, Math.round(112 * game_controls.ez))
                         horizontalPadding: Math.max(14, Math.round(18 * game_controls.ez))
@@ -411,9 +453,8 @@ Item {
 
                 ProgressBar {
                     id: embeddedDecisionBar
-                    /// Keep the bar’s vertical space on the table HUD even between decisions (timer at 0).
-                    visible: game_controls.showTableDecisionChrome
-                        && (game_controls.embeddedMode || game_controls.trainerMode)
+                    /// Only with legacy full-width HUD timer row; embedded + trainers use `Player` street bar.
+                    visible: game_controls.showTableDecisionChrome && game_controls.showHudActTimerRow
                     width: parent.width
                     height: Math.max(4, Math.round(6 * game_controls.ez))
                     padding: Math.max(1, Math.round(2 * game_controls.ez))
@@ -526,8 +567,8 @@ Item {
                 }
             }
 
-            // Facing a raise: fold / call / raise (table + preflop drill), or flop drill check / bets — one row, same geometry as preflop.
-            Row {
+            // Facing a raise: fold / call / raise (table + preflop drill), or flop drill check / bets — Flow wraps on min width.
+            Flow {
                 visible: game_controls.showHumanActions && game_controls.showWagerUi
                         && game_controls.facingRaise
                 width: parent.width
@@ -536,7 +577,7 @@ Item {
                 GameButton {
                     visible: !game_controls.trainerMode || !game_controls.trainerFlopStreet
                     text: qsTr("FOLD")
-                    pillWidth: 76
+                    pillWidth: game_controls.actPill76
                     buttonColor: Theme.dangerBg
                     textColor: Theme.dangerText
                     fontSize: game_controls.hudBtnPt
@@ -562,7 +603,7 @@ Item {
                     text: game_controls.facingNeedChips > 0
                           ? qsTr("Call %1").arg(game_controls.facingNeedChips)
                           : qsTr("CALL")
-                    pillWidth: 108
+                    pillWidth: game_controls.actPill108
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
                     fontSize: game_controls.hudBtnPt
@@ -585,7 +626,7 @@ Item {
                     visible: game_controls.canRaiseFacing && !game_controls.raiseSizingExpanded
                             && (!game_controls.trainerMode || !game_controls.trainerFlopStreet)
                     text: qsTr("RAISE")
-                    pillWidth: 88
+                    pillWidth: game_controls.actPill88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
                     fontSize: game_controls.hudBtnPt
@@ -606,7 +647,7 @@ Item {
                 GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
                     text: qsTr("CHECK")
-                    pillWidth: 76
+                    pillWidth: game_controls.actPill76
                     buttonColor: Theme.panelBorder
                     textColor: Theme.textPrimary
                     fontSize: game_controls.hudBtnPt
@@ -624,7 +665,7 @@ Item {
                 GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
                     text: qsTr("Bet ⅓ pot")
-                    pillWidth: 108
+                    pillWidth: game_controls.actPill108
                     buttonColor: Theme.focusGold
                     textColor: Theme.insetDark
                     fontSize: game_controls.hudBtnPt
@@ -642,7 +683,7 @@ Item {
                 GameButton {
                     visible: game_controls.trainerMode && game_controls.trainerFlopStreet
                     text: qsTr("Bet ¾ pot")
-                    pillWidth: 88
+                    pillWidth: game_controls.actPill88
                     buttonColor: Theme.successGreen
                     textColor: Theme.onAccentText
                     fontSize: game_controls.hudBtnPt

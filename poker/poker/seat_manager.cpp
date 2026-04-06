@@ -143,6 +143,14 @@ void SeatManager::apply_seat_buy_ins_to_table(bool resetBankrollSession)
         const int seat = static_cast<int>(i);
         const int bi = game_.effectiveSeatBuyInChips(seat);
         seat_buy_in_[i] = std::max(1, std::min(bi, cap));
+        /// Seats 1–5 toggled off in Setup stay off the felt; wealth remains in `seat_wallet_` only.
+        if (seat >= 1 && seat < kMaxPlayers && !seat_participating_[i])
+        {
+            const int total_wealth = game_.table[i].stack + seat_wallet_[i];
+            seat_wallet_[i] = total_wealth;
+            game_.table[i].reset_stack(0);
+            continue;
+        }
         const int total_wealth = game_.table[i].stack + seat_wallet_[i];
         int on_table = std::min(bi, cap);
         if (on_table > total_wealth)
@@ -157,18 +165,59 @@ void SeatManager::apply_seat_buy_ins_to_table(bool resetBankrollSession)
 void SeatManager::try_auto_rebuys_for_busted_bots()
 {
     const int n = game_.players_count();
-    for (int s = 1; s < n; ++s)
+    for (int s = 0; s < n; ++s)
     {
+        /// Seat 0: auto-rebuy only when autoplaying as a bot; the human uses the HUD buy-back button.
+        if (s == 0 && game_.interactiveHuman())
+            continue;
         if (!seat_participating_[static_cast<size_t>(s)])
             continue;
         const size_t si = static_cast<size_t>(s);
         if (game_.table[si].stack > 0)
             continue;
-        const int cost = game_.effectiveSeatBuyInChips(s);
-        if (seat_wallet_[si] < cost)
-            seat_wallet_[si] = cost;
-        if (seat_wallet_[si] >= cost)
-            apply_buy_back_in_internal(s);
+        /// Never inflate `seat_wallet_` — rebuy only from chips already in Settings / DB (stack + wallet).
+        apply_buy_back_in_internal(s);
+    }
+}
+
+void SeatManager::cash_out_seat_off_table(int seat)
+{
+    if (seat < 1 || seat >= kMaxPlayers)
+        return;
+    const size_t si = static_cast<size_t>(seat);
+    const int st = game_.table[si].stack;
+    if (st <= 0)
+        return;
+    seat_wallet_[si] += st;
+    game_.table[si].reset_stack(0);
+}
+
+void SeatManager::apply_bot_seat_rejoin_buy_in(int seat)
+{
+    if (seat < 1 || seat >= kMaxPlayers)
+        return;
+    const size_t si = static_cast<size_t>(seat);
+    if (game_.table[si].stack > 0)
+        return;
+    /// No wallet top-up — only sit with chips already in the bankroll.
+    apply_buy_back_in_internal(seat);
+}
+
+void SeatManager::mark_pending_cash_out_after_hand(int seat)
+{
+    if (seat >= 1 && seat < kMaxPlayers)
+        pending_cash_out_after_hand_[static_cast<size_t>(seat)] = true;
+}
+
+void SeatManager::flush_pending_cash_outs_after_hand()
+{
+    for (int s = 1; s < kMaxPlayers; ++s)
+    {
+        const size_t si = static_cast<size_t>(s);
+        if (!pending_cash_out_after_hand_[si])
+            continue;
+        pending_cash_out_after_hand_[si] = false;
+        cash_out_seat_off_table(s);
     }
 }
 

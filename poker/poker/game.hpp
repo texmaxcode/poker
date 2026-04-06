@@ -195,6 +195,10 @@ public:
     Q_PROPERTY(int winningHandShowMs READ winningHandShowMs WRITE setWinningHandShowMs NOTIFY winningHandShowMsChanged)
     Q_INVOKABLE void setWinningHandShowMs(int ms);
     int winningHandShowMs() const;
+    /// Pause between bot actions when “Slow down bots!” is on. Clamped 1–30 s (replaces former ~2.4 s hardcode).
+    Q_PROPERTY(int botDecisionDelaySec READ botDecisionDelaySec WRITE setBotDecisionDelaySec NOTIFY botDecisionDelaySecChanged)
+    Q_INVOKABLE void setBotDecisionDelaySec(int sec);
+    int botDecisionDelaySec() const;
     /// When false, skips the fixed delay after each bot action (default true; set false in unit tests).
     Q_INVOKABLE void setBotActionDelayEnabled(bool enabled);
     Q_INVOKABLE bool botActionDelayEnabled() const { return bot_action_delay_enabled_; }
@@ -252,6 +256,8 @@ public:
 
     /// Off-table portion of bankroll, available for rebuy (starts at 0 after apply; persistence may restore a reserve).
     Q_INVOKABLE int seatWallet(int seat) const;
+    /// Seat 0 buy-in (× BB, capped) when “Play as bot” is on — for UI checks vs `seatBankrollTotal(0)`.
+    Q_INVOKABLE int autoplayBuyInChips() const;
     /// `stack == 0`, hand idle, and off-table bankroll has at least one full buy-in for that seat (`seatBuyIn(seat)`).
     Q_INVOKABLE bool canBuyBackIn(int seat) const;
     /// Move one `seatBuyIn(seat)` from off-table bankroll to stack. No-op if not allowed.
@@ -264,6 +270,7 @@ signals:
     void interactiveHumanChanged();
     void botSlowActionsChanged();
     void winningHandShowMsChanged();
+    void botDecisionDelaySecChanged();
 
 public slots:
     void buttonClicked(QString button);
@@ -282,6 +289,8 @@ private:
     int acting_seat_ = -1;
     bool auto_hand_loop_ = true;
     bool bot_slow_actions_ = false;
+    /// `bot_action_pause` duration when `bot_slow_actions_` (seconds; applied as ms in the loop).
+    int bot_decision_delay_sec_ = 2;
     /// `schedule_next_hand_if_idle`: delay before auto `beginNewHand()` (default 5 s).
     int winning_hand_show_ms_ = 5000;
     /// When false, `bot_action_pause` is a no-op (keeps CI fast; UI keeps default true).

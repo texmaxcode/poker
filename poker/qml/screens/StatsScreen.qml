@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Theme 1.0
 import PokerUi 1.0
 
-/// Session bankroll tables, leaderboard, and bankroll-over-time chart.
+/// Seat bankroll table, leaderboard, and bankroll-over-time chart.
 Page {
     id: statsPage
     padding: 0
@@ -31,9 +31,6 @@ Page {
     property real chartTipY: 0
     /// Rows from `seatRankings()` sorted by seat index 0–5 (on table / off-table bankroll / total).
     property var seatBankrollDetail: []
-    property bool pendingApplyBuyIns: false
-    /// Bumped whenever tables refresh so `seatBuyIn()` re-binds (invokables have no NOTIFY).
-    property int uiRevision: 0
     /// Bound to C++ `statsSeq` so leaderboard / chart refresh when bankroll snapshots update (not only on restart).
     property int statsSeq: pokerGame.statsSeq
     property bool statsDataError: false
@@ -49,19 +46,19 @@ Page {
     readonly property int statsPanelPadding: Theme.trainerPanelPadding + 20
     readonly property int statsTableColSpacing: 10
     readonly property int statsPanelsSpacing: 16
-    /// Two-line cap for display titles — keeps the three top panels’ table headers on one horizontal line.
+    /// Two-line cap for display titles — keeps the top panels’ table headers on one horizontal line.
     readonly property int statsPanelTitleMinH: Math.round((Theme.trainerSectionPx + 2) * 2.35)
     /// Width for the top stats row + chart — `ScrollView.availableWidth` is already inside horizontal padding.
     readonly property real statsTopRowInnerW: Math.max(0, scrollView.availableWidth)
-    /// ~46% / 27% / 27% target; never let seat panel consume space the two side panels need.
+    /// Seat bankrolls ~half width; leaderboard fills the rest (two panels in the top row).
     readonly property real statsSeatPanelW: {
         var w = statsPage.statsTopRowInnerW
         var sp = statsPage.statsPanelsSpacing
-        var sideFloor = 96
-        var maxSeat = w - 2 * sideFloor - 2 * sp
-        return Math.min(620, Math.max(80, Math.min(w * 0.46, maxSeat)))
+        var sideFloor = 120
+        var maxSeat = w - sideFloor - sp
+        return Math.min(620, Math.max(80, Math.min(w * 0.48, maxSeat)))
     }
-    readonly property real statsSidePanelW: Math.max(72, (statsPage.statsTopRowInnerW - statsPage.statsSeatPanelW - 2 * statsPage.statsPanelsSpacing) / 2)
+    readonly property real statsSidePanelW: Math.max(72, statsPage.statsTopRowInnerW - statsPage.statsSeatPanelW - statsPage.statsPanelsSpacing)
 
     function formatTimeMs(ms) {
         if (ms === undefined || ms === null || ms <= 0)
@@ -84,8 +81,6 @@ Page {
             statsPage.statsDataError = true
             rankRepeater.model = []
             seatBankrollDetail = []
-            pendingApplyBuyIns = false
-            uiRevision = (uiRevision + 1) % 2000000000
             return
         }
         rankRepeater.model = list
@@ -102,8 +97,6 @@ Page {
                 out.push(map[s])
         }
         seatBankrollDetail = out
-        pendingApplyBuyIns = pokerGame.pendingSeatBuyInsApply() || pokerGame.pendingSeatBankrollApply()
-        uiRevision = (uiRevision + 1) % 2000000000
     }
 
     function refreshChartData() {
@@ -360,129 +353,6 @@ Page {
                     }
 
                     ThemedPanel {
-                        panelTitle: qsTr("Stakes & buy-ins")
-                        panelPadding: statsPage.statsPanelPadding
-                        panelTitlePixelSize: Theme.trainerSectionPx + 2
-                        panelTitleMinHeight: statsPage.statsPanelTitleMinH
-                        Layout.alignment: Qt.AlignTop
-                        Layout.fillWidth: false
-                        Layout.fillHeight: true
-                        Layout.minimumWidth: 176
-                        Layout.preferredWidth: statsPage.statsSidePanelW
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: statsPage.statsTableRowSpacing
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: statsPage.statsTableTopSlotH
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                Layout.leftMargin: statsPage.statsTableContentInset
-                                Layout.rightMargin: statsPage.statsTableContentInset
-                                spacing: statsPage.statsTableColSpacing
-                                Label {
-                                    text: qsTr("PLAYER")
-                                    font.family: Theme.fontFamilyDisplay
-                                    font.pixelSize: statsPage.statsTableHeaderPx
-                                    font.weight: Font.DemiBold
-                                    font.letterSpacing: 1.2
-                                    color: Theme.textMuted
-                                    Layout.fillWidth: true
-                                    Layout.minimumWidth: 88
-                                }
-                                Label {
-                                    text: qsTr("BUY-IN")
-                                    font.family: Theme.fontFamilyDisplay
-                                    font.pixelSize: statsPage.statsTableHeaderPx
-                                    font.weight: Font.DemiBold
-                                    font.letterSpacing: 1.2
-                                    color: Theme.textMuted
-                                    Layout.preferredWidth: 80
-                                    horizontalAlignment: Text.AlignRight
-                                }
-                            }
-
-                            Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 1
-                                Layout.leftMargin: statsPage.statsTableContentInset
-                                Layout.rightMargin: statsPage.statsTableContentInset
-                                color: Theme.panelBorder
-                                Layout.topMargin: 2
-                                Layout.bottomMargin: statsPage.statsHeaderBodyGap
-                            }
-
-                            Repeater {
-                                model: 6
-
-                                Rectangle {
-                                    required property int index
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: statsPage.statsRowH
-                                    color: index % 2 === 1 ? statsPage.statsRowAlt : "transparent"
-                                    radius: 4
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: statsPage.statsTableContentInset
-                                        anchors.rightMargin: statsPage.statsTableContentInset
-                                        spacing: statsPage.statsTableColSpacing
-
-                                        Label {
-                                            text: botNames.displayName(index)
-                                            Layout.fillWidth: true
-                                            Layout.minimumWidth: 88
-                                            color: Theme.colorForSeat(index)
-                                            font.family: Theme.fontFamilyButton
-                                            font.pixelSize: statsPage.statsTablePx
-                                            font.weight: Font.Bold
-                                            elide: Text.ElideRight
-                                        }
-                                        Label {
-                                            text: "$" + pokerGame.seatBuyIn(index) + (statsPage.uiRevision * 0)
-                                            Layout.preferredWidth: 80
-                                            color: Theme.textSecondary
-                                            font.pixelSize: statsPage.statsTablePx
-                                            horizontalAlignment: Text.AlignRight
-                                        }
-                                    }
-                                }
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                Layout.topMargin: 8
-                                spacing: 12
-                                visible: statsPage.pendingApplyBuyIns
-
-                                Label {
-                                    Layout.fillWidth: true
-                                    wrapMode: Text.WordWrap
-                                    text: qsTr("Pending buy-in edits — apply when table is idle.")
-                                    font.pixelSize: statsPage.statsTablePx
-                                    color: Theme.textPrimary
-                                }
-                                Button {
-                                    text: qsTr("Apply")
-                                    font.family: Theme.fontFamilyButton
-                                    font.pixelSize: statsPage.statsTablePx
-                                    enabled: !pokerGame.gameInProgress()
-                                    onClicked: {
-                                        pokerGame.applyPendingBankrollTotals()
-                                        pokerGame.applySeatBuyInsToStacks()
-                                        pokerGame.savePersistedSettings()
-                                        statsPage.refreshSeatBankrollTables()
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    ThemedPanel {
                         panelTitle: qsTr("Leaderboard")
                         panelPadding: statsPage.statsPanelPadding
                         panelTitlePixelSize: Theme.trainerSectionPx + 2
@@ -538,7 +408,7 @@ Page {
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
-                                    text: qsTr("P/L")
+                                    text: qsTr("P/L ")
                                     font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold

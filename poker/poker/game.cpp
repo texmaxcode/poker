@@ -502,6 +502,9 @@ void game::setInteractiveHuman(bool enabled)
     if (!enabled)
         seat_mgr_.seat_buy_in_[static_cast<size_t>(kHumanSeat)] = effectiveSeatBuyInChips(kHumanSeat);
     emit interactiveHumanChanged();
+    /// Materialize stacks from buy-in targets when idle (e.g. autoplay: auto-rebuy uses effective stack).
+    if (persist_loaded_ && !suppress_persist_ && !in_progress)
+        seat_mgr_.apply_seat_buy_ins_to_table(false);
 }
 
 void game::setHumanSitOut(bool enabled)
@@ -644,11 +647,11 @@ void game::bot_action_pause()
     /// `flush_ui()` already ran `processEvents`; one more pass so the acting-seat highlight is queued.
     /// A plain `msleep` then blocked the GUI thread **without** processing events, so Qt Quick often
     /// showed the whole hand as one instant jump. Pump the event loop so each bot action can render
-    /// before the next decision (~2.4s — shorter pauses were easy to miss visually).
+    /// before the next decision (`botDecisionDelaySec`, default 2 s).
     QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
     QElapsedTimer t;
     t.start();
-    constexpr int kMs = 2400;
+    const int kMs = std::clamp(bot_decision_delay_sec_, 1, 30) * 1000;
     while (t.elapsed() < kMs)
     {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 16);
@@ -1728,7 +1731,26 @@ void game::resetSeatRangeFull(int seat)
 
 void game::setSeatParticipating(int seat, bool participating)
 {
+    if (seat < 1 || seat >= kMaxPlayers)
+        return;
+    if (seat_mgr_.seatParticipating(seat) == participating)
+        return;
     seat_mgr_.setSeatParticipating(seat, participating);
+    if (!participating)
+    {
+        if (!in_progress || !in_hand_[static_cast<size_t>(seat)])
+            seat_mgr_.cash_out_seat_off_table(seat);
+        else
+            seat_mgr_.mark_pending_cash_out_after_hand(seat);
+    }
+    else
+    {
+        seat_mgr_.apply_bot_seat_rejoin_buy_in(seat);
+    }
+    notifySessionStatsChanged();
+    if (!suppress_persist_)
+        savePersistedSettings();
+    flush_ui();
 }
 
 bool game::seatParticipating(int seat) const
@@ -1767,6 +1789,22 @@ int game::winningHandShowMs() const
     return winning_hand_show_ms_;
 }
 
+void game::setBotDecisionDelaySec(int sec)
+{
+    const int v = std::clamp(sec, 1, 30);
+    if (bot_decision_delay_sec_ == v)
+        return;
+    bot_decision_delay_sec_ = v;
+    emit botDecisionDelaySecChanged();
+    if (persist_loaded_ && !suppress_persist_)
+        savePersistedSettings();
+}
+
+int game::botDecisionDelaySec() const
+{
+    return bot_decision_delay_sec_;
+}
+
 void game::setBotActionDelayEnabled(bool enabled)
 {
     bot_action_delay_enabled_ = enabled;
@@ -1799,6 +1837,7 @@ void game::notifySessionStatsChanged()
 
 void game::complete_hand_idle()
 {
+    seat_mgr_.flush_pending_cash_outs_after_hand();
     seat_mgr_.try_auto_rebuys_for_busted_bots();
     seat_mgr_.flush_pending_bankroll_totals();
     /// Normalize persisted buy-in vs wallet from stacks *before* snapshot so history and `v1/seat*/buyIn`
@@ -1815,13 +1854,25 @@ int game::seatWallet(int seat) const
     return seat_mgr_.seatWallet(seat);
 }
 
+int game::autoplayBuyInChips() const
+{
+    const int cap = maxBuyInChips();
+    const int bb = std::max(1, big_blind);
+    const int mult = std::max(1, seat_cfg_[static_cast<size_t>(kHumanSeat)].params.buy_in_bb);
+    return std::max(1, std::min(mult * bb, cap));
+}
+
 bool game::canBuyBackIn(int seat) const
 {
+    if (seat == kHumanSeat && !interactive_human_)
+        return false;
     return seat_mgr_.canBuyBackIn(seat);
 }
 
 bool game::tryBuyBackIn(int seat)
 {
+    if (seat == kHumanSeat && !interactive_human_)
+        return false;
     return seat_mgr_.tryBuyBackIn(seat);
 }
 

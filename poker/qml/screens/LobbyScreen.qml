@@ -121,7 +121,7 @@ Page {
                             spacing: lobbyPage.lobbyNavRowSpacing
                             LobbyNavTile {
                                 bannerSource: "qrc:/assets/images/texas_holdem_icn.png"
-                                sub: qsTr("Play")
+                                sub: qsTr("Table")
                                 detailTip: qsTr(
                                     "6-max Texas Hold’em table: you and five named bots. "
                                     + "Use the HUD to act; you can sit out and watch bots. Blinds and pot are centered on the felt.")
@@ -129,7 +129,7 @@ Page {
                             }
                             LobbyNavTile {
                                 bannerSource: "qrc:/assets/images/bots_and_ranges.png"
-                                sub: qsTr("Configure")
+                                sub: qsTr("Setup")
                                 detailTip: qsTr(
                                     "Set stakes ($ SB/BB, min open) and table cap (BB). Wallet and stacks are $; strategy buy-in is in BB. "
                                     + "Pick archetypes, edit 13×13 grids or paste text ranges; presets include strategy notes.")

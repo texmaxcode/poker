@@ -42,6 +42,8 @@ Page {
     property bool _syncingSlowBots: true
     /// Same pattern for `winningHandSecSpin` vs `pokerGame.winningHandShowMs`.
     property bool _syncingWinningHandSec: true
+    /// `botDecisionDelaySecSpin` vs `pokerGame.botDecisionDelaySec`.
+    property bool _syncingBotDecisionDelaySec: true
     /// False until first frame after sync so `onCheckedChanged` does not overwrite `interactiveHuman` on startup.
     property bool playAsBotUserInputEnabled: false
     /// Collapsed: “Range as text” only; expanded: compact row (textarea + Apply/Full), then hide after apply.
@@ -236,6 +238,9 @@ Page {
         setup._syncingWinningHandSec = true
         winningHandSecSpin.value = Math.max(1, Math.min(60, Math.round(pokerGame.winningHandShowMs / 1000)))
         setup._syncingWinningHandSec = false
+        setup._syncingBotDecisionDelaySec = true
+        botDecisionDelaySecSpin.value = Math.max(1, Math.min(30, pokerGame.botDecisionDelaySec))
+        setup._syncingBotDecisionDelaySec = false
         syncPlayAsBotCheckboxFromEngine()
         /// After sync’s deferred `_syncing` clear; avoids `toggled` applying stale engine state on startup.
         Qt.callLater(function () {
@@ -257,6 +262,9 @@ Page {
             setup._syncingWinningHandSec = true
             winningHandSecSpin.value = Math.max(1, Math.min(60, Math.round(pokerGame.winningHandShowMs / 1000)))
             setup._syncingWinningHandSec = false
+            setup._syncingBotDecisionDelaySec = true
+            botDecisionDelaySecSpin.value = Math.max(1, Math.min(30, pokerGame.botDecisionDelaySec))
+            setup._syncingBotDecisionDelaySec = false
             totalBankSpin.refreshFromGame()
             seatBankSpin.refreshFromGame()
             syncPlayAsBotCheckboxFromEngine()
@@ -289,6 +297,15 @@ Page {
             setup._syncingWinningHandSec = true
             winningHandSecSpin.value = Math.max(1, Math.min(60, Math.round(pokerGame.winningHandShowMs / 1000)))
             setup._syncingWinningHandSec = false
+        }
+    }
+
+    Connections {
+        target: pokerGame
+        function onBotDecisionDelaySecChanged() {
+            setup._syncingBotDecisionDelaySec = true
+            botDecisionDelaySecSpin.value = Math.max(1, Math.min(30, pokerGame.botDecisionDelaySec))
+            setup._syncingBotDecisionDelaySec = false
         }
     }
 
@@ -532,17 +549,46 @@ Page {
                         }
                     }
 
-                    ThemedCheckBox {
-                        id: slowBotsCheck
-                        text: qsTr("Slow down bots!")
-                        /// Use `onCheckedChanged` (fires after `checked` updates). `toggled` / stale `checked`
-                        /// in `onToggled` can race and write the wrong value; early emissions before sync must
-                        /// be ignored via `_syncingSlowBots` (defaults true until `Component.onCompleted`).
-                        onCheckedChanged: {
-                            if (setup._syncingSlowBots)
-                                return
-                            pokerGame.setBotSlowActions(slowBotsCheck.checked)
-                            setup.persistSave()
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        ThemedCheckBox {
+                            id: slowBotsCheck
+                            text: qsTr("Slow down bots!")
+                            /// Use `onCheckedChanged` (fires after `checked` updates). `toggled` / stale `checked`
+                            /// in `onToggled` can race and write the wrong value; early emissions before sync must
+                            /// be ignored via `_syncingSlowBots` (defaults true until `Component.onCompleted`).
+                            onCheckedChanged: {
+                                if (setup._syncingSlowBots)
+                                    return
+                                pokerGame.setBotSlowActions(slowBotsCheck.checked)
+                                setup.persistSave()
+                            }
+                        }
+
+                        SpinBox {
+                            id: botDecisionDelaySecSpin
+                            from: 1
+                            to: 30
+                            stepSize: 1
+                            editable: true
+                            Layout.preferredWidth: 104
+                            Layout.maximumWidth: 120
+                            onValueChanged: {
+                                if (setup._syncingBotDecisionDelaySec)
+                                    return
+                                pokerGame.setBotDecisionDelaySec(value)
+                                setup.persistSave()
+                            }
+                        }
+
+                        Label {
+                            text: qsTr("seconds between bot actions")
+                            font.pixelSize: Theme.trainerCaptionPx
+                            color: Theme.textSecondary
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
                         }
                     }
                 }
@@ -814,6 +860,16 @@ Page {
                             if (!setup.playAsBotUserInputEnabled || setup._syncingPlayAsBot)
                                 return
                             const playAsBotOn = (checked !== undefined) ? checked : playAsBotCheck.checked
+                            /// Block only with zero bankroll — engine no longer invents chips; short-stack autoplay is OK.
+                            if (playAsBotOn && pokerGame.seatBankrollTotal(0) < 1) {
+                                setup._syncingPlayAsBot = true
+                                playAsBotCheck.checked = false
+                                setup._syncingPlayAsBot = false
+                                const w = ApplicationWindow.window
+                                if (w && typeof w.showAppToast === "function")
+                                    w.showAppToast(qsTr("Add chips to your bankroll above before autoplay."))
+                                return
+                            }
                             pokerGame.setInteractiveHuman(!playAsBotOn)
                             setup.persistSave()
                             setup.refreshRangeGrids()

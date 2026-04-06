@@ -77,23 +77,45 @@ Item {
                 table_container.potHudScale * 0.92)))
         anchors.centerIn: parent
 
-        /// Solid trainer-style pill; `potBoxScale` keeps it nearer the old gradient-strip size.
+        /// Stakes as section label above the pill; pill holds **one line** (Pot $N) only.
         Column {
             id: potBlindsHud
             anchors.horizontalCenter: parent.horizontalCenter
             readonly property real _pw: table_container.width
-            readonly property real _potPadW: Math.max(14, Math.round(18 * table_container.potBoxScale))
-            readonly property real _potPadH: Math.max(6, Math.round(8 * table_container.potBoxScale))
+            readonly property real _potPadW: Math.max(20, Math.round(26 * table_container.potBoxScale))
+            readonly property real _potPadH: Math.max(9, Math.round(12 * table_container.potBoxScale))
+            /// Insets for the stakes section label (top-left within the pot column).
+            readonly property real _stakesMarginL: Math.max(4, Math.round(6 * table_container.potBoxScale))
+            readonly property real _stakesMarginR: Math.max(4, Math.round(6 * table_container.potBoxScale))
+            readonly property real _stakesMarginT: Math.max(2, Math.round(4 * table_container.potBoxScale))
             /// Fixed width so the pill does not grow/shrink when the pot amount or stakes text changes.
             readonly property real _potPillW: Math.round(Math.min(300, Math.max(200, _pw * 0.42)))
             width: Math.min(_potPillW + 8, Math.min(_pw * 0.72, _pw - 24))
-            spacing: Math.max(2, Math.round(4 * table_container.potBoxScale))
+            spacing: Math.max(6, Math.round(8 * table_container.potBoxScale))
+
+            Text {
+                id: stakesSectionLabel
+                width: potBlindsHud.width - potBlindsHud._stakesMarginL - potBlindsHud._stakesMarginR
+                x: potBlindsHud._stakesMarginL
+                topPadding: potBlindsHud._stakesMarginT
+                text: qsTr("Pot for $%1 / $%2 game").arg(table_container.smallBlind).arg(table_container.bigBlind)
+                wrapMode: Text.NoWrap
+                elide: Text.ElideRight
+                color: Theme.sectionTitle
+                font.family: Theme.fontFamilyDisplay
+                font.bold: true
+                font.capitalization: Font.AllUppercase
+                font.letterSpacing: 0.5
+                font.pixelSize: Math.max(7, Math.round((Theme.trainerCaptionPx - 4)
+                        * Math.max(0.72, table_container.potBoxScale)))
+                horizontalAlignment: Text.AlignLeft
+            }
 
             Rectangle {
                 id: potTrainerBox
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: potBlindsHud._potPillW
-                height: potStackColumn.implicitHeight + potBlindsHud._potPadH
+                height: potLineText.implicitHeight + potBlindsHud._potPadH
                 radius: Math.max(5, Math.round(7 * Math.min(1.0, table_container.potBoxScale + 0.15)))
                 color: Theme.hudBg1
                 border.color: Theme.hudBorder
@@ -107,41 +129,24 @@ Item {
                     yScale: 1
                 }
 
-                Column {
-                    id: potStackColumn
-                    anchors.centerIn: parent
-                    width: potTrainerBox.width - potBlindsHud._potPadW
-                    /// Section title (stakes) then pot — gap matches trainer panel title/body.
-                    spacing: Math.max(4, Math.round(6 * table_container.potBoxScale))
-
-                    Text {
-                        id: stakesSectionLabel
-                        text: qsTr("$%1/$%2").arg(table_container.smallBlind).arg(table_container.bigBlind)
-                        wrapMode: Text.NoWrap
-                        width: parent.width
-                        elide: Text.ElideRight
-                        color: Theme.sectionTitle
-                        font.family: Theme.fontFamilyDisplay
-                        font.bold: true
-                        font.capitalization: Font.AllUppercase
-                        font.letterSpacing: 0.5
-                        font.pixelSize: Math.max(7, Math.round((Theme.trainerCaptionPx - 4)
-                                * Math.max(0.72, table_container.potBoxScale)))
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    Text {
-                        id: potLineText
-                        text: qsTr("Pot $%1").arg(Math.round(table_container.potShown))
-                        wrapMode: Text.NoWrap
-                        width: parent.width
-                        elide: Text.ElideRight
-                        color: Theme.gold
-                        font.family: Theme.fontFamilyDisplay
-                        font.bold: true
-                        font.pixelSize: Math.max(11, Math.round(Theme.uiPotMainPt * table_container.potBoxScale))
-                        horizontalAlignment: Text.AlignHCenter
-                    }
+                Text {
+                    id: potLineText
+                    anchors.fill: parent
+                    anchors.leftMargin: Math.round(potBlindsHud._potPadW * 0.5)
+                    anchors.rightMargin: Math.round(potBlindsHud._potPadW * 0.5)
+                    anchors.topMargin: Math.round(potBlindsHud._potPadH * 0.5)
+                    anchors.bottomMargin: Math.round(potBlindsHud._potPadH * 0.5)
+                    text: qsTr("$%1").arg(Math.round(table_container.potShown))
+                    wrapMode: Text.NoWrap
+                    maximumLineCount: 1
+                    clip: true
+                    color: Theme.gold
+                    font.family: Theme.fontFamilyDisplay
+                    font.bold: true
+                    font.pixelSize: Math.max(11, Math.round(Theme.uiPotMainPt * table_container.potBoxScale))
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
                 }
             }
 

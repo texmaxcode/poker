@@ -42,6 +42,12 @@ public:
     void apply_seat_buy_ins_to_table(bool resetBankrollSession = true);
     void try_auto_rebuys_for_busted_bots();
     bool apply_buy_back_in_internal(int seat);
+    /// Move all on-table chips to `seat_wallet_` (seat 1–5: bot toggled off in Setup).
+    void cash_out_seat_off_table(int seat);
+    /// Top up wallet if needed, then put `effectiveSeatBuyInChips` on the felt when stack is 0 (bot toggled on).
+    void apply_bot_seat_rejoin_buy_in(int seat);
+    void mark_pending_cash_out_after_hand(int seat);
+    void flush_pending_cash_outs_after_hand();
     /// Rewrites `seat_buy_in_` / `seat_wallet_` from current stacks (and caps stack to `maxBuyInChips`)
     /// so `savePersistedSettings` preserves winnings even when off-table wallet was non-zero.
     void sync_seat_buy_in_from_table_when_wallet_empty();
@@ -54,6 +60,8 @@ private:
     std::array<int, kMaxPlayers> seat_buy_in_{};
     std::array<int, kMaxPlayers> seat_wallet_{};
     std::array<bool, kMaxPlayers> seat_participating_{};
+    /// Bot seat turned off mid-hand: cash out stack at end of hand (before next deal).
+    std::array<bool, kMaxPlayers> pending_cash_out_after_hand_{};
     /// `-1` = none; else total chips to apply for that seat (`setSeatBankrollTotal` while `in_progress`).
     std::array<int, kMaxPlayers> pending_bankroll_total_{};
     bool pending_seat_buyins_apply_ = false;

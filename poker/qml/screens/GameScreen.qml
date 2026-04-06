@@ -66,6 +66,8 @@ Page {
     property var seatParticipating: [true, true, true, true, true, true]
     property bool humanCanBuyBackIn: false
     property int buyInChips: 100
+    /// Matches `game::botDecisionDelaySec` / Setup “Slow down bots” seconds — bot seat timer UI stays in sync with `bot_action_pause`.
+    property int botDecisionDelaySec: pokerGameAccess ? pokerGameAccess.botDecisionDelaySec : 2
 
     signal buttonClicked(string button)
 
@@ -260,7 +262,12 @@ Page {
                                           && game_screen.seatC1[index] !== ""))
                     isActing: game_screen.actingSeat === index
                     isHumanSeat: index === 0
+                    interactiveHuman: index === 0
+                            && (game_screen.pokerGameAccess
+                                ? game_screen.pokerGameAccess.interactiveHuman
+                                : true)
                     decisionSecondsLeft: game_screen.decisionSecondsLeft
+                    botDecisionDelaySec: game_screen.botDecisionDelaySec
                     foldedDim: (game_screen.seatInHand[index] === false)
                     /// "WATCHING" only when sitting out to observe; not when autoplaying your strategy (Play as bot).
                     humanWatching: index === 0 && game_screen.humanSittingOut
