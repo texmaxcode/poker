@@ -71,6 +71,19 @@ ApplicationWindow {
         anchors.fill: parent
     }
 
+    /// Shown from C++ (`poker_version.h` / git at configure time): e.g. "0.1+a1b2c3d4".
+    Label {
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.margins: 10
+        z: 1000
+        text: typeof appVersion !== "undefined" && appVersion.length > 0 ? appVersion : ""
+        font.family: Theme.fontFamilyMono
+        font.pointSize: 9
+        opacity: 0.4
+        color: Theme.textMuted
+    }
+
     font.family: Theme.fontFamilyUi
     font.pointSize: Theme.uiBasePt
 

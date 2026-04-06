@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "poker",
+  "version": "0.1.0",
+  "description": "Texas Hold'em Gym — Qt 6 desktop app (SQLite3 via CMake FindSQLite3 on Windows)",
+  "dependencies": ["sqlite3"]
+}

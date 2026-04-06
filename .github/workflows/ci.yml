@@ -1,32 +1,153 @@
+# Linux (build + tests), Windows (ZIP + windeployqt), macOS (DMG + macdeployqt).
+# Windows/macOS jobs run only on main and stage (see docs/ci.md).
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  QTFRAMEWORK_BYPASS_LICENSE_CHECK: "1"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-linux:
+    name: Linux (Ninja + tests)
     runs-on: ubuntu-24.04
-    # Opt in to Node 24 for JS actions until upstream actions ship Node 24 runtimes
-    # (see https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.10.*'
+          version: "6.10.*"
           target: desktop
           arch: linux_gcc_64
-          # Do not use `modules` for qtbase/qtdeclarative — that input is for *add-on* modules (qtcharts, …).
-          # Default aqt install includes qtbase + qtdeclarative (Quick/QML).
       - name: Install deps
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-test-dev libsqlite3-dev ninja-build pkg-config
       - name: Configure
-        env:
-          QTFRAMEWORK_BYPASS_LICENSE_CHECK: "1"
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
       - name: Build
         run: cmake --build build -j$(nproc)
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  windows:
+    name: Windows (MSVC + vcpkg + windeployqt)
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'stage')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git "$env:GITHUB_WORKSPACE\vcpkg"
+          & "$env:GITHUB_WORKSPACE\vcpkg\bootstrap-vcpkg.bat"
+
+      - name: vcpkg install (sqlite3 from manifest)
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+        run: |
+          & "$env:VCPKG_ROOT\vcpkg.exe" install --triplet x64-windows
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.10.*"
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+
+      - name: Configure & build
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          CMAKE_PREFIX_PATH: ${{ env.QT_ROOT_DIR }}
+        shell: pwsh
+        run: |
+          $tc = Join-Path $env:VCPKG_ROOT "scripts\buildsystems\vcpkg.cmake"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$tc" "-DCMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH" -DBUILD_TESTING:BOOL=OFF
+          cmake --build build --config Release --parallel
+
+      - name: Stage, windeployqt, ZIP
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          CMAKE_PREFIX_PATH: ${{ env.QT_ROOT_DIR }}
+        shell: pwsh
+        run: |
+          $script = Join-Path $env:GITHUB_WORKSPACE "poker\packaging\windows\build-release.ps1"
+          $build = Join-Path $env:GITHUB_WORKSPACE "build"
+          $stage = Join-Path $env:GITHUB_WORKSPACE "dist\windows"
+          if (-not (Test-Path -LiteralPath $script)) { throw "Script not found: $script" }
+          & $script -BuildDir $build -StagingDir $stage -NoConfigure
+
+      - name: Upload artifact (ZIP + folder)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TexasHoldemGym-Windows-x64
+          path: |
+            TexasHoldemGym-Windows-x64*.zip
+            dist/windows/
+
+  macos:
+    name: macOS (Ninja + macdeployqt DMG)
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'stage')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install sqlite ninja
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.10.*"
+          host: mac
+          target: desktop
+          arch: clang_64
+
+      - name: Configure & build
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.QT_ROOT_DIR }}
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
+            -DSQLite3_ROOT="$(brew --prefix sqlite)" \
+            -DBUILD_TESTING:BOOL=OFF
+          cmake --build build -j"$(sysctl -n hw.ncpu)"
+
+      - name: macdeployqt & DMG
+        env:
+          QT_ROOT_DIR: ${{ env.QT_ROOT_DIR }}
+        run: |
+          set -euo pipefail
+          QML="${GITHUB_WORKSPACE}/poker/qml"
+          QT_BIN="${QT_ROOT_DIR}/bin"
+          cd "${GITHUB_WORKSPACE}/build/poker"
+          "${QT_BIN}/macdeployqt" Poker.app -qmldir="${QML}" -dmg
+          mkdir -p "${GITHUB_WORKSPACE}/dist/macos"
+          shopt -s nullglob
+          dmgs=( *.dmg )
+          shopt -u nullglob
+          if [ "${#dmgs[@]}" -gt 0 ]; then
+            CAND=$(ls -t "${dmgs[@]}" | head -1)
+            GITHASH=$(git -C "${GITHUB_WORKSPACE}" rev-parse --short=8 HEAD)
+            cp -f "$CAND" "${GITHUB_WORKSPACE}/dist/macos/TexasHoldemGym-macOS-$(uname -m)-${GITHASH}.dmg"
+            echo "DMG=${GITHUB_WORKSPACE}/dist/macos/TexasHoldemGym-macOS-$(uname -m)-${GITHASH}.dmg"
+          else
+            echo "::warning::No DMG produced; Poker.app is at build/poker/Poker.app"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TexasHoldemGym-macOS-${{ runner.arch }}
+          path: |
+            dist/macos/*.dmg
+            build/poker/Poker.app

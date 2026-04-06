@@ -16,13 +16,15 @@
 #include "toy_nash_solver.hpp"
 #include "training_store.hpp"
 #include "training_controller.hpp"
+#include "poker_version.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName(QStringLiteral("TexasHoldemGym"));
     QCoreApplication::setApplicationName(QStringLiteral("Texas Hold'em Gym"));
+    QCoreApplication::setApplicationVersion(QString::fromUtf8(POKER_APP_VERSION));
 
-    // Prefer Wayland when present so the bundled xcb plugin (needs distro libxcb-cursor on X11) is avoided.
+    // Prefer Wayland when present so the bundled xcb plugin (needs distro libxcb-cursor on X11) is avoided
     if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
     {
         if (!qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY") || qgetenv("XDG_SESSION_TYPE") == "wayland")
@@ -101,6 +103,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyDisplay"), appFontFamilyDisplay);
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyButton"), appFontFamilyButton);
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyMono"), appFontFamilyMono);
+    engine.rootContext()->setContextProperty(QStringLiteral("appVersion"), QCoreApplication::applicationVersion());
     engine.rootContext()->setContextProperty(QStringLiteral("pokerGame"), &poker_game);
     engine.rootContext()->setContextProperty(QStringLiteral("pokerSolver"), &poker_solver);
     engine.rootContext()->setContextProperty(QStringLiteral("toyNashSolver"), &toy_nash_solver);

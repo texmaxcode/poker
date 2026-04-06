@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.texasholdemgym</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <name>Texas Hold'em Gym</name>
+  <summary>Practice Texas Hold'em with drills, bots, and solvers</summary>
+  <description>
+    <p>
+      Texas Hold'em Gym is a desktop training application for No-Limit Texas Hold'em.
+      It includes drills, range tools, statistics, and solver-backed study modes.
+    </p>
+    <p>Build git revision: @POKER_GIT_HASH@</p>
+  </description>
+  <url type="homepage">https://snapcraft.io/</url>
+  <launchable type="desktop-id">texas-holdem-gym.desktop</launchable>
+  <releases>
+    <release version="@PROJECT_VERSION@" date="2026-04-06"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+  <developer id="io.github.texasholdemgym">
+    <name>Texas Hold'em Gym</name>
+  </developer>
+</component>

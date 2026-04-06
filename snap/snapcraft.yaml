@@ -1,0 +1,47 @@
+name: texas-holdem-gym
+title: Texas Hold'em Gym
+base: core24
+# Version is set by parts.poker (adopt-info) from CMake project() + git short hash.
+license: LicenseRef-proprietary
+summary: Practice Texas Hold'em with drills, bots, and solvers
+description: |
+  Texas Hold'em Gym is a desktop training app for No-Limit Texas Hold'em.
+  Work through drills, review ranges, and analyze spots with solvers.
+
+grade: stable
+confinement: strict
+compression: lzo
+
+adopt-info: poker
+
+architectures:
+  - build-on: amd64
+
+icon: poker/qml/assets/images/logo.png
+
+apps:
+  texas-holdem-gym:
+    command: usr/bin/Poker
+    extensions: [kde-neon-6]
+    common-id: io.github.texasholdemgym
+    desktop: usr/share/applications/texas-holdem-gym.desktop
+
+parts:
+  poker:
+    plugin: cmake
+    source: .
+    override-pull: |
+      craftctl default
+      _root="${CRAFT_PROJECT_DIR}"
+      _ver="$(grep '^project(' "${_root}/CMakeLists.txt" | head -1 | sed -E 's/.*VERSION ([0-9.]+).*/\1/')"
+      if [ -z "${_ver}" ]; then _ver="0.1"; fi
+      _h="$(git -C "${_root}" rev-parse --short=8 HEAD 2>/dev/null || echo unknown)"
+      craftctl set version="${_ver}+${_h}"
+    cmake-parameters:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=OFF
+    build-packages:
+      - pkg-config
+      - libsqlite3-dev
+    parse-info:
+      - usr/share/metainfo/io.github.texasholdemgym.metainfo.xml

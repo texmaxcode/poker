@@ -1,4 +1,12 @@
 build/**
+infra/cdk.out/
+infra/node_modules/
+# Snapcraft (snap/snapcraft.yaml; build dirs at repo root)
+/parts/
+/prime/
+/stage/
+*.snap
+.snapcraft/
 .vscode/**
 *.data
 
@@ -32,7 +40,9 @@ ui_*.h
 *.qmlc
 *.jsc
 Makefile*
+# Ignore stray *build-* temp files, but not packaging scripts (build-release.*, build-appimage.sh, …)
 *build-*
+!poker/packaging/**/*
 *.qm
 *.prl
 
