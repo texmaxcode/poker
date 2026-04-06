@@ -17,6 +17,10 @@ Item {
     property var wCall: []
     property var wRaise: []
     property var wBet: []
+    /// When `false`, `wCall` / `wRaise` / `wBet` (and optional `wFold`) are controlled by the parent instead of `pokerGame`.
+    property bool bindToGame: true
+    /// Optional fold weights (e.g. bundled JSON) for tooltips when `bindToGame` is false and `composite` is true.
+    property var wFold: []
     /// 0 = call, 1 = raise, 2 = open (first raise). Used when `composite` and not read-only.
     property int editLayer: 0
     property var rankLabels: ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"]
@@ -162,6 +166,8 @@ Item {
     }
 
     function refreshFromGame() {
+        if (!root.bindToGame)
+            return
         if (!root.composite || typeof pokerGame === "undefined")
             return
         // Clear first so QML always sees a new assignment (avoids stale composite bindings).
@@ -203,14 +209,25 @@ Item {
             root.weights = pokerGame.getRangeGrid(root.seatIndex, 0)
     }
 
-    onSeatIndexChanged: Qt.callLater(refreshFromGame)
-    onCompositeChanged: {
-        if (composite)
+    onSeatIndexChanged: {
+        if (bindToGame)
             Qt.callLater(refreshFromGame)
     }
-    Component.onCompleted: Qt.callLater(refreshFromGame)
+    onCompositeChanged: {
+        if (composite && bindToGame)
+            Qt.callLater(refreshFromGame)
+    }
+    onBindToGameChanged: {
+        if (bindToGame)
+            Qt.callLater(refreshFromGame)
+    }
+    Component.onCompleted: {
+        if (bindToGame)
+            Qt.callLater(refreshFromGame)
+    }
 
     Connections {
+        enabled: root.bindToGame
         target: pokerGame
         function onRangeRevisionChanged() {
             Qt.callLater(refreshFromGame)
@@ -550,6 +567,21 @@ Item {
                         font.pixelSize: Theme.uiRangeGridLegendPx
                         color: Theme.textSecondary
                     }
+                }
+                Label {
+                    visible: root.wFold.length === 169 && root.tipRow >= 0
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: {
+                        if (root.tipRow < 0)
+                            return ""
+                        const idx = root.tipRow * 13 + root.tipCol
+                        const f = (root.wFold.length > idx) ? root.wFold[idx] : 0
+                        return qsTr("Fold %1").arg(Number(f).toFixed(2))
+                    }
+                    font.family: Theme.fontFamilyUi
+                    font.pixelSize: Theme.uiRangeGridLegendPx
+                    color: Theme.textMuted
                 }
             }
         }

@@ -47,6 +47,7 @@ BOOST_AUTO_TEST_CASE(short_big_blind_preflop_level_matches_actual_posts)
   g.setInteractiveHuman(false);
   g.setAutoHandLoop(false);
   g.setBotActionDelayEnabled(false);
+  g.configure(1, 3, 9, 100);
   // Default button 0: SB seat 5, BB seat 4 (see bettingAnchors test).
   g.table[4].stack = 2;
   g.start();
@@ -58,19 +59,21 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_collect_blinds)
 {
   game game;
   BOOST_CHECK(game.players_count() == 6);
+  game.configure(1, 3, 9, 100);
 
   game.collect_blinds();
   BOOST_CHECK_EQUAL(game.pot, 4);
   int sum = 0;
   for (int i = 0; i < 6; ++i)
     sum += game.table[i].stack;
-  BOOST_CHECK_EQUAL(sum + game.pot, 600);
+  BOOST_CHECK_EQUAL(sum + game.pot, 1600);
 }
 
 BOOST_AUTO_TEST_CASE(test_that_game_can_take_bets)
 {
   game game;
   BOOST_CHECK(game.players_count() == 6);
+  game.configure(1, 3, 9, 100);
 
   game.collect_blinds();
   BOOST_CHECK_EQUAL(game.pot, 4);
@@ -79,7 +82,7 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_take_bets)
   int sum = 0;
   for (int i = 0; i < 6; ++i)
     sum += game.table[i].stack;
-  BOOST_CHECK_EQUAL(sum + game.pot, 600);
+  BOOST_CHECK_EQUAL(sum + game.pot, 1600);
 }
 
 BOOST_AUTO_TEST_CASE(test_that_game_can_deal_hold_cards)
@@ -132,10 +135,57 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_deal_river)
   BOOST_CHECK(game.river.rank >= Rank::TWO && game.river.rank <= Rank::ACE);
 }
 
+/// Two seats with $0 on-table stack but funded wallet + buy-in targets must still start (materialize at deal).
+BOOST_AUTO_TEST_CASE(start_applies_buy_ins_before_counting_active_players)
+{
+  game g;
+  g.setInteractiveHuman(true);
+  g.setAutoHandLoop(false);
+  g.setBotActionDelayEnabled(false);
+  g.configure(1, 2, 9, 100);
+  for (int s = 2; s < 6; ++s)
+    g.setSeatParticipating(s, false);
+  g.applySeatBuyInsToStacks();
+  g.setSeatParticipating(1, false);
+  g.applySeatBuyInsToStacks();
+  g.setSeatParticipating(1, true);
+  /// While the bot is off-table, apply human buy-in $0 so the next `apply` does not rematerialize the bot stack.
+  g.setSeatParticipating(1, false);
+  g.setSeatBuyIn(0, 0);
+  g.applySeatBuyInsToStacks();
+  g.setSeatParticipating(1, true);
+  g.setSeatBuyIn(0, 100);
+  g.setSeatBuyIn(1, 100);
+  BOOST_CHECK_EQUAL(g.table[0].stack, 0);
+  BOOST_CHECK_EQUAL(g.table[1].stack, 0);
+  g.start();
+  BOOST_CHECK_GT(g.table[0].stack, 0);
+  BOOST_CHECK_GT(g.table[1].stack, 0);
+}
+
+/// New session with $0 wallet everywhere: buy-in targets still produce stacks so two+ seats can play.
+BOOST_AUTO_TEST_CASE(empty_wallets_still_materialize_stacks_for_configured_buy_ins)
+{
+  game g;
+  g.setInteractiveHuman(false);
+  g.setAutoHandLoop(false);
+  g.setBotActionDelayEnabled(false);
+  g.configure(1, 2, 9, 100);
+  for (int i = 0; i < 6; ++i)
+    g.table[static_cast<size_t>(i)].reset_stack(0);
+  BOOST_CHECK_EQUAL(g.seatWallet(0), 0);
+  g.applySeatBuyInsToStacks();
+  BOOST_CHECK_GT(g.table[0].stack, 0);
+  BOOST_CHECK_GT(g.table[1].stack, 0);
+  g.start();
+  BOOST_CHECK(!g.is_game_in_progress());
+}
+
 BOOST_AUTO_TEST_CASE(test_that_game_can_decide_the_winner)
 {
   game game;
   BOOST_CHECK(game.players_count() == 6);
+  game.configure(1, 3, 9, 100);
 
   game.collect_blinds();
   BOOST_CHECK_EQUAL(game.pot, 4);
@@ -168,7 +218,7 @@ BOOST_AUTO_TEST_CASE(test_that_game_can_decide_the_winner)
   int sum = 0;
   for (int i = 0; i < 6; ++i)
     sum += game.table[i].stack;
-  BOOST_CHECK_EQUAL(sum, 600);
+  BOOST_CHECK_EQUAL(sum, 1600);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

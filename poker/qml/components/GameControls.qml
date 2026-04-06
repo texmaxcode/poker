@@ -139,6 +139,7 @@ Item {
     onPokerGameChanged: refreshEngineHumanInteractive()
 
     Connections {
+        enabled: game_controls.pokerGame !== null
         target: game_controls.pokerGame
         function onInteractiveHumanChanged() {
             game_controls.refreshEngineHumanInteractive()

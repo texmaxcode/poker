@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Theme 1.0
 import PokerUi 1.0
 
-/// Seat bankroll table, leaderboard, and bankroll-over-time chart.
+/// Seat bankroll table, leaderboard (table P/L vs total Δ), and on-table stack chart.
 Page {
     id: statsPage
     padding: 0
@@ -36,6 +36,10 @@ Page {
     property bool statsDataError: false
     readonly property int statsTablePx: 15
     readonly property int statsTableHeaderPx: 12
+    /// Shared numeric column widths for seat bankrolls + leaderboard (scales together).
+    readonly property int statsMoneyColMin: 56
+    readonly property int statsMoneyColPref: 68
+    readonly property int statsMoneyColMax: 102
     readonly property int statsTableTopSlotH: 30
     readonly property int statsTableRowSpacing: 0
     readonly property int statsRowH: 36
@@ -144,7 +148,16 @@ Page {
         bankCanvas.requestPaint()
     }
 
-    function bankrollValueAt(seat, snapIdx) {
+    function tableStackValueAt(seat, snapIdx) {
+        if (snapIdx < 0)
+            return "—"
+        var ser = pokerGame.tableStackSeries(seat)
+        if (ser.length <= snapIdx)
+            return "—"
+        return "$" + ser[snapIdx]
+    }
+
+    function totalBankrollValueAt(seat, snapIdx) {
         if (snapIdx < 0)
             return "—"
         var ser = pokerGame.bankrollSeries(seat)
@@ -241,9 +254,9 @@ Page {
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
-                                    Layout.minimumWidth: 56
-                                    Layout.preferredWidth: 68
-                                    Layout.maximumWidth: 102
+                                    Layout.minimumWidth: statsPage.statsMoneyColMin
+                                    Layout.preferredWidth: statsPage.statsMoneyColPref
+                                    Layout.maximumWidth: statsPage.statsMoneyColMax
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
@@ -253,9 +266,9 @@ Page {
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
-                                    Layout.minimumWidth: 56
-                                    Layout.preferredWidth: 68
-                                    Layout.maximumWidth: 102
+                                    Layout.minimumWidth: statsPage.statsMoneyColMin
+                                    Layout.preferredWidth: statsPage.statsMoneyColPref
+                                    Layout.maximumWidth: statsPage.statsMoneyColMax
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
@@ -265,9 +278,9 @@ Page {
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
-                                    Layout.minimumWidth: 56
-                                    Layout.preferredWidth: 72
-                                    Layout.maximumWidth: 108
+                                    Layout.minimumWidth: statsPage.statsMoneyColMin
+                                    Layout.preferredWidth: statsPage.statsMoneyColPref + 4
+                                    Layout.maximumWidth: statsPage.statsMoneyColMax + 6
                                     horizontalAlignment: Text.AlignRight
                                 }
                             }
@@ -320,27 +333,27 @@ Page {
                                         }
                                         Label {
                                             text: modelData.stack !== undefined ? ("$" + modelData.stack) : "—"
-                                            Layout.minimumWidth: 56
-                                            Layout.preferredWidth: 68
-                                            Layout.maximumWidth: 102
+                                            Layout.minimumWidth: statsPage.statsMoneyColMin
+                                            Layout.preferredWidth: statsPage.statsMoneyColPref
+                                            Layout.maximumWidth: statsPage.statsMoneyColMax
                                             color: Theme.textSecondary
                                             font.pixelSize: statsPage.statsTablePx
                                             horizontalAlignment: Text.AlignRight
                                         }
                                         Label {
                                             text: modelData.wallet !== undefined ? ("$" + modelData.wallet) : "—"
-                                            Layout.minimumWidth: 56
-                                            Layout.preferredWidth: 68
-                                            Layout.maximumWidth: 102
+                                            Layout.minimumWidth: statsPage.statsMoneyColMin
+                                            Layout.preferredWidth: statsPage.statsMoneyColPref
+                                            Layout.maximumWidth: statsPage.statsMoneyColMax
                                             color: Theme.textSecondary
                                             font.pixelSize: statsPage.statsTablePx
                                             horizontalAlignment: Text.AlignRight
                                         }
                                         Label {
                                             text: modelData.total !== undefined ? ("$" + modelData.total) : "—"
-                                            Layout.minimumWidth: 56
-                                            Layout.preferredWidth: 72
-                                            Layout.maximumWidth: 108
+                                            Layout.minimumWidth: statsPage.statsMoneyColMin
+                                            Layout.preferredWidth: statsPage.statsMoneyColPref + 4
+                                            Layout.maximumWidth: statsPage.statsMoneyColMax + 6
                                             color: Theme.gold
                                             font.weight: Font.Bold
                                             font.pixelSize: statsPage.statsTablePx
@@ -404,17 +417,33 @@ Page {
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
-                                    Layout.preferredWidth: 72
+                                    Layout.minimumWidth: statsPage.statsMoneyColMin
+                                    Layout.preferredWidth: statsPage.statsMoneyColPref + 4
+                                    Layout.maximumWidth: statsPage.statsMoneyColMax + 6
                                     horizontalAlignment: Text.AlignRight
                                 }
                                 Label {
-                                    text: qsTr("P/L ")
+                                    text: qsTr("P/L")
                                     font.family: Theme.fontFamilyDisplay
                                     font.pixelSize: statsPage.statsTableHeaderPx
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.2
                                     color: Theme.textMuted
-                                    Layout.preferredWidth: 64
+                                    Layout.minimumWidth: statsPage.statsMoneyColMin
+                                    Layout.preferredWidth: statsPage.statsMoneyColPref
+                                    Layout.maximumWidth: statsPage.statsMoneyColMax
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                                Label {
+                                    text: qsTr("Δ TOTAL")
+                                    font.family: Theme.fontFamilyDisplay
+                                    font.pixelSize: statsPage.statsTableHeaderPx
+                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: 1.2
+                                    color: Theme.textMuted
+                                    Layout.minimumWidth: statsPage.statsMoneyColMin
+                                    Layout.preferredWidth: statsPage.statsMoneyColPref
+                                    Layout.maximumWidth: statsPage.statsMoneyColMax
                                     horizontalAlignment: Text.AlignRight
                                 }
                             }
@@ -477,7 +506,9 @@ Page {
                                                 var t = modelData.total !== undefined ? modelData.total : modelData.stack
                                                 return t !== undefined ? ("$" + t) : "—"
                                             })()
-                                            Layout.preferredWidth: 72
+                                            Layout.minimumWidth: statsPage.statsMoneyColMin
+                                            Layout.preferredWidth: statsPage.statsMoneyColPref + 4
+                                            Layout.maximumWidth: statsPage.statsMoneyColMax + 6
                                             color: Theme.textSecondary
                                             font.pixelSize: statsPage.statsTablePx
                                             horizontalAlignment: Text.AlignRight
@@ -490,10 +521,30 @@ Page {
                                                 p = Number(p)
                                                 return (p >= 0 ? "+" : "") + p
                                             })()
-                                            Layout.preferredWidth: 64
+                                            Layout.minimumWidth: statsPage.statsMoneyColMin
+                                            Layout.preferredWidth: statsPage.statsMoneyColPref
+                                            Layout.maximumWidth: statsPage.statsMoneyColMax
                                             color: modelData.profit === undefined || isNaN(Number(modelData.profit))
                                                     ? Theme.textMuted
                                                     : (Number(modelData.profit) >= 0 ? Theme.profitUp : Theme.profitDown)
+                                            font.pixelSize: statsPage.statsTablePx
+                                            font.weight: Font.DemiBold
+                                            horizontalAlignment: Text.AlignRight
+                                        }
+                                        Label {
+                                            text: (function () {
+                                                var p = modelData.totalDelta
+                                                if (p === undefined || isNaN(Number(p)))
+                                                    return "—"
+                                                p = Number(p)
+                                                return (p >= 0 ? "+" : "") + p
+                                            })()
+                                            Layout.minimumWidth: statsPage.statsMoneyColMin
+                                            Layout.preferredWidth: statsPage.statsMoneyColPref
+                                            Layout.maximumWidth: statsPage.statsMoneyColMax
+                                            color: modelData.totalDelta === undefined || isNaN(Number(modelData.totalDelta))
+                                                    ? Theme.textMuted
+                                                    : (Number(modelData.totalDelta) >= 0 ? Theme.profitUp : Theme.profitDown)
                                             font.pixelSize: statsPage.statsTablePx
                                             font.weight: Font.DemiBold
                                             horizontalAlignment: Text.AlignRight
@@ -507,7 +558,7 @@ Page {
 
             ThemedPanel {
                 Layout.fillWidth: true
-                panelTitle: qsTr("Bankroll over time")
+                panelTitle: qsTr("On-table chips over time")
                 panelPadding: statsPage.statsPanelPadding
 
                 ColumnLayout {
@@ -553,7 +604,7 @@ Page {
                             Label {
                                 anchors.centerIn: parent
                                 visible: pokerGame.bankrollSnapshotCount() < 1
-                                text: qsTr("No data yet — play a hand to see your bankroll chart.")
+                                text: qsTr("No data yet — play a hand to see on-table chips over time.")
                                 color: Theme.textMuted
                                 font.pixelSize: Theme.trainerBodyPx
                             }
@@ -580,7 +631,7 @@ Page {
                                     var maxY = Number.NEGATIVE_INFINITY
                                     var s
                                     for (s = 0; s < 6; s++) {
-                                        var ser = pokerGame.bankrollSeries(s)
+                                        var ser = pokerGame.tableStackSeries(s)
                                         for (var j = 0; j < ser.length; j++) {
                                             var v = Number(ser[j])
                                             if (v < minY)
@@ -677,7 +728,7 @@ Page {
 
                                     var bubbleR = nSnap > 24 ? 3.2 : (nSnap > 12 ? 3.8 : 4.5)
                                     for (s = 0; s < 6; s++) {
-                                        ser = pokerGame.bankrollSeries(s)
+                                        ser = pokerGame.tableStackSeries(s)
                                         if (ser.length < 1)
                                             continue
                                         var col = statsPage.lineColors[s]
@@ -723,7 +774,7 @@ Page {
                                         ctx.setLineDash([])
                                         var hoverR = bubbleR + 2
                                         for (s = 0; s < 6; s++) {
-                                            ser = pokerGame.bankrollSeries(s)
+                                            ser = pokerGame.tableStackSeries(s)
                                             if (ser.length <= hi)
                                                 continue
                                             var cx = xAt(hi)
@@ -829,19 +880,27 @@ Page {
                                                 }
                                                 ColumnLayout {
                                                     spacing: 0
-                                    Label {
-                                        text: botNames.displayName(index)
-                                        font.family: Theme.fontFamilyButton
-                                        font.pixelSize: Theme.trainerCaptionPx
-                                        font.weight: Font.Bold
-                                        color: Theme.colorForSeat(index)
-                                    }
+                                                    Label {
+                                                        text: botNames.displayName(index)
+                                                        font.family: Theme.fontFamilyButton
+                                                        font.pixelSize: Theme.trainerCaptionPx
+                                                        font.weight: Font.Bold
+                                                        color: Theme.colorForSeat(index)
+                                                    }
                                                     Label {
                                                         font.pixelSize: Theme.trainerCaptionPx + 1
                                                         font.bold: true
                                                         color: Theme.textPrimary
-                                                        text: statsPage.bankrollValueAt(index,
+                                                        text: statsPage.tableStackValueAt(index,
                                                                 statsPage.chartHoverIndex)
+                                                    }
+                                                    Label {
+                                                        font.pixelSize: Theme.trainerCaptionPx
+                                                        font.bold: false
+                                                        color: Theme.textSecondary
+                                                        text: qsTr("Total %1").arg(
+                                                            statsPage.totalBankrollValueAt(index,
+                                                                    statsPage.chartHoverIndex))
                                                     }
                                                 }
                                             }
@@ -855,7 +914,7 @@ Page {
                     RowLayout {
                         spacing: Theme.uiGroupInnerSpacing
                         ResetButton {
-                            text: qsTr("Reset chart & profit baseline")
+                            text: qsTr("Reset chart & session baselines")
                             onClicked: {
                                 pokerGame.resetBankrollSession()
                                 statsPage.refreshChartData()

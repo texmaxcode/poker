@@ -676,7 +676,7 @@ Page {
                         }
                         SpinBox {
                             id: totalBankSpin
-                            from: 1
+                            from: 0
                             to: 2000000000
                             stepSize: 1
                             editable: true
@@ -689,7 +689,7 @@ Page {
 
                             function refreshFromGame() {
                                 _applyingFromGame = true
-                                value = Math.max(1, pokerGame.seatBankrollTotal(setup.selectedSeat))
+                                value = Math.max(0, pokerGame.seatBankrollTotal(setup.selectedSeat))
                                 _applyingFromGame = false
                             }
 
@@ -725,7 +725,7 @@ Page {
                         SpinBox {
                             id: seatBankSpin
                             visible: setup.selectedSeat === 0 && !playAsBotCheck.checked
-                            from: 1
+                            from: 0
                             to: Math.max(1, maxTableBbSpin.value * bbSpin.value)
                             stepSize: 1
                             editable: true

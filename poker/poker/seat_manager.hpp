@@ -44,8 +44,6 @@ public:
     bool apply_buy_back_in_internal(int seat);
     /// Move all on-table chips to `seat_wallet_` (seat 1–5: bot toggled off in Setup).
     void cash_out_seat_off_table(int seat);
-    /// Top up wallet if needed, then put `effectiveSeatBuyInChips` on the felt when stack is 0 (bot toggled on).
-    void apply_bot_seat_rejoin_buy_in(int seat);
     void mark_pending_cash_out_after_hand(int seat);
     void flush_pending_cash_outs_after_hand();
     /// Rewrites `seat_buy_in_` / `seat_wallet_` from current stacks (and caps stack to `maxBuyInChips`)

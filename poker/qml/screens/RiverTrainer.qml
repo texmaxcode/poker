@@ -31,6 +31,7 @@ Page {
     property bool _returningFromHidden: false
     property bool _drillSurfaceShown: false
     property bool assetLoadFailed: false
+    property bool _drillStarted: false
     readonly property real flopSpotPotBb: 5.5
     /// $2 BB → chip pot for display (matches ~5.5 bb spot).
     readonly property int trainerPotChips: Math.round(page.flopSpotPotBb * 2)
@@ -178,6 +179,11 @@ Page {
             return
         }
         _drillSurfaceShown = true
+        if (!page.assetLoadFailed && !page._drillStarted) {
+            page._drillStarted = true
+            next()
+            return
+        }
         if (_returningFromHidden) {
             _returningFromHidden = false
             restartDrillAfterReturn()
@@ -204,7 +210,6 @@ Page {
             return
         }
         trainer.startRiverDrill("srp_btn_bb")
-        next()
     }
 
     function next() {
@@ -378,16 +383,7 @@ Page {
                         anchors.fill: parent
                         anchors.margins: 2
 
-                        readonly property int seatReserve: 300
-                        readonly property real seatScale: {
-                            var h = drillPanel.height
-                            var w = drillArea.width
-                            if (h <= 0 || w <= 0)
-                                return 1.0
-                            var fromH = Math.min(1.0, Math.max(0.48, (h - seatReserve) / 300))
-                            var fromW = Math.min(1.0, Math.max(0.48, (w - 16) / 232))
-                            return Math.min(fromH, fromW)
-                        }
+                        readonly property real tableScale: Theme.tableScaleForViewport(drillArea.width, drillArea.height)
 
                         readonly property int riverStripIntrinsic: 5 * Theme.trainerFlopBoardCardWidth
                                 + 4 * Theme.trainerDrillHudSpacing
@@ -512,20 +508,23 @@ Page {
                             }
 
                             Item {
+                                id: riverSeatRow
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: Math.max(170, Math.round(312 * drillArea.seatScale))
-                                Layout.minimumHeight: Math.max(150, Math.round(195 * drillArea.seatScale))
+                                readonly property real seatUiScale: Theme.trainerSeatUiScale(
+                                        drillArea.width, drillArea.height, width)
+                                Layout.preferredHeight: Math.max(170, Math.round(312 * seatUiScale))
+                                Layout.minimumHeight: Math.max(150, Math.round(195 * seatUiScale))
 
                                 Item {
                                     id: trainerSeatWrap
-                                    width: Math.min(Math.round(218 * drillArea.seatScale),
+                                    width: Math.min(Math.round(218 * riverSeatRow.seatUiScale),
                                             parent.width > 0 ? parent.width : 99999)
-                                    height: Math.round(312 * drillArea.seatScale)
+                                    height: Math.round(312 * riverSeatRow.seatUiScale)
                                     anchors.horizontalCenter: parent.horizontalCenter
 
                                     Player {
                                         anchors.fill: parent
-                                        uiScale: drillArea.seatScale
+                                        uiScale: riverSeatRow.seatUiScale
                                         seatIndex: 0
                                         name: qsTr("You")
                                         position: "BTN"
@@ -555,6 +554,7 @@ Page {
                                 trainerFlopStreet: true
                                 pokerGame: null
                                 embeddedMode: false
+                                hudScale: drillArea.tableScale
                                 trainerInputLocked: page.inputLocked || page.assetLoadFailed
                                 humanSitOut: false
                                 statusText: page.statusLine

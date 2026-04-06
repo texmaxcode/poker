@@ -34,6 +34,8 @@ Page {
     /// Avoid treating initial `visible: false` at startup as "left the page".
     property bool _drillSurfaceShown: false
     property bool assetLoadFailed: false
+    /// Set when the user has opened this page once — avoids starting timers while the tab is not visible.
+    property bool _drillStarted: false
     /// Matches HUD pot / sizing context ($2 BB training table).
     readonly property int trainerPotChips: 12
     /// Display chips (animates up on call / raise like the table HUD).
@@ -199,6 +201,11 @@ Page {
             return
         }
         _drillSurfaceShown = true
+        if (!page.assetLoadFailed && !page._drillStarted) {
+            page._drillStarted = true
+            nextQuestion()
+            return
+        }
         if (_returningFromHidden) {
             _returningFromHidden = false
             restartDrillAfterReturn()
@@ -225,7 +232,6 @@ Page {
             return
         refreshModeModelForPosition()
         trainer.startPreflopDrill(position, mode)
-        nextQuestion()
     }
 
     function nextQuestion() {
@@ -451,16 +457,7 @@ Page {
                         anchors.fill: parent
                         anchors.margins: 2
 
-                        readonly property int seatReserve: 220
-                        readonly property real seatScale: {
-                            var h = drillPanel.height
-                            var w = drillArea.width
-                            if (h <= 0 || w <= 0)
-                                return 1.0
-                            var fromH = Math.min(1.0, Math.max(0.48, (h - seatReserve) / 300))
-                            var fromW = Math.min(1.0, Math.max(0.48, (w - 16) / 232))
-                            return Math.min(fromH, fromW)
-                        }
+                        readonly property real tableScale: Theme.tableScaleForViewport(drillArea.width, drillArea.height)
 
                         ColumnLayout {
                             id: preflopDrillStack
@@ -517,20 +514,23 @@ Page {
                             }
 
                             Item {
+                                id: preflopSeatRow
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: Math.max(170, Math.round(312 * drillArea.seatScale))
-                                Layout.minimumHeight: Math.max(150, Math.round(195 * drillArea.seatScale))
+                                readonly property real seatUiScale: Theme.trainerSeatUiScale(
+                                        drillArea.width, drillArea.height, width)
+                                Layout.preferredHeight: Math.max(170, Math.round(312 * seatUiScale))
+                                Layout.minimumHeight: Math.max(150, Math.round(195 * seatUiScale))
 
                                 Item {
                                     id: trainerSeatWrap
-                                    width: Math.min(Math.round(218 * drillArea.seatScale),
+                                    width: Math.min(Math.round(218 * preflopSeatRow.seatUiScale),
                                             parent.width > 0 ? parent.width : 99999)
-                                    height: Math.round(312 * drillArea.seatScale)
+                                    height: Math.round(312 * preflopSeatRow.seatUiScale)
                                     anchors.horizontalCenter: parent.horizontalCenter
 
                                     Player {
                                         anchors.fill: parent
-                                        uiScale: drillArea.seatScale
+                                        uiScale: preflopSeatRow.seatUiScale
                                         seatIndex: 0
                                         name: qsTr("You")
                                         position: page.position
@@ -560,6 +560,7 @@ Page {
                                 trainerFlopStreet: false
                                 pokerGame: null
                                 embeddedMode: false
+                                hudScale: drillArea.tableScale
                                 trainerInputLocked: page.inputLocked || page.assetLoadFailed
                                 humanSitOut: false
                                 statusText: page.statusLine

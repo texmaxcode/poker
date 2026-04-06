@@ -119,11 +119,8 @@ void game::join_table(player p)
 {
     if (table.size() >= static_cast<size_t>(kMaxPlayers))
         return;
-    const bool more_than_ten_blinds = (p.stack >= 10 * big_blind);
-    const bool within_table_cap = (p.stack <= maxBuyInChips());
-    const bool has_enough_money = more_than_ten_blinds && within_table_cap;
-    if (has_enough_money)
-        table.push_back(p);
+    /// Seats are always filled to `kMaxPlayers`; chips come from configure / buy-in apply (`start()` gates play).
+    table.push_back(p);
 }
 
 int game::players_count() const
@@ -388,6 +385,29 @@ int game::count_active() const
     {
         if (in_hand_[static_cast<size_t>(i)])
             ++c;
+    }
+    return c;
+}
+
+int game::count_eligible_players_for_deal_after_apply()
+{
+    if (!in_progress)
+    {
+        seat_mgr_.flush_pending_bankroll_totals();
+        seat_mgr_.apply_seat_buy_ins_to_table(false);
+    }
+    int c = 0;
+    const int n = players_count();
+    for (int i = 0; i < n; ++i)
+    {
+        const size_t si = static_cast<size_t>(i);
+        if (table[si].stack <= 0)
+            continue;
+        if (static_cast<int>(i) == kHumanSeat && human_sitting_out_)
+            continue;
+        if (i >= 1 && !seat_mgr_.seat_participating_[si])
+            continue;
+        ++c;
     }
     return c;
 }
@@ -1268,6 +1288,12 @@ void game::switch_button()
 
 void game::start()
 {
+    if (!in_progress)
+    {
+        /// Wallet / buy-in targets may leave stacks at 0 until applied; `count_active()` requires stacks.
+        seat_mgr_.flush_pending_bankroll_totals();
+        seat_mgr_.apply_seat_buy_ins_to_table(false);
+    }
     const int n = players_count();
     for (int i = 0; i < n; ++i)
         in_hand_[static_cast<size_t>(i)] = table[static_cast<size_t>(i)].stack > 0;
@@ -1521,7 +1547,7 @@ int game::effectiveSeatBuyInChips(int seat) const
     const size_t si = static_cast<size_t>(seat);
     const bool use_strategy_buy_in = (seat != kHumanSeat) || !interactive_human_;
     if (!use_strategy_buy_in)
-        return std::max(1, std::min(seat_mgr_.seat_buy_in_[si], cap));
+        return std::clamp(seat_mgr_.seat_buy_in_[si], 0, cap);
     const int bb = std::max(1, big_blind);
     const int mult = std::max(1, seat_cfg_[si].params.buy_in_bb);
     return std::max(1, std::min(mult * bb, cap));
@@ -1548,7 +1574,8 @@ void game::configureImpl(int sb, int bb, int streetBet, int startStack, bool res
         const size_t szi = static_cast<size_t>(i);
         if (i == kHumanSeat && interactive_human_)
         {
-            seat_mgr_.seat_buy_in_[szi] = std::max(1, std::min(seat_mgr_.seat_buy_in_[szi], cap));
+            /// Align human buy-in with configured start stack (seat targets start at 0 before first configure).
+            seat_mgr_.seat_buy_in_[szi] = std::clamp(starting_stack_, 0, cap);
             continue;
         }
         seat_cfg_[szi].params.buy_in_bb =
@@ -1745,7 +1772,23 @@ void game::setSeatParticipating(int seat, bool participating)
     }
     else
     {
-        seat_mgr_.apply_bot_seat_rejoin_buy_in(seat);
+        /// Do not move wallet→stack here — `apply_seat_buy_ins_to_table` / `start()` already materialize
+        /// buy-ins (including partial wallet). Eager `apply_buy_back_in` duplicated full-buy logic and
+        /// skipped seats when wallet was short of the full target.
+        /// Idle table: if at least one other player can deal, queue a hand (deferred so the Setup toggle
+        /// returns immediately — `start()` runs the full hand on the same thread). In progress: unchanged;
+        /// the bot is dealt in on the next hand via normal `in_hand_` / auto-deal.
+        if (!suppress_persist_ && m_root && !in_progress
+            && count_eligible_players_for_deal_after_apply() >= 2)
+        {
+            QTimer::singleShot(0, this, [this]() {
+                if (!m_root || in_progress)
+                    return;
+                if (count_eligible_players_for_deal_after_apply() < 2)
+                    return;
+                beginNewHand();
+            });
+        }
     }
     notifySessionStatsChanged();
     if (!suppress_persist_)
@@ -1886,6 +1929,11 @@ QVariantList game::bankrollSeries(int seat) const
     return bankroll_tracker_.bankrollSeries(seat);
 }
 
+QVariantList game::tableStackSeries(int seat) const
+{
+    return bankroll_tracker_.tableStackSeries(seat);
+}
+
 int game::bankrollSnapshotCount() const
 {
     return bankroll_tracker_.bankrollSnapshotCount();
@@ -1911,9 +1959,17 @@ int game::sessionBaselineStack(int seat) const
     return bankroll_tracker_.sessionBaselineStack(seat);
 }
 
+int game::sessionBaselineTableStack(int seat) const
+{
+    return bankroll_tracker_.sessionBaselineTableStack(seat);
+}
+
 void game::resetBankrollSession()
 {
     bankroll_tracker_.resetBankrollSession();
+    if (persist_loaded_ && !suppress_persist_)
+        savePersistedSettings();
+    flush_ui();
 }
 
 QVariantMap game::bettingAnchors() const
@@ -1938,7 +1994,7 @@ game::game(QObject *parent)
     for (int s = 0; s < kMaxPlayers; ++s)
     {
         player p;
-        p.stack = seat_mgr_.seat_buy_in_[static_cast<size_t>(s)];
+        p.stack = 0;
         p.first_card = card(Rank::TWO, Suite::CLUBS);
         p.second_card = card(Rank::THREE, Suite::CLUBS);
         join_table(p);

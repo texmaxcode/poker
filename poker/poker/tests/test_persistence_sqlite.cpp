@@ -144,6 +144,9 @@ BOOST_AUTO_TEST_CASE(test_bankroll_survives_save_load)
   const QVariantList series = g2.bankrollSeries(0);
   BOOST_REQUIRE(!series.isEmpty());
   BOOST_CHECK_EQUAL(series.last().toInt(), 130);
+  const QVariantList tableSer = g2.tableStackSeries(0);
+  BOOST_REQUIRE(!tableSer.isEmpty());
+  BOOST_CHECK_EQUAL(tableSer.last().toInt(), 130);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

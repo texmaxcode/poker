@@ -91,6 +91,8 @@ private:
 
     std::vector<int> action_order(Street st) const;
     int count_active() const;
+    /// Applies idle buy-in materialization then counts seats that would be dealt in (matches `start()` eligibility).
+    int count_eligible_players_for_deal_after_apply();
     /// True if every seat still `in_hand_` has no chips behind (all-in or blind-only — no further betting).
     bool everyone_in_hand_is_all_in() const;
     /// Heads-up: one player is all-in and the other still has chips — no further betting; run the board out
@@ -232,14 +234,18 @@ public:
     /// No new chart point: bumps `statsSeq` so Stats / buy-in lines refresh (e.g. after `setSeatBuyIn`).
     Q_INVOKABLE void notifySessionStatsChanged();
 
-    /// Leaderboard row maps: `seat`, `stack`, `rank`, `profit` (vs session baseline).
+    /// Leaderboard row maps: `seat`, `stack`, `wallet`, `total`, `rank`, `profit` (on-table P/L),
+    /// `totalDelta` (change in stack+wallet vs session baseline).
     Q_INVOKABLE QVariantList seatRankings() const;
-    /// Stack after each recorded snapshot for `seat` (same length for all seats).
+    /// Total chips (stack + wallet) after each snapshot for `seat`.
     Q_INVOKABLE QVariantList bankrollSeries(int seat) const;
+    /// On-table stack after each snapshot — stats chart uses this so wallet-only moves do not look like wins/losses.
+    Q_INVOKABLE QVariantList tableStackSeries(int seat) const;
     Q_INVOKABLE int bankrollSnapshotCount() const;
     /// Wall-clock ms since epoch for each bankroll snapshot (same length as `bankrollSeries`).
     Q_INVOKABLE QVariantList bankrollSnapshotTimesMs() const;
     Q_INVOKABLE int sessionBaselineStack(int seat) const;
+    Q_INVOKABLE int sessionBaselineTableStack(int seat) const;
     /// Clear history and re-baseline from current stacks (one snapshot).
     Q_INVOKABLE void resetBankrollSession();
     /// Sets total chips for `seat` (table stack up to `maxBuyInChips()`, rest off-table; buy-in = on-table amount).

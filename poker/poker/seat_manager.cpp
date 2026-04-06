@@ -12,7 +12,8 @@ SeatManager::SeatManager(game &g)
     : game_(g)
 {
     seat_participating_.fill(true);
-    seat_buy_in_.fill(g.starting_stack_);
+    /// Buy-in targets only; chips come from `configure` / apply / persistence (clean install: $0 on table & wallet).
+    seat_buy_in_.fill(0);
     seat_wallet_.fill(0);
     pending_bankroll_total_.fill(-1);
 }
@@ -36,7 +37,7 @@ void SeatManager::setSeatBuyIn(int seat, int chips)
     const int cap = maxBuyInChips();
     int capped = std::min(chips, cap);
     capped = std::min(capped, 2000000000);
-    seat_buy_in_[static_cast<size_t>(seat)] = std::max(1, capped);
+    seat_buy_in_[static_cast<size_t>(seat)] = std::max(0, capped);
     if (game_.in_progress)
         pending_seat_buyins_apply_ = true;
     game_.notifySessionStatsChanged();
@@ -75,7 +76,7 @@ void SeatManager::setSeatBankrollTotal(int seat, int totalChips)
 {
     if (seat < 0 || seat >= kMaxPlayers)
         return;
-    const int t = std::max(1, std::min(2000000000, totalChips));
+    const int t = std::clamp(totalChips, 0, 2000000000);
     if (game_.in_progress)
     {
         pending_bankroll_total_[static_cast<size_t>(seat)] = t;
@@ -138,11 +139,17 @@ bool SeatManager::seatParticipating(int seat) const
 void SeatManager::apply_seat_buy_ins_to_table(bool resetBankrollSession)
 {
     const int cap = maxBuyInChips();
+    long long total_chips_in_play = 0;
+    for (size_t i = 0; i < game_.table.size(); ++i)
+        total_chips_in_play += static_cast<long long>(game_.table[i].stack) + seat_wallet_[i];
+    /// Only mint play-money buy-ins when no chips exist anywhere (fresh session / empty DB). Otherwise a
+    /// busted stack would get a free full rebuy every deal.
+    const bool allow_empty_bankroll_bootstrap = (total_chips_in_play < 1);
     for (size_t i = 0; i < game_.table.size(); ++i)
     {
         const int seat = static_cast<int>(i);
         const int bi = game_.effectiveSeatBuyInChips(seat);
-        seat_buy_in_[i] = std::max(1, std::min(bi, cap));
+        seat_buy_in_[i] = std::clamp(bi, 0, cap);
         /// Seats 1–5 toggled off in Setup stay off the felt; wealth remains in `seat_wallet_` only.
         if (seat >= 1 && seat < kMaxPlayers && !seat_participating_[i])
         {
@@ -151,8 +158,15 @@ void SeatManager::apply_seat_buy_ins_to_table(bool resetBankrollSession)
             game_.table[i].reset_stack(0);
             continue;
         }
-        const int total_wealth = game_.table[i].stack + seat_wallet_[i];
-        int on_table = std::min(bi, cap);
+        /// With wallet + stack both at 0, there is nothing to move to the felt. Credit the buy-in target
+        /// once so a fresh session (or cleared DB) can still seat players; off-table wallet stays 0 after.
+        int total_wealth = game_.table[i].stack + seat_wallet_[i];
+        const int target = seat_buy_in_[i];
+        if (allow_empty_bankroll_bootstrap && total_wealth < 1 && target > 0
+            && !(seat == 0 && game_.human_sitting_out_))
+            seat_wallet_[i] += target;
+        total_wealth = game_.table[i].stack + seat_wallet_[i];
+        int on_table = std::min(target, cap);
         if (on_table > total_wealth)
             on_table = total_wealth;
         seat_wallet_[i] = total_wealth - on_table;
@@ -192,17 +206,6 @@ void SeatManager::cash_out_seat_off_table(int seat)
     game_.table[si].reset_stack(0);
 }
 
-void SeatManager::apply_bot_seat_rejoin_buy_in(int seat)
-{
-    if (seat < 1 || seat >= kMaxPlayers)
-        return;
-    const size_t si = static_cast<size_t>(seat);
-    if (game_.table[si].stack > 0)
-        return;
-    /// No wallet top-up — only sit with chips already in the bankroll.
-    apply_buy_back_in_internal(seat);
-}
-
 void SeatManager::mark_pending_cash_out_after_hand(int seat)
 {
     if (seat >= 1 && seat < kMaxPlayers)
@@ -231,10 +234,12 @@ bool SeatManager::apply_buy_back_in_internal(int seat)
     if (game_.table[si].stack > 0)
         return false;
     const int cost = game_.effectiveSeatBuyInChips(seat);
-    if (seat_wallet_[si] < cost)
+    if (cost < 1 || seat_wallet_[si] < 1)
         return false;
-    game_.table[si].stack += cost;
-    seat_wallet_[si] -= cost;
+    /// Move up to full buy-in; partial stack when wallet is short (matches `apply_seat_buy_ins_to_table`).
+    const int move = std::min(cost, seat_wallet_[si]);
+    game_.table[si].stack += move;
+    seat_wallet_[si] -= move;
     return true;
 }
 
@@ -284,7 +289,7 @@ void SeatManager::apply_seat_bankroll_total_now(int seat, int totalChips)
 {
     if (seat < 0 || seat >= kMaxPlayers)
         return;
-    const int t = std::max(1, std::min(2000000000, totalChips));
+    const int t = std::clamp(totalChips, 0, 2000000000);
     const size_t si = static_cast<size_t>(seat);
     const int cap = maxBuyInChips();
     const int on_table = std::min(t, cap);

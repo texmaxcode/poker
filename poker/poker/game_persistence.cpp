@@ -35,21 +35,33 @@ void GamePersistence::save_bankroll_session_to_settings() const
             ? (n - static_cast<size_t>(kMaxBankrollSnapshotsPersisted))
             : 0;
     QVariantList histList;
+    QVariantList tableHistList;
     QVariantList timesList;
     for (size_t r = start; r < n; ++r)
     {
         QVariantList row;
+        QVariantList rowTable;
         for (int i = 0; i < game::kMaxPlayers; ++i)
+        {
             row.append(game_.bankroll_tracker_.bankroll_history_[r][static_cast<size_t>(i)]);
+            rowTable.append(game_.bankroll_tracker_.table_stack_history_[r][static_cast<size_t>(i)]);
+        }
         histList.append(row);
+        tableHistList.append(rowTable);
         timesList.append(static_cast<qlonglong>(game_.bankroll_tracker_.bankroll_snapshot_times_ms_[r]));
     }
     AppStateSqlite::setValue(QStringLiteral("v1/bankrollHistory"), histList);
+    AppStateSqlite::setValue(QStringLiteral("v1/tableStackHistory"), tableHistList);
     AppStateSqlite::setValue(QStringLiteral("v1/bankrollSnapshotTimesMs"), timesList);
     QVariantList baselineList;
+    QVariantList baselineTableList;
     for (int i = 0; i < game::kMaxPlayers; ++i)
+    {
         baselineList.append(game_.bankroll_tracker_.session_baseline_[static_cast<size_t>(i)]);
+        baselineTableList.append(game_.bankroll_tracker_.session_baseline_table_[static_cast<size_t>(i)]);
+    }
     AppStateSqlite::setValue(QStringLiteral("v1/sessionBaseline"), baselineList);
+    AppStateSqlite::setValue(QStringLiteral("v1/sessionBaselineTable"), baselineTableList);
 }
 
 bool GamePersistence::load_bankroll_session_from_settings()
@@ -133,6 +145,30 @@ bool GamePersistence::load_bankroll_session_from_settings()
     game_.bankroll_tracker_.bankroll_history_ = std::move(loaded_hist);
     game_.bankroll_tracker_.bankroll_snapshot_times_ms_ = std::move(loaded_times);
 
+    std::vector<std::array<int, game::kMaxPlayers>> loaded_table_hist;
+    const QVariant vtsh = AppStateSqlite::value(QStringLiteral("v1/tableStackHistory"));
+    if (vtsh.canConvert<QVariantList>())
+    {
+        const QVariantList tOuter = vtsh.toList();
+        if (!tOuter.isEmpty() && tOuter[0].canConvert<QVariantList>())
+        {
+            for (int r = 0; r < tOuter.size(); ++r)
+            {
+                const QVariantList row = tOuter[r].toList();
+                if (row.size() < game::kMaxPlayers)
+                    break;
+                std::array<int, game::kMaxPlayers> snap{};
+                for (int i = 0; i < game::kMaxPlayers; ++i)
+                    snap[static_cast<size_t>(i)] =
+                        clamp_int(static_cast<int>(row[i].toDouble()), 0, 2000000000);
+                loaded_table_hist.push_back(snap);
+            }
+        }
+    }
+    if (loaded_table_hist.size() != game_.bankroll_tracker_.bankroll_history_.size())
+        loaded_table_hist = game_.bankroll_tracker_.bankroll_history_;
+    game_.bankroll_tracker_.table_stack_history_ = std::move(loaded_table_hist);
+
     const QVariant vb = AppStateSqlite::value(QStringLiteral("v1/sessionBaseline"));
     if (vb.canConvert<QVariantList>())
     {
@@ -150,6 +186,24 @@ bool GamePersistence::load_bankroll_session_from_settings()
         for (int i = 0; i < n; ++i)
             game_.bankroll_tracker_.session_baseline_[static_cast<size_t>(i)] =
                 game_.table[static_cast<size_t>(i)].stack + game_.seat_mgr_.seat_wallet_[static_cast<size_t>(i)];
+    }
+
+    const QVariant vbt = AppStateSqlite::value(QStringLiteral("v1/sessionBaselineTable"));
+    if (vbt.canConvert<QVariantList>())
+    {
+        const QVariantList bl = vbt.toList();
+        if (bl.size() >= game::kMaxPlayers)
+        {
+            for (int i = 0; i < game::kMaxPlayers; ++i)
+                game_.bankroll_tracker_.session_baseline_table_[static_cast<size_t>(i)] =
+                    clamp_int(static_cast<int>(bl[i].toDouble()), 0, 2000000000);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < game::kMaxPlayers; ++i)
+            game_.bankroll_tracker_.session_baseline_table_[static_cast<size_t>(i)] =
+                game_.bankroll_tracker_.session_baseline_[static_cast<size_t>(i)];
     }
 
     game_.bankroll_tracker_.notifySessionStatsChanged();
@@ -358,7 +412,9 @@ void GamePersistence::writePersistedSettingsImpl(bool onlyIfMissingKeys) const
     {
         if (AppStateSqlite::contains(QStringLiteral("v1/bankrollHistory"))
             && AppStateSqlite::contains(QStringLiteral("v1/bankrollSnapshotTimesMs"))
-            && AppStateSqlite::contains(QStringLiteral("v1/sessionBaseline")))
+            && AppStateSqlite::contains(QStringLiteral("v1/sessionBaseline"))
+            && AppStateSqlite::contains(QStringLiteral("v1/tableStackHistory"))
+            && AppStateSqlite::contains(QStringLiteral("v1/sessionBaselineTable")))
         {
             AppStateSqlite::commitTransaction();
             AppStateSqlite::sync();

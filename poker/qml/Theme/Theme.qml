@@ -261,6 +261,21 @@ QtObject {
         var maxH = Math.min(trainerDrillPanelMaxH, Math.max(minH, h - 28))
         return Math.max(minH, Math.min(maxH, want))
     }
+    /// Same formula as `GameScreen` `tableArea.tableScale` — hero seat + HUD scale with viewport size.
+    function tableScaleForViewport(w, h) {
+        var ww = Math.max(1, w)
+        var hh = Math.max(1, h)
+        return Math.min(1.0, Math.min(ww, hh) / 1024.0)
+    }
+    /// Seat `uiScale` for training drills: match table scaling, then shrink if the row is narrower than 218×scale.
+    function trainerSeatUiScale(viewportW, viewportH, seatRowWidth) {
+        var ts = tableScaleForViewport(viewportW, viewportH)
+        var row = Math.max(1, seatRowWidth)
+        var need = 218.0 * ts + 8.0
+        if (row >= need)
+            return ts
+        return Math.max(0.34, Math.min(ts, (row - 8.0) / 218.0))
+    }
     /// Embedded `GameControls` must fit FOLD/CALL/RAISE (or CHECK / bet / bet) in one row (~300px + margins).
     readonly property int trainerEmbeddedHudMinWidth: 340
     /// Win-line banner: mini cards beside one-line result text (`GameControls` embedded HUD).

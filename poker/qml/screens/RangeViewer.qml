@@ -1,11 +1,11 @@
 import QtQuick
-import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import Theme 1.0
 import PokerUi 1.0
 
 /// Read-only 13×13 opening-range reference from `preflop_ranges_v1.json` (mode `open`).
+/// Uses the same `RangeGrid` component as Setup so layout and composite layers match.
 Page {
     id: page
     padding: 0
@@ -26,32 +26,11 @@ Page {
     property var raiseW: []
     property bool hasScenario: false
 
-    readonly property var rankLabels: ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"]
-    readonly property int gridGap: 2
-    readonly property real labelColW: Math.max(Theme.uiRangeGridCornerW, Theme.uiRangeGridRowHeaderW)
-
-    readonly property real layoutWidth: {
-        const w = gridHost.width
-        if (w > 1)
-            return w
-        const pw = gridHost.parent ? gridHost.parent.width : 0
-        return pw > 1 ? pw : w
-    }
-    readonly property real cellW: {
-        const w = layoutWidth
-        const g = gridGap
-        const lw = labelColW
-        if (!w || w < lw + 13 * 20 + 13 * g)
-            return Theme.uiRangeGridCellW
-        return Math.max(18, Math.floor((w - lw - 13 * g) / 13))
-    }
-    readonly property real cellH: Math.max(20, cellW * (Theme.uiRangeGridCellH / Theme.uiRangeGridCellW))
-    readonly property real cornerH: Theme.uiRangeGridCornerH * (cellW / Theme.uiRangeGridCellW)
-    readonly property int axisPx: Math.max(10, Math.round(Theme.uiRangeGridAxisPx * Math.min(1.15, cellW / Theme.uiRangeGridCellW)))
-
-    readonly property color actRaise: Theme.successGreen
-    readonly property color actCall: Theme.accentBlue
-    readonly property color actFold: Theme.textMuted
+    /// Stable empty binding for unused composite layers (avoid `[]` in bindings each frame).
+    readonly property var _emptyLayer: []
+    /// Align JSON actions with Setup layers: first-in “raise” → Open layer; other modes use Raise.
+    readonly property var gridWRaise: page.rangeMode === "open" ? page._emptyLayer : page.raiseW
+    readonly property var gridWBet: page.rangeMode === "open" ? page.raiseW : page._emptyLayer
 
     background: BrandedBackground { anchors.fill: parent }
 
@@ -66,85 +45,6 @@ Page {
             flick.contentY = 0
             flick.contentX = 0
         }
-    }
-
-    function handNotation(row, col) {
-        if (row === col)
-            return rankLabels[row] + rankLabels[row]
-        if (row < col)
-            return rankLabels[row] + rankLabels[col] + "s"
-        return rankLabels[col] + rankLabels[row] + "o"
-    }
-
-    function cellRegionColor(row, col) {
-        if (row === col)
-            return Theme.rangeGridPairTint
-        if (row < col)
-            return Theme.rangeGridSuitedTint
-        return Theme.rangeGridOffsuitTint
-    }
-
-    function cellRegionName(row, col) {
-        if (row === col)
-            return qsTr("Pair")
-        if (row < col)
-            return qsTr("Suited")
-        return qsTr("Offsuit")
-    }
-
-    function rankIndexToSvgRank(i) {
-        const m = ["ace", "king", "queen", "jack", "10", "9", "8", "7", "6", "5", "4", "3", "2"]
-        const n = Number(i)
-        const j = Number.isFinite(n) ? Math.max(0, Math.min(m.length - 1, Math.floor(n))) : 0
-        return m[j]
-    }
-
-    function cardFileName(rankIdx, suit) {
-        return suit + "_" + rankIndexToSvgRank(rankIdx) + ".svg"
-    }
-
-    function cardFileNamesForCell(row, col) {
-        const r = Math.max(0, Math.min(12, Math.floor(Number(row))))
-        const c = Math.max(0, Math.min(12, Math.floor(Number(col))))
-        if (r === c)
-            return [cardFileName(r, "spades"), cardFileName(r, "hearts")]
-        if (r < c)
-            return [cardFileName(r, "spades"), cardFileName(c, "spades")]
-        return [cardFileName(c, "spades"), cardFileName(r, "hearts")]
-    }
-
-    function cellFreqs(idx) {
-        const f = (foldW.length > idx) ? Number(foldW[idx]) : 0
-        const c = (callW.length > idx) ? Number(callW[idx]) : 0
-        const r = (raiseW.length > idx) ? Number(raiseW[idx]) : 0
-        return { f: f, c: c, r: r }
-    }
-
-    function dominantKind(idx) {
-        const t = cellFreqs(idx)
-        let best = "fold"
-        let v = t.f
-        if (t.c > v) {
-            best = "call"
-            v = t.c
-        }
-        if (t.r > v) {
-            best = "raise"
-            v = t.r
-        }
-        if (v < 1e-9)
-            return "none"
-        return best
-    }
-
-    function actionFillColor(kind) {
-        if (kind === "raise")
-            return Qt.tint(Theme.panel, Qt.alpha(actRaise, 0.62))
-        if (kind === "call")
-            return Qt.tint(Theme.panel, Qt.alpha(actCall, 0.58))
-        if (kind === "fold")
-            return Qt.tint(Theme.panel, Qt.alpha(actFold, 0.72))
-        return Qt.tint(Theme.panel, Qt.alpha(Theme.textMuted, 0.35))
     }
 
     function findScenarioForPosition() {
@@ -209,162 +109,6 @@ Page {
     onPositionChanged: findScenarioForPosition()
 
     Component.onCompleted: loadRangesAsset()
-
-    property int tipRow: -1
-    property int tipCol: -1
-    property Item tipAnchor: null
-    property real tipPopupX: 0
-    property real tipPopupY: 0
-
-    function cellTipPopupX(anchor, popup) {
-        if (!anchor || !popup)
-            return 0
-        const target = popup.parent
-        if (!target)
-            return 0
-        const p = anchor.mapToItem(target, 0, 0)
-        const w = popup.width > 2 ? popup.width : Math.max(popup.implicitWidth, 200)
-        const cx = p.x + anchor.width / 2 - w / 2
-        return Math.min(target.width - w - 12, Math.max(12, cx))
-    }
-
-    function cellTipPopupY(anchor, popup) {
-        if (!anchor || !popup)
-            return 0
-        const target = popup.parent
-        if (!target)
-            return 0
-        const p = anchor.mapToItem(target, 0, 0)
-        const h = popup.height > 2 ? popup.height : Math.max(popup.implicitHeight, 120)
-        const margin = 10
-        const edge = 12
-        const aboveY = p.y - h - margin
-        const maxY = target.height - h - edge
-        if (aboveY >= edge)
-            return Math.max(edge, Math.min(maxY, aboveY))
-        const belowY = p.y + anchor.height + margin
-        if (belowY <= maxY)
-            return Math.max(edge, belowY)
-        return Math.max(edge, Math.min(maxY, belowY))
-    }
-
-    function syncTipPopupPos() {
-        if (!tipAnchor)
-            return
-        tipPopupX = cellTipPopupX(tipAnchor, rangeCellTip)
-        tipPopupY = cellTipPopupY(tipAnchor, rangeCellTip)
-    }
-
-    Timer {
-        id: tipShowTimer
-        interval: 220
-        repeat: false
-        onTriggered: {
-            if (page.tipRow >= 0 && page.tipAnchor) {
-                rangeCellTip.parent = Overlay.overlay || page
-                rangeCellTip.open()
-                Qt.callLater(page.syncTipPopupPos)
-            }
-        }
-    }
-
-    Timer {
-        id: tipFollowTimer
-        interval: 32
-        repeat: true
-        running: false
-        onTriggered: page.syncTipPopupPos()
-    }
-
-    Popup {
-        id: rangeCellTip
-        parent: page
-        modal: false
-        focus: false
-        padding: 12
-        closePolicy: Popup.NoAutoClose
-        x: page.tipPopupX
-        y: page.tipPopupY
-        onOpened: {
-            Qt.callLater(page.syncTipPopupPos)
-            tipFollowTimer.start()
-        }
-        onClosed: tipFollowTimer.stop()
-
-        background: Rectangle {
-            color: Theme.panelElevated
-            border.color: Theme.panelBorder
-            border.width: 1
-            radius: 8
-        }
-
-        contentItem: Column {
-            spacing: 8
-            width: Math.min(300, Math.max(160, page.width - 24))
-
-            Row {
-                spacing: 8
-                readonly property real cardPaintDpr: (Window.window && Window.window.devicePixelRatio > 0)
-                        ? Window.window.devicePixelRatio : 1.0
-                /// Integer `model` + index lookup — Qt 6 `modelData` from JS arrays is unreliable in delegates.
-                Repeater {
-                    model: page.tipRow >= 0 && page.tipCol >= 0
-                            ? page.cardFileNamesForCell(page.tipRow, page.tipCol).length : 0
-                    Image {
-                        required property int index
-                        readonly property var tipCardNames: page.cardFileNamesForCell(page.tipRow, page.tipCol)
-                        width: 64
-                        height: 92
-                        fillMode: Image.Stretch
-                        mipmap: true
-                        sourceSize.width: Math.max(1, Math.round(64 * parent.cardPaintDpr))
-                        sourceSize.height: Math.max(1, Math.round(92 * parent.cardPaintDpr))
-                        asynchronous: true
-                        source: {
-                            if (index < 0 || index >= tipCardNames.length)
-                                return ""
-                            const fn = tipCardNames[index]
-                            return fn ? ("qrc:/assets/cards/" + fn) : ""
-                        }
-                    }
-                }
-            }
-
-            Label {
-                visible: page.tipRow >= 0
-                text: page.tipRow >= 0 ? page.handNotation(page.tipRow, page.tipCol) : ""
-                font.family: Theme.fontFamilyUi
-                font.bold: true
-                font.pixelSize: Math.max(Theme.uiRangeGridAxisPx, 14)
-                color: Theme.textPrimary
-            }
-
-            Label {
-                visible: page.tipRow >= 0
-                text: page.tipRow >= 0 ? page.cellRegionName(page.tipRow, page.tipCol) : ""
-                font.pixelSize: Theme.uiRangeGridLegendPx
-                color: Theme.textMuted
-            }
-
-            Label {
-                visible: page.tipRow >= 0 && page.hasScenario
-                text: {
-                    if (page.tipRow < 0)
-                        return ""
-                    const idx = page.tipRow * 13 + page.tipCol
-                    const t = page.cellFreqs(idx)
-                    return qsTr("Fold %1% · Call %2% · Raise %3%")
-                            .arg(Math.round(t.f * 100))
-                            .arg(Math.round(t.c * 100))
-                            .arg(Math.round(t.r * 100))
-                }
-                wrapMode: Text.WordWrap
-                font.family: Theme.fontFamilyUi
-                font.pixelSize: Theme.uiRangeGridLegendPx
-                color: Theme.textSecondary
-            }
-        }
-    }
 
     ScrollView {
         id: scrollView
@@ -463,142 +207,41 @@ Page {
 
                         Row {
                             spacing: 8
-                            Rectangle { width: 10; height: 10; radius: 2; color: page.actRaise }
-                            Label { text: qsTr("Raise"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
-                        }
-                        Row {
-                            spacing: 8
-                            Rectangle { width: 10; height: 10; radius: 2; color: page.actCall }
+                            Rectangle { width: 10; height: 10; radius: 2; color: Theme.rangeLayerCallSubdued }
                             Label { text: qsTr("Call"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
                         }
                         Row {
                             spacing: 8
-                            Rectangle { width: 10; height: 10; radius: 2; color: page.actFold }
-                            Label { text: qsTr("Fold"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
+                            Rectangle { width: 10; height: 10; radius: 2; color: Theme.rangeLayerRaiseSubdued }
+                            Label { text: qsTr("Raise"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
+                        }
+                        Row {
+                            spacing: 8
+                            Rectangle { width: 10; height: 10; radius: 2; color: Theme.rangeLayerOpenSubdued }
+                            Label { text: qsTr("Open"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
                         }
                         Item { Layout.fillWidth: true }
                     }
 
-                    Item {
-                        id: gridHost
+                    RangeGrid {
+                        id: rng
+                        visible: page.hasScenario
+                        readOnly: true
+                        composite: true
+                        bindToGame: false
+                        seatIndex: 0
+                        wCall: page.callW
+                        wRaise: page.gridWRaise
+                        wBet: page.gridWBet
+                        wFold: page.foldW
                         Layout.fillWidth: true
-                        implicitHeight: gridBody.implicitHeight
-
-                        ColumnLayout {
-                            id: gridBody
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            visible: page.hasScenario
-                            spacing: 2
-
-                            RowLayout {
-                                spacing: page.gridGap
-                                Item {
-                                    Layout.preferredWidth: page.labelColW
-                                    Layout.preferredHeight: page.cornerH
-                                }
-                                Repeater {
-                                    model: 13
-                                    Label {
-                                        text: page.rankLabels[index]
-                                        horizontalAlignment: Text.AlignHCenter
-                                        Layout.preferredWidth: page.cellW
-                                        font.family: Theme.fontFamilyUi
-                                        font.bold: true
-                                        font.pixelSize: page.axisPx
-                                    }
-                                }
-                            }
-
-                            Repeater {
-                                model: 13
-                                RowLayout {
-                                    id: rowItem
-                                    property int row: index
-                                    spacing: page.gridGap
-                                    Label {
-                                        text: page.rankLabels[rowItem.row]
-                                        Layout.preferredWidth: page.labelColW
-                                        font.family: Theme.fontFamilyUi
-                                        font.bold: true
-                                        font.pixelSize: page.axisPx
-                                    }
-                                    Repeater {
-                                        model: 13
-                                        Item {
-                                            id: cellItem
-                                            Layout.preferredWidth: page.cellW
-                                            Layout.preferredHeight: page.cellH
-                                            property int col: index
-                                            property int idx: rowItem.row * 13 + col
-
-                                            Rectangle {
-                                                anchors.fill: parent
-                                                color: page.cellRegionColor(rowItem.row, col)
-                                                border.color: Qt.alpha(Theme.chromeLine, 0.35)
-                                                border.width: 1
-                                            }
-
-                                            Rectangle {
-                                                anchors.fill: parent
-                                                color: page.actionFillColor(page.dominantKind(idx))
-                                                opacity: 0.92
-                                                border.width: 0
-                                            }
-
-                                            Rectangle {
-                                                anchors.fill: parent
-                                                z: 1
-                                                visible: cellMa.containsMouse
-                                                color: Qt.rgba(1, 1, 1, 0.06)
-                                            }
-
-                                            MouseArea {
-                                                id: cellMa
-                                                z: 2
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: function (mouse) {
-                                                    page.tipRow = rowItem.row
-                                                    page.tipCol = col
-                                                    page.tipAnchor = cellItem
-                                                    tipShowTimer.stop()
-                                                    rangeCellTip.parent = Overlay.overlay || page
-                                                    rangeCellTip.open()
-                                                    Qt.callLater(page.syncTipPopupPos)
-                                                }
-                                            }
-
-                                            Connections {
-                                                target: cellMa
-                                                function onContainsMouseChanged() {
-                                                    if (cellMa.containsMouse) {
-                                                        page.tipRow = rowItem.row
-                                                        page.tipCol = col
-                                                        page.tipAnchor = cellItem
-                                                        tipShowTimer.restart()
-                                                    } else if (page.tipAnchor === cellItem) {
-                                                        tipShowTimer.stop()
-                                                        rangeCellTip.close()
-                                                        page.tipRow = -1
-                                                        page.tipCol = -1
-                                                        page.tipAnchor = null
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
 
                 Label {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
-                    text: qsTr("Frequencies sum to 100% per combo. Colors follow the strongest action; hover or tap a cell for split.")
+                    text: qsTr("Frequencies sum to 100% per combo. Same composite chart as Setup (Call / Raise / Open). Hover a cell for fold share and layer weights.")
                     color: Theme.textMuted
                     font.pixelSize: Theme.trainerCaptionPx
                 }
