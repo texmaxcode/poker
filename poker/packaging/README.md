@@ -11,4 +11,4 @@ Shared requirements: **CMake** ≥ 3.26, **Qt 6.10** (Quick/QML), **SQLite3** (C
 - **Windows**: SQLite via **vcpkg** — use repo root [`vcpkg.json`](../../vcpkg.json) and `-DCMAKE_TOOLCHAIN_FILE=…/vcpkg.cmake`.
 - **macOS**: `brew install sqlite` and pass `-DSQLite3_ROOT=$(brew --prefix sqlite)` if needed.
 
-CI: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs Linux (build + tests), Windows (ZIP), and macOS (DMG) on every push and pull request in parallel. [`.github/workflows/build-snap.yml`](../../.github/workflows/build-snap.yml) builds the Linux snap when `snap/` or desktop sources change.
+CI: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) runs **Linux** (build + tests) on every push and pull request. **Windows** and **macOS** packaging jobs run only on **`main`** and **`stage`** (and PRs targeting those branches); see **[docs/ci.md](../../docs/ci.md)**. [`.github/workflows/build-snap.yml`](../../.github/workflows/build-snap.yml) builds the Linux snap when `snap/` or desktop sources change on **`main`**, **`stage`**, or **`master`**.
