@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName(QStringLiteral("Texas Hold'em Gym"));
     QCoreApplication::setApplicationVersion(QString::fromUtf8(POKER_APP_VERSION));
 
-    // Prefer Wayland when present so the bundled xcb plugin (needs distro libxcb-cursor on X11) is avoided.
+    // Prefer Wayland when present so the bundled xcb plugin (needs distro libxcb-cursor on X11) is avoided
     if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
     {
         if (!qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY") || qgetenv("XDG_SESSION_TYPE") == "wayland")
