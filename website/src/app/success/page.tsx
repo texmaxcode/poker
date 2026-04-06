@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DOWNLOAD_LINKS } from "@/lib/downloads";
+import { WindowsIcon, MacIcon } from "@/components/PlatformIcons";
 
 export const metadata: Metadata = {
   title: "Purchase Complete — Download Texas Hold'em Gym",
-  description: "Your purchase is confirmed. Download Texas Hold'em Gym for Windows, macOS, or Linux.",
+  description: "Your purchase is confirmed. Download Texas Hold'em Gym for Windows or macOS.",
 };
 
 interface InstallStep {
   platform: string;
-  icon: string;
   label: string;
   href: string;
   steps: string[];
+  Icon: typeof WindowsIcon;
 }
 
 const PLATFORMS: InstallStep[] = [
   {
     platform: "Windows",
-    icon: "🪟",
     label: "Download for Windows (.exe)",
     href: DOWNLOAD_LINKS.windows,
     steps: [
@@ -26,10 +26,10 @@ const PLATFORMS: InstallStep[] = [
       'Click "Next" through the setup wizard',
       "Launch Texas Hold'em Gym from the Start Menu",
     ],
+    Icon: WindowsIcon,
   },
   {
     platform: "macOS",
-    icon: "🍎",
     label: "Download for macOS (.dmg)",
     href: DOWNLOAD_LINKS.mac,
     steps: [
@@ -37,17 +37,7 @@ const PLATFORMS: InstallStep[] = [
       "Drag Texas Hold'em Gym into Applications.",
       "Right-click the app and choose Open the first time you launch it.",
     ],
-  },
-  {
-    platform: "Linux",
-    icon: "🐧",
-    label: "Download for Linux (.AppImage)",
-    href: DOWNLOAD_LINKS.linux,
-    steps: [
-      "Open a terminal in the folder where you downloaded the file.",
-      "Make it runnable: chmod +x texas-holdem-gym-linux.AppImage",
-      "Launch it: ./texas-holdem-gym-linux.AppImage",
-    ],
+    Icon: MacIcon,
   },
 ];
 
@@ -63,19 +53,19 @@ export default function SuccessPage() {
           Purchase Complete!
         </h1>
         <p className="text-[#a89890] text-lg">
-          Thank you for buying Texas Hold&apos;em Gym. Download links have been sent to your email.
+          Thank you for buying Texas Hold&apos;em Gym. Installer links have been sent to your email.
         </p>
       </div>
 
       {/* Download buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12 max-w-xl mx-auto">
         {PLATFORMS.map((p) => (
           <a
             key={p.platform}
             href={p.href}
             className="flex flex-col items-center gap-3 bg-poker-panel border border-gold/30 rounded-xl p-5 hover:border-gold hover:bg-gold/5 transition-all group"
           >
-            <span className="text-4xl">{p.icon}</span>
+            <p.Icon className="w-12 h-12 text-gold group-hover:text-gold-bright transition-colors" />
             <span className="text-gold font-semibold text-sm text-center group-hover:text-gold-bright transition-colors">
               {p.label}
             </span>
@@ -91,7 +81,7 @@ export default function SuccessPage() {
         {PLATFORMS.map((p) => (
           <div key={p.platform} className="bg-poker-panel border border-poker-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">{p.icon}</span>
+              <p.Icon className="w-6 h-6 text-gold flex-shrink-0" />
               <span className="font-semibold text-white">{p.platform}</span>
             </div>
             <ol className="space-y-1.5">

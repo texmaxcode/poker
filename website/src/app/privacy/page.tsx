@@ -21,7 +21,7 @@ export default function PrivacyPage() {
           </p>
           <p className="mt-2">
             We store your email address and purchase record (Stripe session ID, amount, date) in our database
-            solely to send you download links and provide purchase support.
+            solely to send you installer links (Windows and macOS) and provide purchase support.
           </p>
         </section>
 
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-white font-bold text-xl mb-3">3. How We Use Your Email</h2>
           <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Send your download links immediately after purchase</li>
+            <li>Send your Windows and macOS installer links immediately after purchase</li>
             <li>Provide customer support when you contact us</li>
           </ul>
           <p className="mt-2">We do <strong className="text-white">not</strong> send marketing emails or sell your address to anyone.</p>

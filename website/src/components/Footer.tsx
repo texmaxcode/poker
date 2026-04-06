@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlatformWindowsMacLabel } from "@/components/PlatformIcons";
 
 export default function Footer() {
   return (
@@ -18,7 +19,6 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/features" data-track="footer_features" className="text-[#7a7068] hover:text-gold transition-colors">Features</Link></li>
               <li><Link href="/pricing" data-track="footer_pricing" className="text-[#7a7068] hover:text-gold transition-colors">Pricing</Link></li>
-              <li><Link href="/download" data-track="footer_download" className="text-[#7a7068] hover:text-gold transition-colors">Download</Link></li>
             </ul>
           </div>
           <div>
@@ -38,7 +38,9 @@ export default function Footer() {
           <div className="flex items-center gap-4">
             <span>One-time purchase. No subscription.</span>
             <span>•</span>
-            <span>Windows · macOS · Linux</span>
+            <span className="inline-flex items-center gap-2 text-[#7a7068]">
+              <PlatformWindowsMacLabel iconClassName="w-3 h-3 text-[#7a7068]" />
+            </span>
           </div>
         </div>
       </div>

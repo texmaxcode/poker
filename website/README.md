@@ -23,8 +23,7 @@ src/
 │   ├── features/page.tsx
 │   ├── pricing/page.tsx
 │   ├── buy/page.tsx                 # Buy button page
-│   ├── success/page.tsx             # Post-payment download page
-│   ├── download/page.tsx            # Public download page
+│   ├── success/page.tsx             # Post-payment installer links (Windows + macOS)
 │   ├── privacy/page.tsx
 │   ├── terms/page.tsx
 │   ├── contact/page.tsx
@@ -39,6 +38,7 @@ src/
 │   ├── AnalyticsTracker.tsx
 │   ├── Nav.tsx
 │   ├── Footer.tsx
+│   ├── PlatformIcons.tsx            # Windows / macOS SVG marks
 │   └── BuyButton.tsx
 └── lib/
     ├── stripe.ts
@@ -51,6 +51,7 @@ middleware.ts                        # Protects /admin
 prisma/
 └── schema.prisma
 public/
+├── icons/                           # windows.svg, macos.svg (used in transactional email)
 └── screenshots/                     # App screenshots used on site
 ```
 
@@ -108,12 +109,11 @@ npm run db:generate
 
 ### 6. Upload app files to S3
 
-Upload the three platform builds to your S3 bucket:
+Upload the Windows and macOS builds to your S3 bucket:
 
 ```
 s3://your-bucket/downloads/texas-holdem-gym-windows.exe
 s3://your-bucket/downloads/texas-holdem-gym-mac.dmg
-s3://your-bucket/downloads/texas-holdem-gym-linux.AppImage
 ```
 
 Then set `NEXT_PUBLIC_DOWNLOAD_BASE_URL` to your CloudFront distribution URL.
@@ -173,8 +173,10 @@ After pulling changes, run `npm run db:push` (or migrate) so new columns/tables 
 3. User redirected to Stripe-hosted checkout page
 4. After payment: redirect to `/success?session_id=...`
 5. Stripe fires `checkout.session.completed` webhook to `/api/stripe/webhook`
-6. Webhook stores purchase in DB and sends download email via Resend
-7. `/success` page shows download buttons immediately (no server-side validation required — user is already redirected there)
+6. Webhook stores purchase in DB and sends installer links email via Resend
+7. `/success` page shows Windows and macOS installer buttons immediately (no server-side validation required — user is already redirected there)
+
+`/download` redirects to `/buy` (legacy URLs).
 
 ---
 
@@ -184,7 +186,7 @@ After pulling changes, run `npm run db:push` (or migrate) so new columns/tables 
 |---|---|
 | Price | `src/lib/stripe.ts` → `PRODUCT_PRICE_CENTS` |
 | Product name | `src/lib/stripe.ts` → `PRODUCT_NAME` |
-| Download file names | `src/lib/downloads.ts` |
+| Installer file names (S3 paths) | `src/lib/downloads.ts` |
 | Email copy | `src/lib/email.ts` |
 | Brand colours | `tailwind.config.ts` → `colors.gold` |
 | Nav links | `src/components/Nav.tsx` |

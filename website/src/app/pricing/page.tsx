@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import BuyButton from "@/components/BuyButton";
+import { MacIcon, WindowsIcon } from "@/components/PlatformIcons";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: "Texas Hold'em Gym — $79 one-time purchase. No subscription. Windows, macOS, and Linux included.",
+  description: "Texas Hold'em Gym — $79 one-time purchase. No subscription. Windows and macOS included.",
 };
 
 const INCLUDES = [
@@ -16,7 +17,6 @@ const INCLUDES = [
   "Pot odds and profitability calculator",
   "Strategy solver",
   "Win-rate tracker and bankroll history",
-  "Windows, macOS & Linux",
   "Free updates",
   "30-day money-back guarantee",
 ];
@@ -30,7 +30,7 @@ const REASONS = [
   {
     icon: "♦",
     title: "Every Platform Included",
-    desc: "Windows, macOS, and Linux. One purchase covers every machine you own — no extra fees per device.",
+    desc: "Windows and macOS. One purchase covers every machine you own — no extra fees per device.",
   },
   {
     icon: "♣",
@@ -44,8 +44,8 @@ const REASONS = [
   },
   {
     icon: "♠",
-    title: "Download Immediately",
-    desc: "After payment you see a download page in your browser and receive an email with links for all platforms.",
+    title: "Installers right away",
+    desc: "After payment you see a confirmation page with Windows and macOS links, and receive the same links by email.",
   },
 ];
 
@@ -78,7 +78,7 @@ export default function PricingPage() {
             </div>
 
             <BuyButton size="lg" className="w-full justify-center mb-3" />
-            <p className="text-[#9a8e85] text-xs text-center mb-6">Secure checkout · Download link sent instantly</p>
+            <p className="text-[#9a8e85] text-xs text-center mb-6">Secure checkout · Installer links sent instantly</p>
 
             <div className="section-divider mb-5" />
 
@@ -89,6 +89,14 @@ export default function PricingPage() {
                   {item}
                 </li>
               ))}
+              <li className="flex items-start gap-3 text-[#c4b8b0] text-sm">
+                <span className="text-gold flex-shrink-0 mt-0.5 text-xs">✓</span>
+                <span className="inline-flex items-center gap-2 flex-wrap">
+                  <WindowsIcon className="w-4 h-4 text-gold flex-shrink-0" />
+                  <MacIcon className="w-4 h-4 text-gold flex-shrink-0" />
+                  <span>Windows &amp; macOS — one license, both platforms</span>
+                </span>
+              </li>
             </ul>
           </div>
         </div>

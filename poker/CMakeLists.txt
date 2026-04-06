@@ -5,9 +5,24 @@ add_executable(Poker
     qml/application.qrc
 )
 
+target_include_directories(Poker PRIVATE "${CMAKE_BINARY_DIR}/generated")
+
 set_target_properties(Poker PROPERTIES
-    WIN32_EXECUTABLE ON 
+    WIN32_EXECUTABLE ON
 )
+
+# macOS: .app bundle required for macdeployqt and Gatekeeper-friendly distribution
+if(APPLE)
+    set_target_properties(Poker PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "Texas Hold'em Gym"
+        MACOSX_BUNDLE_GUI_IDENTIFIER com.texasholdemgym.poker
+        MACOSX_BUNDLE_INFO_STRING "Texas Hold'em Gym"
+        MACOSX_BUNDLE_LONG_VERSION_STRING "${POKER_APP_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${POKER_GIT_HASH}"
+    )
+endif()
 
 add_subdirectory(poker)
 
@@ -27,6 +42,13 @@ if(UNIX AND NOT APPLE)
         RENAME texas-holdem-gym.png)
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/packaging/linux/texas-holdem-gym.desktop"
         DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications")
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/packaging/linux/io.github.texasholdemgym.metainfo.xml.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/io.github.texasholdemgym.metainfo.xml"
+        @ONLY
+    )
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/io.github.texasholdemgym.metainfo.xml"
+        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/metainfo")
 
     add_custom_target(install-local
         COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/packaging/linux/install-local.sh"

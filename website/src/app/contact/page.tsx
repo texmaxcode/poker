@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 const TOPICS = [
   {
     icon: "📦",
-    title: "Purchase & Download",
-    desc: "Didn't receive your download link? Send us the email address you used to pay and we'll sort it out right away.",
+    title: "Purchase & installers",
+    desc: "Didn't receive your Windows or macOS installer links? Send us the email address you used to pay and we'll sort it out right away.",
     email: "support@texasholdemgym.com",
   },
   {

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import BuyButton from "@/components/BuyButton";
+import { PlatformWindowsMacLabel } from "@/components/PlatformIcons";
 
 export const metadata: Metadata = {
   title: "Buy Texas Hold'em Gym",
-  description: "Purchase Texas Hold'em Gym for $79 — one-time payment, all platforms.",
+  description: "Purchase Texas Hold'em Gym for $79 — one-time payment, Windows and macOS.",
 };
 
 export default function BuyPage() {
@@ -17,8 +18,10 @@ export default function BuyPage() {
         <p className="text-[#a89890] mb-2">
           You&apos;ll be redirected to Stripe&apos;s secure checkout page.
         </p>
-        <p className="text-[#7a7068] text-sm mb-8">
-          $79 one-time · All platforms · 30-day refund guarantee
+        <p className="text-[#7a7068] text-sm mb-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <span>$79 one-time ·</span>
+          <PlatformWindowsMacLabel iconClassName="w-3.5 h-3.5 text-[#7a7068]" />
+          <span>· 30-day refund guarantee</span>
         </p>
         <BuyButton size="lg" label="Proceed to Checkout — $79" />
         <p className="text-[#7a7068] text-xs mt-4">

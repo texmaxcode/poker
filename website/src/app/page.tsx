@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import BuyButton from "@/components/BuyButton";
+import { MacIcon, PlatformWindowsMacLabel, WindowsIcon } from "@/components/PlatformIcons";
 
 const FEATURES = [
   {
@@ -52,15 +53,15 @@ const FAQS = [
   },
   {
     q: "Which platforms are supported?",
-    a: "Windows, macOS, and Linux. All three are included in a single purchase — install it on every machine you own.",
+    a: "Windows and macOS. Both are included in a single purchase — install on every machine you own.",
   },
   {
     q: "Does it need an internet connection?",
     a: "No. Everything runs locally on your computer. No login, no cloud, no data leaves your machine.",
   },
   {
-    q: "How do I get the download?",
-    a: "Right after payment you see a download page and receive an email with links for all three platforms. No waiting.",
+    q: "How do I get the installers?",
+    a: "Right after payment you see a confirmation page with Windows and macOS links, and you receive the same links by email. No waiting.",
   },
   {
     q: "What is your refund policy?",
@@ -93,9 +94,15 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-5xl mx-auto px-4 pt-24 pb-0 text-center">
           {/* Top badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold/25 bg-gold/8 text-gold text-sm font-semibold mb-8 tracking-wide">
+          <div className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-1.5 rounded-full border border-gold/25 bg-gold/8 text-gold text-sm font-semibold mb-8 tracking-wide">
             <span className="text-xs">♠</span>
-            Windows · macOS · Linux &nbsp;·&nbsp; One-time $79
+            <span className="inline-flex items-center gap-1.5">
+              <WindowsIcon className="w-3.5 h-3.5 text-gold" />
+              <MacIcon className="w-3.5 h-3.5 text-gold" />
+              <span>Windows · macOS</span>
+            </span>
+            <span className="text-gold/50">·</span>
+            <span>One-time $79</span>
           </div>
 
           {/* Headline */}
@@ -119,7 +126,7 @@ export default function HomePage() {
               <span className="hidden sm:inline text-[#3d3028]">·</span>
               <span className="flex items-center gap-1.5"><span className="text-gold text-xs">✓</span> One-time payment</span>
               <span className="hidden sm:inline text-[#3d3028]">·</span>
-              <span className="flex items-center gap-1.5"><span className="text-gold text-xs">✓</span> Download instantly</span>
+              <span className="flex items-center gap-1.5"><span className="text-gold text-xs">✓</span> Installers after checkout</span>
             </div>
 
             <p className="text-xs text-[#9a8e85]">
@@ -149,13 +156,17 @@ export default function HomePage() {
       {/* ── Trust strip ───────────────────────────────────────────────────── */}
       <section className="border-y border-poker-border bg-poker-panel/60 py-4">
         <div className="max-w-4xl mx-auto px-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-          {[
-            "Runs fully offline",
-            "No account or cloud",
-            "Windows · macOS · Linux",
-            "Secure Stripe checkout",
-            "30-day refund policy",
-          ].map((t) => (
+          {["Runs fully offline", "No account or cloud"].map((t) => (
+            <span key={t} className="flex items-center gap-2 text-sm text-[#c4b8b0]">
+              <span className="w-1 h-1 rounded-full bg-gold inline-block flex-shrink-0" />
+              {t}
+            </span>
+          ))}
+          <span className="flex items-center gap-2 text-sm text-[#c4b8b0]">
+            <span className="w-1 h-1 rounded-full bg-gold inline-block flex-shrink-0" />
+            <PlatformWindowsMacLabel />
+          </span>
+          {["Secure Stripe checkout", "30-day refund policy"].map((t) => (
             <span key={t} className="flex items-center gap-2 text-sm text-[#c4b8b0]">
               <span className="w-1 h-1 rounded-full bg-gold inline-block flex-shrink-0" />
               {t}
@@ -256,7 +267,7 @@ export default function HomePage() {
               </div>
 
               <BuyButton size="lg" className="w-full justify-center mb-3" />
-              <p className="text-[#9a8e85] text-xs text-center mb-6">Secure checkout via Stripe · Download link sent immediately</p>
+              <p className="text-[#9a8e85] text-xs text-center mb-6">Secure checkout via Stripe · Installer links sent immediately</p>
 
               <div className="section-divider mb-5" />
 
@@ -270,7 +281,6 @@ export default function HomePage() {
                   "Pot odds calculator",
                   "Strategy solver",
                   "Win-rate tracker and bankroll history",
-                  "Windows, macOS & Linux",
                   "Free updates",
                   "30-day money-back guarantee",
                 ].map((item) => (
@@ -279,6 +289,14 @@ export default function HomePage() {
                     {item}
                   </li>
                 ))}
+                <li className="flex items-start gap-3 text-[#c4b8b0] text-sm">
+                  <span className="text-gold flex-shrink-0 mt-0.5 text-xs">✓</span>
+                  <span className="inline-flex items-center gap-2 flex-wrap">
+                    <WindowsIcon className="w-4 h-4 text-gold flex-shrink-0" />
+                    <MacIcon className="w-4 h-4 text-gold flex-shrink-0" />
+                    <span>Windows &amp; macOS — one license, both platforms</span>
+                  </span>
+                </li>
               </ul>
             </div>
           </div>
@@ -317,7 +335,7 @@ export default function HomePage() {
             One purchase. Every tool to sharpen your game — all yours, forever.
           </p>
           <BuyButton size="lg" />
-          <p className="text-[#9a8e85] text-sm mt-4">30-day money-back guarantee · Instant download</p>
+          <p className="text-[#9a8e85] text-sm mt-4">30-day money-back guarantee · Instant access to installers</p>
         </div>
       </section>
     </>

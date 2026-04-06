@@ -7,6 +7,15 @@ endif()
 
 project(Poker VERSION 0.1 LANGUAGES CXX)
 
+include("${CMAKE_SOURCE_DIR}/cmake/GitVersion.cmake")
+
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/generated")
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/version.h.in"
+    "${CMAKE_BINARY_DIR}/generated/poker_version.h"
+    @ONLY
+)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
