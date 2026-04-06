@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.26)
 
+# So `cmake -DBUILD_TESTING=OFF` is honored when include(CTest) defines the BUILD_TESTING option (CI / release builds).
+if(POLICY CMP0077)
+  cmake_policy(SET CMP0077 NEW)
+endif()
+
 # Qt commercial installer: silence "qtframework" license service prompts for moc/uic/rcc (set to 0 to enforce).
 if(NOT DEFINED ENV{QTFRAMEWORK_BYPASS_LICENSE_CHECK})
     set(ENV{QTFRAMEWORK_BYPASS_LICENSE_CHECK} "1")

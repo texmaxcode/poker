@@ -66,10 +66,10 @@ jobs:
         env:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           CMAKE_PREFIX_PATH: ${{ env.QT_ROOT_DIR }}
+        shell: pwsh
         run: |
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
-            -DCMAKE_PREFIX_PATH="$env:CMAKE_PREFIX_PATH"
+          $tc = Join-Path $env:VCPKG_ROOT "scripts\buildsystems\vcpkg.cmake"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 "-DCMAKE_TOOLCHAIN_FILE=$tc" "-DCMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH" -DBUILD_TESTING:BOOL=OFF
           cmake --build build --config Release --parallel
 
       - name: Stage, windeployqt, ZIP
@@ -113,7 +113,8 @@ jobs:
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
-            -DSQLite3_ROOT="$(brew --prefix sqlite)"
+            -DSQLite3_ROOT="$(brew --prefix sqlite)" \
+            -DBUILD_TESTING:BOOL=OFF
           cmake --build build -j"$(sysctl -n hw.ncpu)"
 
       - name: macdeployqt & DMG
