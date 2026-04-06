@@ -70,4 +70,4 @@ This repo does not generate an MSI/NSIS installer by default. You can wrap `dist
 
 ## GitHub Actions
 
-See `.github/workflows/build-desktop.yml` for an automated Windows build using vcpkg + Qt + `windeployqt`.
+See `.github/workflows/ci.yml` for an automated Windows build using vcpkg + Qt + `windeployqt`.

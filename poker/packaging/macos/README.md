@@ -40,4 +40,4 @@ Apple requires **notarization** for a smooth “Open” experience on other Macs
 
 ## GitHub Actions
 
-See `.github/workflows/build-desktop.yml` — builds on `macos-latest`, uploads the DMG as an artifact.
+See `.github/workflows/ci.yml` — macOS job on `macos-latest`, uploads the DMG as an artifact.
