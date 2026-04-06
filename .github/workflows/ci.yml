@@ -122,27 +122,24 @@ jobs:
             -DBUILD_TESTING:BOOL=OFF
           cmake --build build -j"$(sysctl -n hw.ncpu)"
 
-      - name: macdeployqt & DMG
+      - name: macdeployqt, codesign & DMG
         env:
           QT_ROOT_DIR: ${{ env.QT_ROOT_DIR }}
         run: |
           set -euo pipefail
           QML="${GITHUB_WORKSPACE}/poker/qml"
           QT_BIN="${QT_ROOT_DIR}/bin"
+          GITHASH=$(git -C "${GITHUB_WORKSPACE}" rev-parse --short=8 HEAD)
+          ARCH=$(uname -m)
+          DMG_NAME="TexasHoldemGym-macOS-${ARCH}-${GITHASH}.dmg"
           cd "${GITHUB_WORKSPACE}/build/poker"
-          "${QT_BIN}/macdeployqt" Poker.app -qmldir="${QML}" -dmg
+          "${QT_BIN}/macdeployqt" Poker.app -qmldir="${QML}"
+          codesign --force --deep --sign - Poker.app
+          rm -f "${DMG_NAME}"
+          hdiutil create -volname "Texas Hold'em Gym" -srcfolder Poker.app -ov -format UDZO "${DMG_NAME}"
           mkdir -p "${GITHUB_WORKSPACE}/dist/macos"
-          shopt -s nullglob
-          dmgs=( *.dmg )
-          shopt -u nullglob
-          if [ "${#dmgs[@]}" -gt 0 ]; then
-            CAND=$(ls -t "${dmgs[@]}" | head -1)
-            GITHASH=$(git -C "${GITHUB_WORKSPACE}" rev-parse --short=8 HEAD)
-            cp -f "$CAND" "${GITHUB_WORKSPACE}/dist/macos/TexasHoldemGym-macOS-$(uname -m)-${GITHASH}.dmg"
-            echo "DMG=${GITHUB_WORKSPACE}/dist/macos/TexasHoldemGym-macOS-$(uname -m)-${GITHASH}.dmg"
-          else
-            echo "::warning::No DMG produced; Poker.app is at build/poker/Poker.app"
-          fi
+          cp -f "${DMG_NAME}" "${GITHUB_WORKSPACE}/dist/macos/${DMG_NAME}"
+          echo "DMG=${GITHUB_WORKSPACE}/dist/macos/${DMG_NAME}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

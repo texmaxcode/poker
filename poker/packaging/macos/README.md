@@ -29,14 +29,16 @@ export CMAKE_PREFIX_PATH="$HOME/Qt/6.10.0/macos"
 
 Artifacts:
 
-- `build-macos/poker/Poker.app` — Qt frameworks embedded by `macdeployqt`
-- `dist/macos/TexasHoldemGym-macOS-arm64.dmg` or `…-x86_64.dmg` (suffix from `uname -m`)
+- `build-macos/poker/Poker.app` — Qt frameworks embedded by `macdeployqt`, then **ad-hoc signed** (`codesign --force --deep --sign -`) so embedded dylibs validate under dyld
+- `dist/macos/TexasHoldemGym-macOS-arm64-<githash>.dmg` or `…-x86_64-…` (architecture from `uname -m`)
 
 Override build dir: `BUILD_DIR=/tmp/poker-build ./poker/packaging/macos/build-release.sh`
 
+The DMG is built with **`hdiutil`** after signing so the image contains a consistently signed bundle. (Building the DMG with `macdeployqt -dmg` *before* signing can ship an app that crashes at launch with **Code Signature Invalid** / **CODESIGNING Invalid Page** while dyld loads a Qt library.)
+
 ## Notarization (distribution outside the Mac App Store)
 
-Apple requires **notarization** for a smooth “Open” experience on other Macs. After you have a signed `.app` or `.dmg`, use `xcrun notarytool` and `stapler`. This repo does not automate signing/notarization; add secrets in CI if you need it.
+Ad-hoc signing (`-`) is enough for local and CI builds; other Macs may need **Right-click → Open** the first time. For wide distribution, use a **Developer ID** identity with `codesign` and **`xcrun notarytool`** / **`stapler`**. This repo does not automate Developer ID signing or notarization; add signing secrets in CI if you need it.
 
 ## GitHub Actions
 

@@ -72,25 +72,20 @@ APP="${BUILD_DIR}/poker/Poker.app"
 [[ -d "${APP}" ]] || die "missing ${APP} — MACOSX_BUNDLE must be enabled for Poker (see poker/CMakeLists.txt)"
 
 echo "==> macdeployqt (frameworks + QML)…"
+# Sign the bundle after deploy: embedded Qt dylibs must be signed or dyld kills with
+# EXC_BAD_ACCESS / CODESIGNING Invalid Page (especially on newer macOS).
 rm -f "${BUILD_DIR}/poker/"*.dmg 2>/dev/null || true
-(
-  cd "${BUILD_DIR}/poker"
-  "${QT_BIN}/macdeployqt" "Poker.app" -qmldir="${QML_DIR}" -dmg
-)
-
 ARCH="$(uname -m)"
 DMG_NAME="TexasHoldemGym-macOS-${ARCH}-${POKER_GIT_HASH}.dmg"
 mkdir -p "${DIST_DIR}"
-shopt -s nullglob
-_dmgs=( "${BUILD_DIR}/poker/"*.dmg )
-shopt -u nullglob
-if [[ "${#_dmgs[@]}" -gt 0 ]]; then
-  # macdeployqt names the dmg from the bundle; pick the one we just built
-  CANDIDATE="$(ls -t "${_dmgs[@]}" | head -1)"
-  cp -f "${CANDIDATE}" "${DIST_DIR}/${DMG_NAME}"
-  echo "==> DMG: ${DIST_DIR}/${DMG_NAME}"
-else
-  echo "warning: no .dmg found next to Poker.app; app still at ${APP}" >&2
-fi
+(
+  cd "${BUILD_DIR}/poker"
+  "${QT_BIN}/macdeployqt" "Poker.app" -qmldir="${QML_DIR}"
+  codesign --force --deep --sign - "Poker.app"
+  rm -f "${DMG_NAME}"
+  hdiutil create -volname "Texas Hold'em Gym" -srcfolder "Poker.app" -ov -format UDZO "${DMG_NAME}"
+)
+cp -f "${BUILD_DIR}/poker/${DMG_NAME}" "${DIST_DIR}/${DMG_NAME}"
+echo "==> DMG: ${DIST_DIR}/${DMG_NAME}"
 
 echo "==> Done: ${APP}"
