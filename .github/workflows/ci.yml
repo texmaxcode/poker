@@ -76,11 +76,13 @@ jobs:
         env:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           CMAKE_PREFIX_PATH: ${{ env.QT_ROOT_DIR }}
+        shell: pwsh
         run: |
-          & "${{ github.workspace }}\poker\packaging\windows\build-release.ps1" `
-            -BuildDir "${{ github.workspace }}\build" `
-            -StagingDir "${{ github.workspace }}\dist\windows" `
-            -NoConfigure
+          $script = Join-Path $env:GITHUB_WORKSPACE "poker\packaging\windows\build-release.ps1"
+          $build = Join-Path $env:GITHUB_WORKSPACE "build"
+          $stage = Join-Path $env:GITHUB_WORKSPACE "dist\windows"
+          if (-not (Test-Path -LiteralPath $script)) { throw "Script not found: $script" }
+          & $script -BuildDir $build -StagingDir $stage -NoConfigure
 
       - name: Upload artifact (ZIP + folder)
         uses: actions/upload-artifact@v4
