@@ -67,13 +67,22 @@ function Find-QtRoot {
 
 function Get-ExePath {
     param([string]$Root)
+    # Visual Studio generator: Release output may be poker\Release\ or poker\x64\Release\ (toolset/arch).
     $candidates = @(
         (Join-Path $Root "poker\Release\Poker.exe"),
+        (Join-Path $Root "poker\x64\Release\Poker.exe"),
         (Join-Path $Root "poker\RelWithDebInfo\Poker.exe"),
+        (Join-Path $Root "poker\x64\RelWithDebInfo\Poker.exe"),
         (Join-Path $Root "poker\Poker.exe")
     )
     foreach ($c in $candidates) {
-        if (Test-Path $c) { return $c }
+        if (Test-Path -LiteralPath $c) { return $c }
+    }
+    $pokerDir = Join-Path $Root "poker"
+    if (Test-Path -LiteralPath $pokerDir) {
+        $found = Get-ChildItem -LiteralPath $pokerDir -Filter "Poker.exe" -Recurse -File -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($found) { return $found.FullName }
     }
     throw "Poker.exe not found under $Root — build Release first."
 }
