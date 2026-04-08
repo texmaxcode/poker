@@ -20,6 +20,10 @@ Windows and macOS jobs are **skipped** on other branches (e.g. feature branches)
 
 Builds the Snap when relevant paths change on **main**, **stage**, or **master** (see the workflow file for `paths` filters).
 
+## `deploy-amplify-website.yml` — Amplify (Next.js site)
+
+Runs on **push** to **main** or **stage** when **`website/`**, **`infra/`**, or **`amplify.yml`** change, and on **workflow_dispatch**. If **`infra/`** changed, it deploys the **CDK** stack `TexasHoldemGym-AmplifyHosting`. If **`website/`** or **`amplify.yml`** changed, it runs **`aws amplify start-job`** so the hosted app (and SSR) rebuilds. The public hostname (e.g. **texasholdemgym.com**) is configured in the AWS Amplify console under **Domain management**; the workflow only talks to AWS APIs.
+
 ## Local packaging
 
 See [poker/packaging/README.md](../poker/packaging/README.md) for Windows, macOS, and Linux packaging commands.

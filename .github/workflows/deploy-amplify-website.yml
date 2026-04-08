@@ -1,0 +1,122 @@
+# Deploy / refresh the marketing site on AWS Amplify Hosting.
+# Production URL (custom domain) is configured in Amplify → Domain management (e.g. texasholdemgym.com).
+#
+# Required repository secrets:
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY — IAM user or CI keys with CloudFormation/CDK + Amplify
+#   AMPLIFY_GITHUB_PAT — GitHub PAT (repo scope) for CDK context when updating the Amplify app resource
+#   AMPLIFY_APP_ID — Amplify app ID (from CDK output TexasHoldemGym-AmplifyHosting or Amplify console)
+#
+# Optional: repository variable AWS_REGION (defaults to us-east-1 in env below).
+
+name: Deploy website (Amplify)
+
+on:
+  push:
+    branches: [main, stage]
+    paths:
+      - "website/**"
+      - "infra/**"
+      - "amplify.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: amplify-website-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.flags.outputs.infra }}
+      website: ${{ steps.flags.outputs.website }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        if: github.event_name == 'push'
+        id: filter
+        with:
+          filters: |
+            infra:
+              - 'infra/**'
+            website:
+              - 'website/**'
+              - 'amplify.yml'
+
+      - id: flags
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "infra=true" >> "$GITHUB_OUTPUT"
+            echo "website=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "infra=${{ steps.filter.outputs.infra }}" >> "$GITHUB_OUTPUT"
+            echo "website=${{ steps.filter.outputs.website }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  cdk-amplify:
+    name: CDK deploy (Amplify Hosting stack)
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: infra/package-lock.json
+
+      - name: Install CDK dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy TexasHoldemGym-AmplifyHosting
+        env:
+          CDK_GITHUB_TOKEN: ${{ secrets.AMPLIFY_GITHUB_PAT }}
+        run: |
+          npx cdk deploy TexasHoldemGym-AmplifyHosting --require-approval never \
+            -c "githubOwner=${{ github.repository_owner }}" \
+            -c "githubRepo=${{ github.event.repository.name }}" \
+            -c "githubToken=${CDK_GITHUB_TOKEN}" \
+            -c "productionBranch=${{ github.ref_name }}"
+
+  amplify-build:
+    name: Start Amplify build
+    needs: changes
+    if: needs.changes.outputs.website == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Start production build (texasholdemgym.com after Amplify finishes)
+        env:
+          APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+        run: |
+          if [ -z "${APP_ID}" ]; then
+            echo "::error::Set repository secret AMPLIFY_APP_ID (Amplify Console → App settings → General, or CDK output)."
+            exit 1
+          fi
+          aws amplify start-job \
+            --app-id "${APP_ID}" \
+            --branch-name "${{ github.ref_name }}" \
+            --job-type RELEASE
+          echo "Build queued. When it completes, production traffic uses your custom domain (e.g. texasholdemgym.com) if configured in Amplify."

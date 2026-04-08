@@ -219,8 +219,7 @@ void GamePersistence::loadPersistedSettings()
 
     if (AppStateSqlite::contains(QStringLiteral("v1/smallBlind")))
     {
-        game_.max_on_table_bb_ =
-            clamp_int(AppStateSqlite::value(QStringLiteral("v1/maxOnTableBb"), 100).toInt(), 1, 10000);
+        game_.max_on_table_bb_ = clamp_int(AppStateSqlite::value(QStringLiteral("v1/maxOnTableBb"), 100).toInt(), 1, 10000);
         const int sb = clamp_int(AppStateSqlite::value(QStringLiteral("v1/smallBlind")).toInt(), 1, 500);
         const int bb = clamp_int(AppStateSqlite::value(QStringLiteral("v1/bigBlind")).toInt(), 1, 500);
         const int st = clamp_int(AppStateSqlite::value(QStringLiteral("v1/streetBet")).toInt(), 1, 100000);
@@ -247,8 +246,7 @@ void GamePersistence::loadPersistedSettings()
     else
     {
         if (AppStateSqlite::contains(QStringLiteral("v1/maxOnTableBb")))
-            game_.max_on_table_bb_ =
-                clamp_int(AppStateSqlite::value(QStringLiteral("v1/maxOnTableBb")).toInt(), 1, 10000);
+            game_.max_on_table_bb_ = clamp_int(AppStateSqlite::value(QStringLiteral("v1/maxOnTableBb")).toInt(), 1, 10000);
         if (AppStateSqlite::contains(QStringLiteral("v1/bigBlind")))
             game_.big_blind = clamp_int(AppStateSqlite::value(QStringLiteral("v1/bigBlind")).toInt(), 1, 500);
         if (AppStateSqlite::contains(QStringLiteral("v1/streetBet")))

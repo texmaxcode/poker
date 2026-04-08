@@ -660,9 +660,7 @@ void game::schedule_next_hand_if_idle()
 
 void game::bot_action_pause()
 {
-    if (!bot_action_delay_enabled_)
-        return;
-    if (!bot_slow_actions_)
+    if (!bot_slow_actions_ or !bot_action_delay_enabled_)
         return;
     /// `flush_ui()` already ran `processEvents`; one more pass so the acting-seat highlight is queued.
     /// A plain `msleep` then blocked the GUI thread **without** processing events, so Qt Quick often

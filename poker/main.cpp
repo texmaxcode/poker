@@ -87,16 +87,6 @@ int main(int argc, char *argv[])
     TrainingController trainer(&training_store);
     SessionStore session_store;
 
-    // Headless self-test for debugging crashes in toy solver code paths.
-    const QStringList args = QCoreApplication::arguments();
-    if (args.contains(QStringLiteral("--selftest-leduc")))
-    {
-        const QVariantMap r = toy_nash_solver.solveLeduc(2000);
-        const QString s = r.value(QStringLiteral("summaryText")).toString();
-        qInfo().noquote() << s;
-        return 0;
-    }
-
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/"));
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamily"), appFontFamily);

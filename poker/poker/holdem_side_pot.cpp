@@ -11,8 +11,7 @@ bool nlhe_build_side_pot_slices(const std::vector<int> &hand_contribution_per_se
         return false;
     slices_out->clear();
 
-    const long sum =
-        std::accumulate(hand_contribution_per_seat.begin(), hand_contribution_per_seat.end(), 0L);
+    const long sum = std::accumulate(hand_contribution_per_seat.begin(), hand_contribution_per_seat.end(), 0L);
     if (sum != static_cast<long>(total_pot_chips) || total_pot_chips <= 0)
         return false;
 

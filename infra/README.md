@@ -13,6 +13,10 @@ Monorepo build is defined in the repository root **`amplify.yml`** (`appRoot: we
 - AWS CLI configured (`aws sts get-caller-identity`)
 - CDK bootstrap once per account/region: `./scripts/bootstrap.sh`
 
+## GitHub Actions (Amplify website)
+
+Workflow [`.github/workflows/deploy-amplify-website.yml`](../.github/workflows/deploy-amplify-website.yml) runs on pushes to **`main`** / **`stage`** when **`website/`**, **`infra/`**, or **`amplify.yml`** change. It **CDK-deploys** `TexasHoldemGym-AmplifyHosting` when `infra/` changes, and **starts an Amplify build** when the site or `amplify.yml` changes. Configure repository **secrets** listed at the top of that workflow (AWS keys, `AMPLIFY_GITHUB_PAT`, `AMPLIFY_APP_ID`). The live hostname (**e.g. texasholdemgym.com**) is set under Amplify → **Domain management**, not in the workflow file.
+
 ## Commands
 
 | Action | Command |
