@@ -72,6 +72,7 @@ Table stakes, per-seat bot strategy and range text (exported form), per-seat **b
 | Document | Contents |
 |----------|----------|
 | [docs/ci.md](docs/ci.md) | GitHub Actions: which jobs run on which branches (Linux vs Windows/macOS/snap) |
+| [docs/github-actions-aws-amplify.md](docs/github-actions-aws-amplify.md) | **Setup:** GitHub Actions secrets and deploy to AWS Amplify (marketing site) |
 | [docs/building.md](docs/building.md) | Dependencies, CMake configure, tests, card assets script, troubleshooting |
 | [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, persistence |
 | [docs/game-in-code.md](docs/game-in-code.md) | NLHE as implemented: blinds, streets, side pots, stake cap, bankroll |

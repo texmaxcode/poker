@@ -1,5 +1,4 @@
-# Linux (build + tests), Windows (ZIP + windeployqt), macOS (DMG + macdeployqt).
-# Windows/macOS jobs run only on main and stage (see docs/ci.md).
+# Linux (build + tests), Windows (ZIP + windeployqt), macOS (DMG + macdeployqt) — same triggers for all jobs.
 name: CI
 
 on:
@@ -40,7 +39,6 @@ jobs:
 
   windows:
     name: Windows (MSVC + vcpkg + windeployqt)
-    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'stage')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +94,6 @@ jobs:
 
   macos:
     name: macOS (Ninja + macdeployqt DMG)
-    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage') || github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'stage')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
