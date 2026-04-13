@@ -1,17 +1,20 @@
 #ifndef TEXAS_HOLDEM_GYM_CARDS_H
 #define TEXAS_HOLDEM_GYM_CARDS_H
 
-#include <vector>
-#include <iostream>
+#include <iosfwd>
 #include <string>
+#include <type_traits>
+#include <vector>
 
 #include <QString>
 
-#include "utils.hpp"
-#include <algorithm>
-#include <random>
-
 #define UNKNOWN "Unknown"
+
+template <typename Enumeration>
+auto as_integer(Enumeration const value) -> typename std::underlying_type<Enumeration>::type
+{
+  return static_cast<typename std::underlying_type<Enumeration>::type>(value);
+}
 
 enum class Suite
 {

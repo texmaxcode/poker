@@ -33,7 +33,7 @@ You need a **toolchain**, **CMake**, **Qt 6.10+** (Quick stack), and **Boost** (
 |-------------|--------|
 | CMake | **3.26+** (`cmake_minimum_required` in tree) |
 | C++ compiler | **C++17** (GCC, Clang, MSVC supported in principle) |
-| Qt 6 | **≥ 6.10** — components: **Core**, **Gui**, **Qml**, **Quick** (Quick pulls Gui/OpenGL stack on many platforms) |
+| Qt 6 | **≥ 6.10** — components: **Core**, **Gui**, **Qml**, **Quick**, **Network** (Quick pulls Gui stack on many platforms) |
 | Boost | **≥ 1.70** — **unit_test_framework** only, for `Test_poker` when tests are enabled |
 | Build backend | **Ninja** recommended (used by `build.sh`); Makefile generators work too |
 
@@ -49,10 +49,10 @@ ctest --test-dir build --output-on-failure
 
 To configure **without** tests (no Boost required): `-DBUILD_TESTING=OFF`.
 
-Convenience script (expects `QT_LIBS` or defaults in the script — edit for your machine):
+Convenience script (requires **`CMAKE_PREFIX_PATH`** or **`QT_LIBS`** pointing at your Qt 6 prefix):
 
 ```bash
-QT_LIBS=/path/to/Qt/6.10.0/gcc_64 ./build.sh
+CMAKE_PREFIX_PATH=/path/to/Qt/6.10.0/gcc_64 ./build.sh
 ```
 
 **Run** (binary name and path):

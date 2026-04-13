@@ -1,7 +1,10 @@
 #include "cards.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <iostream>
+#include <random>
 
 namespace {
 
@@ -186,8 +189,6 @@ card_deck::card_deck()
 
 void card_deck::shuffle()
 {
-    // Might be good for testing.
-    // auto random_engine = std::default_random_engine{};
     std::random_device rd;
     std::mt19937 generator(rd());
     std::shuffle(cards.begin(), cards.end(), generator);

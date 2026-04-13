@@ -98,7 +98,7 @@ This runs the **`poker.unit`** test (`Test_poker` executable).
 The script:
 
 1. Removes and recreates the build directory (`DESTINATION`, default `./build`)
-2. Configures with **Ninja**, `CMAKE_PREFIX_PATH` from **`QT_LIBS`** (default is a developer-specific path—**override `QT_LIBS`** for your machine)
+2. Configures with **Ninja**, `CMAKE_PREFIX_PATH` from **`CMAKE_PREFIX_PATH`** or **`QT_LIBS`** (both must point at your Qt 6 prefix; the script exits with an error if neither is set)
 3. Builds
 4. Runs **ctest**
 5. Launches `./build/poker/Poker`
