@@ -6,7 +6,7 @@
 | **Windows** | [`windows/`](./windows/) | `dist/windows/` + optional `TexasHoldemGym-Windows-x64-<githash>.zip` |
 | **macOS** | [`macos/`](./macos/) | `Poker.app`, `dist/macos/TexasHoldemGym-macOS-*.dmg` |
 
-Shared requirements: **CMake** ≥ 3.26, **Qt 6.10** (Quick/QML), **SQLite3** (CMake `SQLite::SQLite3`).
+Shared requirements: **CMake** ≥ 3.26, **Qt 6.10** (Quick/QML + **Network** for QML `XMLHttpRequest` / range JSON), **SQLite3** (CMake `SQLite::SQLite3`).
 
 - **Windows**: SQLite via **vcpkg** — use repo root [`vcpkg.json`](../../vcpkg.json) and `-DCMAKE_TOOLCHAIN_FILE=…/vcpkg.cmake`.
 - **macOS**: `brew install sqlite` and pass `-DSQLite3_ROOT=$(brew --prefix sqlite)` if needed.

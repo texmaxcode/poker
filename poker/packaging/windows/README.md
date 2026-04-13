@@ -60,14 +60,33 @@ build-release.cmd
 1. Configures CMake in **Release** (Ninja if `ninja` is on `PATH`, else multi-config Visual Studio).
 2. Builds target `Poker`.
 3. Copies `Poker.exe` to the staging folder.
-4. Copies `sqlite3.dll` from vcpkg when `VCPKG_ROOT` is set.
-5. Runs Qt’s **`windeployqt`** with `--qmldir` pointing at `poker/qml` so Quick/QML is included.
-6. Optionally zips the staging directory.
+4. Copies `sqlite3.dll` from vcpkg (`installed\<triplet>\bin`, triplet = `VCPKG_DEFAULT_TRIPLET` or `x64-windows`).
+5. Runs Qt’s **`windeployqt`** with `--qmldir` pointing at `poker/qml`, **`--release`**, and **`--compiler-runtime`**. The last flag copies the **MSVC runtime** (`vcruntime*.dll`, `msvcp*.dll`, etc.) next to `Poker.exe` so the app runs on PCs that never installed the [VC++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+6. Walks **PE imports** with **`dumpbin`** (from VS) and copies any matching **`.dll` still missing** from **vcpkg `installed\<triplet>\bin`** and from **Qt’s `bin`** (first match wins). Covers **vcpkg transitive deps** (e.g. zlib for SQLite) and any **Qt DLL** still absent after `windeployqt` (unusual, but safe). If `dumpbin` is not available, use **“x64 Native Tools”** / **Developer PowerShell for VS** or rely on CI.
+7. Optionally zips the staging directory.
 
-## Installer (.exe setup)
+## Installer (Inno Setup)
 
-This repo does not generate an MSI/NSIS installer by default. You can wrap `dist\windows` with [WiX](https://wixtoolset.org/), [Inno Setup](https://jrsoftware.org/isinfo.php), or ship the ZIP as on the website.
+CI and local builds can produce a single **`TexasHoldemGym-Setup-<version>-<githash>.exe`** under **`dist\`**.
+
+1. Install [Inno Setup 6](https://jrsoftware.org/isdl.php).
+2. Run **`build-release.ps1`** so **`dist\windows`** is complete.
+3. From **`poker\packaging\windows`**:
+
+```powershell
+.\build-installer.ps1
+```
+
+Override staging or compiler:
+
+```powershell
+.\build-installer.ps1 -StagingDir "D:\out\windows" -IsccPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+```
+
+The script **`TexasHoldemGym.iss`** installs under **Program Files**, Start menu, optional desktop icon, and uninstaller. For **MSI** (enterprise deployment), generate a package with [WiX](https://wixtoolset.org/) using the same **`dist\windows`** tree as source.
+
+**Code signing:** sign **`Poker.exe`** before `build-installer.ps1`, or add a `SignTool` line in the `.iss` file once you have a certificate.
 
 ## GitHub Actions
 
-See `.github/workflows/ci.yml` for an automated Windows build using vcpkg + Qt + `windeployqt`.
+See `.github/workflows/ci.yml`: Windows job runs vcpkg, Qt, **`build-release.ps1`**, Inno Setup, and uploads the ZIP, staged folder, and **`dist\TexasHoldemGym-Setup-*.exe`**.

@@ -46,7 +46,7 @@ Page {
         id: scrollView
         anchors.fill: parent
         clip: true
-        topPadding: Theme.uiScrollViewTopPadding
+        topPadding: Theme.trainerPageTopPadding
 
         RowLayout {
             width: scrollView.availableWidth
@@ -95,7 +95,7 @@ Page {
                             wrapMode: Text.WordWrap
                             text: qsTr(
                                 "Counts every trainer answer. Accuracy is the share graded “Correct” (frequency ≥70% in the loaded strategy). "
-                                + "EV lost adds flop EV gaps in big blinds vs the best line; preflop rows add 0 EV here. Reset clears stats but keeps your auto-advance delay.")
+                                + "EV lost adds postflop EV gaps in big blinds vs the best line; preflop rows add 0 EV here. Reset clears stats but keeps your auto-advance delay.")
                             color: Theme.textSecondary
                             font.pixelSize: Theme.trainerBodyPx
                             lineHeight: Theme.bodyLineHeight
@@ -106,9 +106,11 @@ Page {
                         readonly property real totalEv: Number(page.trainingProgress.totalEvLossBb || 0)
                         readonly property real accPct: totalD > 0 ? (100.0 * totalC / totalD) : 0
 
-                        RowLayout {
+                        GridLayout {
                             Layout.fillWidth: true
-                            spacing: Theme.uiGroupInnerSpacing
+                            columns: progressCol.width > 520 ? 3 : 1
+                            rowSpacing: Theme.uiGroupInnerSpacing
+                            columnSpacing: Theme.uiGroupInnerSpacing
 
                             Rectangle {
                                 Layout.fillWidth: true
@@ -261,11 +263,19 @@ Page {
                     }
                 }
 
-                Item {
+                Flow {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 34
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.trainerDrillHudSpacing
+                    layoutDirection: Qt.LeftToRight
+
+                    Item {
+                        width: Math.max(0, (parent.width - drillNavContent.implicitWidth) / 2)
+                        height: 1
+                        visible: drillNavContent.implicitWidth < parent.width
+                    }
+
+                    Flow {
+                        id: drillNavContent
                         spacing: Theme.trainerDrillHudSpacing
                         GameButton {
                             text: qsTr("Preflop")

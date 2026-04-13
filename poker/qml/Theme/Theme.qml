@@ -131,6 +131,10 @@ QtObject {
 
     /// Training / drill screens: keep readable line length and controls off ultra-wide edges.
     readonly property int trainerContentMaxWidth: 920
+    /// Extra inset below the app header on training drill pages (keeps content off the toolbar rule).
+    readonly property int trainerPageTopPadding: 4
+    /// Floor for `GameControls.hudScale` on trainers — must stay below ~0.5 or the action dock steals too much height on short windows.
+    readonly property real trainerHudMinScale: 0.38
     /// Flop trainer: community cards match table scale so pot + board + seat fit without overlap.
     readonly property int trainerFlopBoardCardWidth: 100
     readonly property int trainerFlopBoardCardHeight: 148
@@ -233,6 +237,28 @@ QtObject {
         return dedup.join(" · ")
     }
 
+    /// Human-friendly label for preflop scenario mode keys (e.g. "call_vs_UTG" → "Call vs UTG").
+    function trainerModeDisplayLabel(mode) {
+        if (!mode)
+            return ""
+        var m = String(mode).trim()
+        if (m === "open")
+            return "Open (RFI)"
+        if (m === "call")
+            return "Call"
+        if (m === "defend")
+            return "Defend"
+        if (m === "vs3bet")
+            return "vs 3-Bet"
+        if (m.indexOf("call_vs_") === 0)
+            return "Call vs " + m.substring(8).toUpperCase()
+        if (m.indexOf("3bet_vs_") === 0)
+            return "3-Bet vs " + m.substring(8).toUpperCase()
+        if (m === "3bet")
+            return "3-Bet"
+        return m.charAt(0).toUpperCase() + m.slice(1)
+    }
+
     /// Typography for training copy — sized for Merriweather (wider serif; Oswald was condensed so read smaller).
     readonly property int trainerPageHeadlinePt: 19
     readonly property int trainerSectionPx: 16
@@ -242,24 +268,21 @@ QtObject {
     readonly property int trainerMetricValuePx: 20
     readonly property int trainerToolButtonPx: 14
     readonly property int trainerButtonLabelPx: 15
-    readonly property int trainerColumnSpacing: 14
+    readonly property int trainerColumnSpacing: 6
     readonly property int trainerPanelPadding: 14
     readonly property int trainerPanelRadius: 10
-    /// Drill panel: min / max / fallback height — table-aligned layout (pot/board top, seat bottom).
-    readonly property int trainerDrillPanelMinH: 600
-    readonly property int trainerDrillPanelMaxH: 760
-    readonly property int trainerDrillPanelFallbackH: 660
-    readonly property real trainerDrillPanelViewportFrac: 0.58
-
-    /// Picks a drill panel height from the scroll viewport so short windows are not forced to 600px+.
-    function trainerDrillPanelHeight(availableScrollHeight) {
-        var h = availableScrollHeight
-        if (h <= 0)
-            return trainerDrillPanelFallbackH
-        var want = Math.round(h * trainerDrillPanelViewportFrac)
-        var minH = Math.min(trainerDrillPanelMinH, Math.max(260, h - 220))
-        var maxH = Math.min(trainerDrillPanelMaxH, Math.max(minH, h - 28))
-        return Math.max(minH, Math.min(maxH, want))
+    /// Drill panel: minimum height — pot + tiny board + compact seat at smallest drillScale.
+    readonly property int trainerDrillPanelMinH: 100
+    /// Drill panel: maximum height — prevents the drill from dominating ultra-tall windows.
+    readonly property int trainerDrillPanelMaxH: 580
+    /// Shrinks seat `uiScale` when the seat row is shorter than the design-height seat (avoids clipping).
+    function trainerSeatUiScaleClamped(seatScale, wrapHeight) {
+        var s = seatScale > 0 ? seatScale : 1.0
+        var h = wrapHeight
+        if (!(h > 1))
+            return Math.max(0.28, Math.min(1.0, s))
+        var designH = 288.0
+        return Math.max(0.28, Math.min(s, h / designH))
     }
     /// Same formula as `GameScreen` `tableArea.tableScale` — hero seat + HUD scale with viewport size.
     function tableScaleForViewport(w, h) {

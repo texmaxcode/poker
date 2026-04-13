@@ -91,13 +91,13 @@ Item {
             return design
         return Math.max(96, inner)
     }
-    readonly property int namePosSpacing: Math.max(2, Math.round(4 * _s))
-    /// Horizontal gap between name and position badges (slightly wider than `namePosSpacing` for clear separation).
-    readonly property int namePosGap: Math.max(namePosSpacing, Math.round(6 * _s))
     readonly property int cardW: Math.round(Theme.holeCardWidth * _s)
     readonly property int cardH: Math.round(Theme.holeCardHeight * _s)
     readonly property int cardGap: Math.max(2, Math.round(Theme.holeCardGap * _s))
     readonly property int cardRowH: Math.round(Theme.holeCardHeight * _s)
+    readonly property int namePosSpacing: Math.max(2, Math.round(4 * _s))
+    /// Horizontal gap between name and position badges (slightly wider than `namePosSpacing` for clear separation).
+    readonly property int namePosGap: Math.max(namePosSpacing, Math.round(6 * _s))
     /// Street / timer band: one text line + optional thin progress (timer when thinking, action after).
     readonly property int streetRowH: Math.max(28, Math.round(22 * _s) + Math.max(4, Math.round(5 * _s)) + 6)
     readonly property bool seatUsesHumanDecisionUi: root.isHumanSeat && root.interactiveHuman

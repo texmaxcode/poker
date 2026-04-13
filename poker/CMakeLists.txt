@@ -32,6 +32,7 @@ target_link_libraries(Poker
     PRIVATE Qt${QT_VERSION_MAJOR}::Gui
     PRIVATE Qt${QT_VERSION_MAJOR}::Quick
     PRIVATE Qt${QT_VERSION_MAJOR}::Qml
+    PRIVATE Qt${QT_VERSION_MAJOR}::Network
 )
 
 if(UNIX AND NOT APPLE)
