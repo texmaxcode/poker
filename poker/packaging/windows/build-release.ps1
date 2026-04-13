@@ -101,6 +101,94 @@ function Get-ExePath {
     return $all[0].FullName
 }
 
+function Find-DumpBin {
+    $cmd = Get-Command dumpbin -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (-not (Test-Path -LiteralPath $vswhere)) { return $null }
+    $inst = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
+    if (-not $inst) { return $null }
+    $msvcRoot = Join-Path $inst "VC\Tools\MSVC"
+    if (-not (Test-Path -LiteralPath $msvcRoot)) { return $null }
+    $msvc = Get-ChildItem -LiteralPath $msvcRoot -Directory -ErrorAction SilentlyContinue | Sort-Object { $_.Name } -Descending | Select-Object -First 1
+    if (-not $msvc) { return $null }
+    $db = Join-Path $msvc.FullName "bin\Hostx64\x64\dumpbin.exe"
+    if (Test-Path -LiteralPath $db) { return $db }
+    return $null
+}
+
+function Get-PeImportDlls {
+    param(
+        [Parameter(Mandatory = $true)][string] $DumpBin,
+        [Parameter(Mandatory = $true)][string] $PePath
+    )
+    if (-not (Test-Path -LiteralPath $PePath)) { return @() }
+    $out = @(& $DumpBin /nologo /dependents $PePath 2>&1 | ForEach-Object { "$_" })
+    if ($LASTEXITCODE -ne 0) { return @() }
+    $deps = New-Object System.Collections.Generic.List[string]
+    foreach ($line in $out) {
+        if ($line -match '(?i)^\s+(\S+\.dll)\s*$') {
+            $deps.Add($Matches[1])
+        }
+    }
+    return $deps
+}
+
+function Copy-TransitiveDllsFromSearchBins {
+    <#
+    .SYNOPSIS
+      For every PE in staging, copy missing dependent .dll from search roots (vcpkg bin, Qt bin).
+      Catches zlib→sqlite and any Qt DLL windeployqt did not place (e.g. optional imports).
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string] $StagingDir,
+        [Parameter(Mandatory = $true)][string[]] $SearchBins,
+        [string] $DumpBin = ""
+    )
+    $roots = @($SearchBins | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique)
+    if ($roots.Count -eq 0) { return }
+    if (-not $DumpBin) {
+        $DumpBin = Find-DumpBin
+    }
+    if (-not $DumpBin -or -not (Test-Path -LiteralPath $DumpBin)) {
+        Write-Host "    (skip transitive DLL sync: dumpbin not found — install VS C++ tools or use Developer shell)"
+        return
+    }
+    $queue = New-Object System.Collections.Queue
+    Get-ChildItem -LiteralPath $StagingDir -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Extension -match '(?i)^\.(exe|dll)$' } |
+        ForEach-Object { $queue.Enqueue($_.FullName) }
+    $processed = @{}
+    while ($queue.Count -gt 0) {
+        $pe = [string]$queue.Dequeue()
+        if ($processed.ContainsKey($pe)) { continue }
+        $processed[$pe] = $true
+        foreach ($dep in (Get-PeImportDlls -DumpBin $DumpBin -PePath $pe)) {
+            $name = Split-Path -Leaf $dep
+            if ($name -match '(?i)^(api-ms-|ext-ms-)') { continue }
+            $dest = Join-Path $StagingDir $name
+            if (Test-Path -LiteralPath $dest) { continue }
+            foreach ($bin in $roots) {
+                $src = Join-Path $bin $name
+                if (Test-Path -LiteralPath $src) {
+                    Copy-Item -LiteralPath $src -Destination $dest
+                    Write-Host "    Copied runtime: $name (from $bin)"
+                    $queue.Enqueue($dest)
+                    break
+                }
+            }
+        }
+    }
+}
+
+function Get-VcpkgInstalledBin {
+    if (-not $env:VCPKG_ROOT) { return $null }
+    $trip = if ($env:VCPKG_DEFAULT_TRIPLET) { $env:VCPKG_DEFAULT_TRIPLET } else { "x64-windows" }
+    $bin = Join-Path $env:VCPKG_ROOT "installed\$trip\bin"
+    if (Test-Path -LiteralPath $bin) { return $bin }
+    return $null
+}
+
 $QtInstall = Find-QtRoot
 $Windeployqt = Join-Path $QtInstall "bin\windeployqt.exe"
 if (-not (Test-Path $Windeployqt)) {
@@ -154,17 +242,34 @@ New-Item -ItemType Directory -Path $StagingDir | Out-Null
 $StageExe = Join-Path $StagingDir "Poker.exe"
 Copy-Item -Path $Exe -Destination $StageExe
 
-if ($env:VCPKG_ROOT) {
-    $sqliteDll = Join-Path $env:VCPKG_ROOT "installed\x64-windows\bin\sqlite3.dll"
-    if (Test-Path $sqliteDll) {
-        Copy-Item $sqliteDll $StagingDir
-        Write-Host "    Copied sqlite3.dll from vcpkg"
+$VcpkgBin = Get-VcpkgInstalledBin
+if ($VcpkgBin) {
+    $sqliteDll = Join-Path $VcpkgBin "sqlite3.dll"
+    if (Test-Path -LiteralPath $sqliteDll) {
+        Copy-Item -LiteralPath $sqliteDll -Destination $StagingDir
+        Write-Host "    Copied sqlite3.dll from vcpkg ($VcpkgBin)"
+    } else {
+        Write-Warning "sqlite3.dll not found under vcpkg bin: $VcpkgBin — app will fail at runtime if SQLite is dynamic."
     }
+} elseif ($env:VCPKG_ROOT) {
+    Write-Warning "VCPKG_ROOT is set but installed\bin not found (check VCPKG_DEFAULT_TRIPLET)."
+} else {
+    Write-Warning "VCPKG_ROOT not set: sqlite3.dll will not be copied; use vcpkg or place sqlite3.dll next to Poker.exe."
 }
 
-Write-Host "==> windeployqt (Qt + QML)…"
-& $Windeployqt --qmldir $QmlDir --release $StageExe
+Write-Host "==> windeployqt (Qt + QML + MSVC runtime)…"
+# --compiler-runtime bundles vcruntime/msvcp/concrt next to the exe so clean Windows installs work without a separate VC++ Redistributable install.
+& $Windeployqt --qmldir $QmlDir --release --compiler-runtime $StageExe
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+$QtBin = Join-Path $QtInstall "bin"
+$extraBins = New-Object System.Collections.Generic.List[string]
+if ($VcpkgBin) { [void]$extraBins.Add($VcpkgBin) }
+if (Test-Path -LiteralPath $QtBin) { [void]$extraBins.Add($QtBin) }
+if ($extraBins.Count -gt 0) {
+    Write-Host "==> Transitive DLLs (vcpkg + Qt bin, via dumpbin)…"
+    Copy-TransitiveDllsFromSearchBins -StagingDir $StagingDir -SearchBins @($extraBins)
+}
 
 if (-not $SkipZip) {
     $zipName = Join-Path $RepoRoot "TexasHoldemGym-Windows-x64-${gitHash}.zip"

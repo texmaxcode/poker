@@ -33,7 +33,7 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
 option(BUILD_SHARED_LIBS "Build shared libraries?" NO)
 
-find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Qml Quick)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Core Gui Qml Quick Network)
 # Persistence uses the system SQLite3 C API (not Qt SQL plugins), so it works with bundled installs
 # and arbitrary `QT_PLUGIN_PATH` without `sqldrivers`.
 find_package(SQLite3 REQUIRED)
