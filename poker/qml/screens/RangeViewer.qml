@@ -4,8 +4,6 @@ import QtQuick.Layouts
 import Theme 1.0
 import PokerUi 1.0
 
-/// Read-only 13×13 opening-range reference from `preflop_ranges_v1.json` (mode `open`).
-/// Uses the same `RangeGrid` component as Setup so layout and composite layers match.
 Page {
     id: page
     padding: 0
@@ -13,10 +11,11 @@ Page {
 
     property StackLayout stackLayout: null
 
-    readonly property var kPositions: ["UTG", "HJ", "CO", "BTN", "SB"]
-    readonly property string rangeMode: "open"
+    readonly property var kPositions: ["UTG", "HJ", "CO", "BTN", "SB", "BB"]
 
     property string position: "BTN"
+    property string rangeMode: "open"
+    property var availableModes: []
     property var scenariosRoot: null
     property bool loadFailed: false
     property string loadError: ""
@@ -26,9 +25,7 @@ Page {
     property var raiseW: []
     property bool hasScenario: false
 
-    /// Stable empty binding for unused composite layers (avoid `[]` in bindings each frame).
     readonly property var _emptyLayer: []
-    /// Align JSON actions with Setup layers: first-in “raise” → Open layer; other modes use Raise.
     readonly property var gridWRaise: page.rangeMode === "open" ? page._emptyLayer : page.raiseW
     readonly property var gridWBet: page.rangeMode === "open" ? page.raiseW : page._emptyLayer
 
@@ -47,7 +44,31 @@ Page {
         }
     }
 
-    function findScenarioForPosition() {
+    function rebuildAvailableModes() {
+        availableModes = []
+        if (!scenariosRoot)
+            return
+        const arr = scenariosRoot.scenarios
+        if (!arr || !arr.length)
+            return
+        const want = String(position).trim().toUpperCase()
+        var seen = []
+        for (let i = 0; i < arr.length; ++i) {
+            const s = arr[i]
+            if (!s) continue
+            const p = String(s.position || "").trim().toUpperCase()
+            if (p !== want) continue
+            const m = String(s.mode || "open").trim()
+            if (seen.indexOf(m) < 0)
+                seen.push(m)
+        }
+        availableModes = seen
+        if (seen.indexOf(rangeMode) < 0 && seen.length > 0)
+            rangeMode = seen[0]
+        findScenarioForMode()
+    }
+
+    function findScenarioForMode() {
         hasScenario = false
         foldW = []
         callW = []
@@ -60,15 +81,13 @@ Page {
         const want = String(position).trim().toUpperCase()
         for (let i = 0; i < arr.length; ++i) {
             const s = arr[i]
-            if (!s)
-                continue
+            if (!s) continue
             const p = String(s.position || "").trim().toUpperCase()
             const m = String(s.mode || "open").trim()
             if (p !== want || m !== page.rangeMode)
                 continue
             const a = s.actions
-            if (!a)
-                continue
+            if (!a) continue
             const fa = a.fold
             const ca = a.call
             const ra = a.raise
@@ -96,7 +115,7 @@ Page {
             }
             try {
                 scenariosRoot = JSON.parse(xhr.responseText)
-                findScenarioForPosition()
+                rebuildAvailableModes()
             } catch (e) {
                 loadFailed = true
                 loadError = qsTr("Invalid range file.")
@@ -106,7 +125,8 @@ Page {
         xhr.send()
     }
 
-    onPositionChanged: findScenarioForPosition()
+    onPositionChanged: rebuildAvailableModes()
+    onRangeModeChanged: findScenarioForMode()
 
     Component.onCompleted: loadRangesAsset()
 
@@ -185,7 +205,34 @@ Page {
 
                 ThemedPanel {
                     Layout.fillWidth: true
-                    panelTitle: qsTr("13×13 chart (open)")
+                    panelTitle: qsTr("Mode")
+                    panelOpacity: 0.5
+                    borderOpacity: 0.5
+                    visible: page.availableModes.length > 0
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Repeater {
+                            model: page.availableModes
+                            GameButton {
+                                required property var modelData
+                                text: Theme.trainerModeDisplayLabel(modelData)
+                                padH: 20
+                                overrideHeight: 34
+                                fontSize: Theme.uiHudButtonPt
+                                buttonColor: page.rangeMode === modelData ? Theme.successGreen : Theme.panelBorder
+                                textColor: Theme.onAccentText
+                                onClicked: page.rangeMode = modelData
+                            }
+                        }
+                    }
+                }
+
+                ThemedPanel {
+                    Layout.fillWidth: true
+                    panelTitle: qsTr("13x13 chart (%1)").arg(Theme.trainerModeDisplayLabel(page.rangeMode))
                     panelOpacity: 0.5
                     borderOpacity: 0.5
 
@@ -193,8 +240,8 @@ Page {
                         Layout.fillWidth: true
                         visible: !page.loadFailed && !page.hasScenario
                         wrapMode: Text.WordWrap
-                        text: qsTr("No “open” range for %1 in the bundled JSON. Add a scenario or pick another seat.")
-                                .arg(page.position)
+                        text: qsTr("No range for %1 %2 in the bundled data.")
+                                .arg(page.position).arg(Theme.trainerModeDisplayLabel(page.rangeMode))
                         color: Theme.textSecondary
                         font.pixelSize: Theme.trainerBodyPx
                         lineHeight: Theme.bodyLineHeight
@@ -213,10 +260,11 @@ Page {
                         Row {
                             spacing: 8
                             Rectangle { width: 10; height: 10; radius: 2; color: Theme.rangeLayerRaiseSubdued }
-                            Label { text: qsTr("Raise"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
+                            Label { text: qsTr("Raise / 3-Bet"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
                         }
                         Row {
                             spacing: 8
+                            visible: page.rangeMode === "open"
                             Rectangle { width: 10; height: 10; radius: 2; color: Theme.rangeLayerOpenSubdued }
                             Label { text: qsTr("Open"); font.family: Theme.fontFamilyDisplay; color: Theme.textMuted; font.pixelSize: Theme.uiRangeGridLegendPx }
                         }
@@ -241,7 +289,7 @@ Page {
                 Label {
                     Layout.fillWidth: true
                     wrapMode: Text.WordWrap
-                    text: qsTr("Frequencies sum to 100% per combo. Same composite chart as Setup (Call / Raise / Open). Hover a cell for fold share and layer weights.")
+                    text: qsTr("Frequencies sum to 100% per combo. Hover a cell for details.")
                     color: Theme.textMuted
                     font.pixelSize: Theme.trainerCaptionPx
                 }

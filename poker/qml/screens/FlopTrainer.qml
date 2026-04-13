@@ -11,8 +11,6 @@ Page {
 
     property StackLayout stackLayout: null
 
-    readonly property int trainerControlColumns: scrollView.availableWidth < 480 ? 2 : 4
-
     property string statusLine: qsTr("Starting…")
     property string board0: ""
     property string board1: ""
@@ -30,9 +28,8 @@ Page {
     property bool _drillSurfaceShown: false
     property bool assetLoadFailed: false
     property bool _drillStarted: false
-    readonly property real flopSpotPotBb: 5.5
-    /// $2 BB → chip pot for display (matches ~5.5 bb spot).
-    readonly property int trainerPotChips: Math.round(page.flopSpotPotBb * 2)
+    readonly property real spotPotBb: 5.5
+    readonly property int trainerPotChips: Math.round(page.spotPotBb * 2)
     property int trainerPotShown: trainerPotChips
 
     function resetTrainerPotDisplay() {
@@ -248,32 +245,30 @@ Page {
         startAutoAdvance()
     }
 
-    function scrollMainToTop() {
-        var flick = scrollView.contentItem
-        if (flick) {
-            flick.contentY = 0
-            flick.contentX = 0
-        }
-    }
+    function scrollMainToTop() { }
 
-    ScrollView {
-        id: scrollView
+    Item {
+        id: trainerRoot
         anchors.fill: parent
-        clip: true
-        topPadding: Theme.uiScrollViewTopPadding
+        anchors.topMargin: Theme.trainerPageTopPadding
 
         RowLayout {
-            width: scrollView.availableWidth
+            anchors.fill: parent
             spacing: 0
 
             Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignTop
             }
 
             ColumnLayout {
-                Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(280, scrollView.availableWidth - 40))
+                id: trainerMainCol
+                Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(260, trainerRoot.width - (trainerRoot.width < 600 ? 16 : 40)))
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignTop
                 spacing: Theme.trainerColumnSpacing
 
                 Text {
@@ -288,7 +283,7 @@ Page {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: 12
 
                     GameButton {
                         style: "form"
@@ -301,13 +296,6 @@ Page {
                     }
 
                     Item { Layout.fillWidth: true }
-                }
-
-                GridLayout {
-                    Layout.fillWidth: true
-                    rowSpacing: 10
-                    columnSpacing: 12
-                    columns: page.trainerControlColumns
 
                     Label {
                         text: qsTr("Delay")
@@ -318,8 +306,7 @@ Page {
                     ThemedSpinBox {
                         id: delaySecSpin
                         labelPixelSize: Theme.trainerCaptionPx
-                        Layout.fillWidth: page.trainerControlColumns <= 2
-                        Layout.preferredWidth: page.trainerControlColumns >= 4 ? Theme.trainerSpinBoxWidth : implicitWidth
+                        Layout.preferredWidth: Theme.trainerSpinBoxWidth
                         Layout.alignment: Qt.AlignVCenter
                         from: 1
                         to: 120
@@ -340,8 +327,7 @@ Page {
                     ThemedSpinBox {
                         id: timeLimitSpin
                         labelPixelSize: Theme.trainerCaptionPx
-                        Layout.fillWidth: page.trainerControlColumns <= 2
-                        Layout.preferredWidth: page.trainerControlColumns >= 4 ? Theme.trainerSpinBoxWidth : implicitWidth
+                        Layout.preferredWidth: Theme.trainerSpinBoxWidth
                         Layout.alignment: Qt.AlignVCenter
                         from: 5
                         to: 120
@@ -367,7 +353,9 @@ Page {
                 Rectangle {
                     id: drillPanel
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.trainerDrillPanelHeight(scrollView.availableHeight)
+                    Layout.fillHeight: true
+                    Layout.minimumHeight: Theme.trainerDrillPanelMinH
+                    Layout.maximumHeight: Theme.trainerDrillPanelMaxH
                     radius: Theme.trainerPanelRadius
                     color: Qt.alpha(Theme.panel, 0.35)
                     border.width: 1
@@ -379,29 +367,36 @@ Page {
                         anchors.fill: parent
                         anchors.margins: 2
 
-                        readonly property real tableScale: Theme.tableScaleForViewport(drillArea.width, drillArea.height)
-
                         readonly property int flopStripIntrinsic: 3 * Theme.trainerFlopBoardCardWidth
                                 + 2 * Theme.trainerDrillHudSpacing
-                        readonly property real boardStripScale: Math.min(1.0, Math.max(0.32,
-                                (drillArea.width - 2 * Theme.trainerPanelPadding) / Math.max(1, flopStripIntrinsic)))
-                        readonly property int drillCardW: Math.max(36, Math.round(Theme.trainerFlopBoardCardWidth * boardStripScale))
-                        readonly property int drillCardH: Math.max(52, Math.round(Theme.trainerFlopBoardCardHeight * boardStripScale))
-                        readonly property int drillCardGap: Math.max(4, Math.round(Theme.trainerDrillHudSpacing * boardStripScale))
+                        readonly property real drillScale: {
+                            var fixedH = 60
+                            var scalableH = Theme.trainerFlopBoardCardHeight + 288.0 + 30.0
+                            var hScale = (Math.max(1, drillArea.height) - fixedH) / scalableH
+                            var wScale = (Math.max(1, drillArea.width) - 24) / Math.max(1, flopStripIntrinsic)
+                            return Math.min(1.0, Math.max(0.28, Math.min(hScale, wScale)))
+                        }
+                        readonly property int drillCardW: Math.round(Theme.trainerFlopBoardCardWidth * drillScale)
+                        readonly property int drillCardH: Math.round(Theme.trainerFlopBoardCardHeight * drillScale)
+                        readonly property int drillCardGap: Math.max(2, Math.round(Theme.trainerDrillHudSpacing * drillScale))
                         readonly property int flopBoardStripWidth: 3 * drillCardW + 2 * drillCardGap
+                        readonly property int tableSeatW: Math.round(218 * drillScale)
+                        readonly property int tableSeatH: Math.round(312 * drillScale)
+                        readonly property int panelPad: Math.max(4, Math.round(10 * drillScale))
+                        readonly property int seatShadowBleed: Math.max(4, Math.round(8 * drillScale))
 
                         ColumnLayout {
                             id: flopDrillStack
                             anchors.fill: parent
-                            anchors.leftMargin: Theme.trainerPanelPadding
-                            anchors.rightMargin: Theme.trainerPanelPadding
-                            anchors.topMargin: Theme.trainerPanelPadding
-                            anchors.bottomMargin: Theme.trainerPanelPadding
-                            spacing: 12
+                            anchors.leftMargin: drillArea.panelPad
+                            anchors.rightMargin: drillArea.panelPad
+                            anchors.topMargin: drillArea.panelPad
+                            anchors.bottomMargin: drillArea.panelPad + drillArea.seatShadowBleed
+                            spacing: Math.max(2, Math.round(6 * drillArea.drillScale))
 
                             Column {
                                 Layout.alignment: Qt.AlignHCenter
-                                spacing: 8
+                                spacing: Math.max(3, Math.round(6 * drillArea.drillScale))
                                 width: drillArea.flopBoardStripWidth
 
                                 Rectangle {
@@ -420,7 +415,7 @@ Page {
                                         color: Theme.gold
                                         font.family: Theme.fontFamilyMono
                                         font.pixelSize: Math.max(10, Math.round(Theme.trainerCaptionPx
-                                                * Math.max(0.88, drillArea.boardStripScale)))
+                                                * Math.max(0.8, drillArea.drillScale)))
                                         font.bold: true
 
                                         transform: Scale {
@@ -440,7 +435,7 @@ Page {
                                     Card {
                                         width: drillArea.drillCardW
                                         height: drillArea.drillCardH
-                                        displayScaleFactor: drillArea.boardStripScale
+                                        displayScaleFactor: drillArea.drillScale
                                         card: board0
                                         flipped: true
                                         tableCard: true
@@ -449,7 +444,7 @@ Page {
                                     Card {
                                         width: drillArea.drillCardW
                                         height: drillArea.drillCardH
-                                        displayScaleFactor: drillArea.boardStripScale
+                                        displayScaleFactor: drillArea.drillScale
                                         card: board1
                                         flipped: true
                                         tableCard: true
@@ -458,7 +453,7 @@ Page {
                                     Card {
                                         width: drillArea.drillCardW
                                         height: drillArea.drillCardH
-                                        displayScaleFactor: drillArea.boardStripScale
+                                        displayScaleFactor: drillArea.drillScale
                                         card: board2
                                         flipped: true
                                         tableCard: true
@@ -480,29 +475,25 @@ Page {
                             }
 
                             Item {
-                                Layout.fillHeight: true
-                                Layout.minimumHeight: 4
-                                Layout.maximumHeight: 24
-                            }
-
-                            Item {
                                 id: flopSeatRow
                                 Layout.fillWidth: true
-                                readonly property real seatUiScale: Theme.trainerSeatUiScale(
-                                        drillArea.width, drillArea.height, width)
-                                Layout.preferredHeight: Math.max(170, Math.round(312 * seatUiScale))
-                                Layout.minimumHeight: Math.max(150, Math.round(195 * seatUiScale))
+                                Layout.fillHeight: true
+                                Layout.preferredHeight: drillArea.tableSeatH
+                                Layout.minimumHeight: 60
+                                Layout.maximumHeight: drillArea.tableSeatH
 
                                 Item {
                                     id: trainerSeatWrap
-                                    width: Math.min(Math.round(218 * flopSeatRow.seatUiScale),
-                                            parent.width > 0 ? parent.width : 99999)
-                                    height: Math.round(312 * flopSeatRow.seatUiScale)
+                                    width: Math.min(drillArea.tableSeatW,
+                                            parent.width > 0 ? parent.width : drillArea.tableSeatW)
+                                    height: Math.min(drillArea.tableSeatH,
+                                            parent.height > 0 ? parent.height : drillArea.tableSeatH)
                                     anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.bottom: parent.bottom
 
                                     Player {
                                         anchors.fill: parent
-                                        uiScale: flopSeatRow.seatUiScale
+                                        uiScale: Theme.trainerSeatUiScaleClamped(drillArea.drillScale, trainerSeatWrap.height)
                                         seatIndex: 0
                                         name: qsTr("You")
                                         position: "BTN"
@@ -523,64 +514,52 @@ Page {
                                     }
                                 }
                             }
-
-                            GameControls {
-                                id: flopExerciseHud
-                                Layout.fillWidth: true
-                                Layout.topMargin: 6
-                                trainerMode: true
-                                trainerFlopStreet: true
-                                pokerGame: null
-                                embeddedMode: false
-                                hudScale: drillArea.tableScale
-                                trainerInputLocked: page.inputLocked || page.assetLoadFailed
-                                humanSitOut: false
-                                statusText: page.statusLine
-                                statusSubText: page.secLeft > 0
-                                        ? qsTr("Next in %1 s").arg(page.secLeft)
-                                        : ""
-                                humanHandText: ""
-                                decisionSecondsLeft: page.inputLocked ? page.secLeft : page.decisionSecLeft
-                                decisionTimeTotal: trainingStore.trainerDecisionSeconds
-                                humanMoreTimeAvailable: false
-                                humanCanCheck: false
-                                humanBbPreflopOption: false
-                                humanCanRaiseFacing: true
-                                facingNeedChips: 0
-                                facingMinRaiseChips: 6
-                                facingMaxChips: 200
-                                facingPotAmount: page.trainerPotChips
-                                humanStackChips: 200
-                                humanBbCanRaise: false
-                                humanCanBuyBackIn: false
-                            }
                         }
+                    }
+                }
 
-                        Connections {
-                            target: flopExerciseHud
-                            function onTrainerAction(action, amount) {
-                                const u = String(action).toUpperCase()
-                                if (u === "CHECK")
-                                    page.submit("check")
-                                else if (u === "BET33") {
-                                    page.bumpTrainerPot(Number(amount))
-                                    page.submit("bet33")
-                                } else if (u === "BET75") {
-                                    page.bumpTrainerPot(Number(amount))
-                                    page.submit("bet75")
-                                }
-                            }
-                        }
+                GameControls {
+                    id: flopExerciseHud
+                    Layout.fillWidth: true
+                    trainerMode: true
+                    trainerFlopStreet: true
+                    pokerGame: null
+                    embeddedMode: false
+                    hudScale: Math.max(drillArea.drillScale, Theme.trainerHudMinScale)
+                    trainerInputLocked: page.inputLocked || page.assetLoadFailed
+                    humanSitOut: false
+                    statusText: page.statusLine
+                    statusSubText: page.secLeft > 0
+                            ? qsTr("Next in %1 s").arg(page.secLeft)
+                            : ""
+                    humanHandText: ""
+                    decisionSecondsLeft: page.inputLocked ? page.secLeft : page.decisionSecLeft
+                    decisionTimeTotal: trainingStore.trainerDecisionSeconds
+                    humanMoreTimeAvailable: false
+                    humanCanCheck: false
+                    humanBbPreflopOption: false
+                    humanCanRaiseFacing: true
+                    facingNeedChips: 0
+                    facingMinRaiseChips: 6
+                    facingMaxChips: 200
+                    facingPotAmount: page.trainerPotChips
+                    humanStackChips: 200
+                    humanBbCanRaise: false
+                    humanCanBuyBackIn: false
+                }
 
-                        MouseArea {
-                            z: 40
-                            anchors.fill: parent
-                            visible: flopExerciseHud.sizingDialogOpen
-                            onClicked: {
-                                flopExerciseHud.raiseSizingExpanded = false
-                                flopExerciseHud.openRaiseSizingExpanded = false
-                                flopExerciseHud.bbPreflopSizingExpanded = false
-                            }
+                Connections {
+                    target: flopExerciseHud
+                    function onTrainerAction(action, amount) {
+                        const u = String(action).toUpperCase()
+                        if (u === "CHECK")
+                            page.submit("check")
+                        else if (u === "BET33") {
+                            page.bumpTrainerPot(Number(amount))
+                            page.submit("bet33")
+                        } else if (u === "BET75") {
+                            page.bumpTrainerPot(Number(amount))
+                            page.submit("bet75")
                         }
                     }
                 }
@@ -589,6 +568,8 @@ Page {
             Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignTop
             }
         }
     }

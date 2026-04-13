@@ -43,6 +43,17 @@ QString grade_label(double freq)
     return QStringLiteral("Wrong");
 }
 
+QString postflop_grade(double chosen_freq, double max_freq)
+{
+    if (max_freq < 1e-9)
+        return QStringLiteral("Wrong");
+    if (chosen_freq >= max_freq - 1e-9)
+        return QStringLiteral("Correct");
+    if (chosen_freq >= 0.25)
+        return QStringLiteral("Mix");
+    return QStringLiteral("Wrong");
+}
+
 } // namespace
 
 TrainingController::TrainingController(TrainingStore *store, QObject *parent) : QObject(parent), store_(store) {}
@@ -95,8 +106,21 @@ QStringList TrainingController::preflopModesForPosition(const QString &position)
             continue;
         seen.insert(sc.mode);
     }
-    static const QStringList kPreferredOrder = {QStringLiteral("open"), QStringLiteral("vs3bet"),
-                                                QStringLiteral("3bet")};
+    static const QStringList kPreferredOrder = {
+        QStringLiteral("open"),
+        QStringLiteral("call"),
+        QStringLiteral("call_vs_UTG"),
+        QStringLiteral("call_vs_HJ"),
+        QStringLiteral("call_vs_CO"),
+        QStringLiteral("call_vs_BTN"),
+        QStringLiteral("defend"),
+        QStringLiteral("3bet"),
+        QStringLiteral("3bet_vs_UTG"),
+        QStringLiteral("3bet_vs_HJ"),
+        QStringLiteral("3bet_vs_CO"),
+        QStringLiteral("3bet_vs_BTN"),
+        QStringLiteral("vs3bet"),
+    };
     QStringList out;
     for (const QString &m : kPreferredOrder)
     {
@@ -191,6 +215,7 @@ void TrainingController::startFlopDrill(const QString &matchup)
 {
     (void)matchup;
     flop_idx_ = -1;
+    std::shuffle(flop_spots_.begin(), flop_spots_.end(), rng_);
     last_feedback_.clear();
 }
 
@@ -198,6 +223,7 @@ void TrainingController::startTurnDrill(const QString &matchup)
 {
     (void)matchup;
     turn_idx_ = -1;
+    std::shuffle(turn_spots_.begin(), turn_spots_.end(), rng_);
     last_feedback_.clear();
 }
 
@@ -205,6 +231,7 @@ void TrainingController::startRiverDrill(const QString &matchup)
 {
     (void)matchup;
     river_idx_ = -1;
+    std::shuffle(river_spots_.begin(), river_spots_.end(), rng_);
     last_feedback_.clear();
 }
 
@@ -247,6 +274,8 @@ QVariantMap TrainingController::nextPostflopQuestion(std::vector<PostflopSpot> &
         return out;
     }
     idx = (idx + 1) % static_cast<int>(spots.size());
+    if (idx == 0)
+        std::shuffle(spots.begin(), spots.end(), rng_);
     const PostflopSpot &s = spots[static_cast<size_t>(idx)];
     out.insert(QStringLiteral("spotId"), s.id);
     for (int i = 0; i < s.n_board; ++i)
@@ -373,7 +402,8 @@ QVariantMap TrainingController::submitPostflopAnswer(const QString &action, cons
 
     const double best_ev = std::max({s.ev_check, s.ev_b33, s.ev_b75});
     const double ev_loss = std::max(0.0, best_ev - ev);
-    const QString grade = grade_label(freq);
+    const double max_freq = std::max({s.freq_check, s.freq_b33, s.freq_b75});
+    const QString grade = postflop_grade(freq, max_freq);
     const bool correct = (grade == QStringLiteral("Correct"));
 
     last_feedback_.clear();

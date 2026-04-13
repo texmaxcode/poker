@@ -70,10 +70,10 @@ Item {
     /// Timer row (“Act”, seconds) — slightly larger than micro copy for legibility.
     readonly property int hudTimerLabelPx: Math.max(10, Math.round((Theme.uiSmallPx + 1) * ez))
 
-    readonly property int barBottomPad: embeddedMode ? Math.max(4, Math.round(8 * ez)) : 12
+    readonly property int barBottomPad: embeddedMode ? Math.max(4, Math.round(8 * ez)) : (trainerMode ? 6 : 12)
     /// Inset below the panel top border — timer / “Act” row (embedded HUD was flush to the edge at 1px).
-    readonly property int mainColTopMargin: embeddedMode ? Math.max(6, Math.round(14 * ez)) : 10
-    readonly property int mainColSpacing: embeddedMode ? Math.max(4, Math.round(6 * ez)) : 12
+    readonly property int mainColTopMargin: embeddedMode ? Math.max(6, Math.round(14 * ez)) : (trainerMode ? 6 : 10)
+    readonly property int mainColSpacing: embeddedMode ? Math.max(4, Math.round(6 * ez)) : (trainerMode ? 6 : 12)
     /// Horizontal gap between FOLD / CALL / RAISE (and similar action rows).
     readonly property int actionRowSpacing: {
         if (embeddedMode)
