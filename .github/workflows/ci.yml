@@ -147,6 +147,11 @@ jobs:
           fi
           cd "${GITHUB_WORKSPACE}/build/poker"
           "${QT_BIN}/macdeployqt" Poker.app -qmldir="${QML}" "${DEPLOY_EXTRA[@]}"
+          # persist_sqlite.cpp uses the SQLite3 C API directly, not QSqlDatabase, so no
+          # Qt SQL driver plugin is loaded at runtime. macdeployqt copies them anyway and
+          # their LC_LOAD_DYLIB entries point at the runner's Homebrew/Postgres.app paths
+          # (libiodbc, libmimerapi, libpq) that don't exist on user machines — drop them.
+          rm -rf Poker.app/Contents/PlugIns/sqldrivers
           # Surface any remaining absolute Homebrew references at build time.
           bad=0
           while IFS= read -r -d '' macho; do

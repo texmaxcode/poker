@@ -257,12 +257,33 @@ function Assert-StagingImportsResolved {
     Write-Host "    All PE imports resolve inside the staging tree."
 }
 
-function Get-VcpkgInstalledBin {
-    if (-not $env:VCPKG_ROOT) { return $null }
+function Get-VcpkgInstalledBins {
+    <#
+    .SYNOPSIS
+      Enumerate vcpkg bin directories to search for runtime DLLs (sqlite3.dll, …).
+      Order matters: manifest-mode (vcpkg.json in repo) installs land in
+      <CMAKE_BINARY_DIR>\vcpkg_installed\<triplet>\bin and <RepoRoot>\vcpkg_installed\...,
+      NOT in $VCPKG_ROOT\installed\... — so classic-mode layout is only the last resort.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string] $RepoRoot,
+        [Parameter(Mandatory = $true)][string] $BuildDir
+    )
     $trip = if ($env:VCPKG_DEFAULT_TRIPLET) { $env:VCPKG_DEFAULT_TRIPLET } else { "x64-windows" }
-    $bin = Join-Path $env:VCPKG_ROOT "installed\$trip\bin"
-    if (Test-Path -LiteralPath $bin) { return $bin }
-    return $null
+    $candidates = @(
+        (Join-Path $BuildDir "vcpkg_installed\$trip\bin"),
+        (Join-Path $RepoRoot "vcpkg_installed\$trip\bin")
+    )
+    if ($env:VCPKG_ROOT) {
+        $candidates += (Join-Path $env:VCPKG_ROOT "installed\$trip\bin")
+    }
+    $found = New-Object System.Collections.Generic.List[string]
+    foreach ($c in $candidates) {
+        if ((Test-Path -LiteralPath $c) -and -not $found.Contains($c)) {
+            $found.Add($c) | Out-Null
+        }
+    }
+    return ,$found.ToArray()
 }
 
 $QtInstall = Find-QtRoot
@@ -318,19 +339,25 @@ New-Item -ItemType Directory -Path $StagingDir | Out-Null
 $StageExe = Join-Path $StagingDir "Poker.exe"
 Copy-Item -Path $Exe -Destination $StageExe
 
-$VcpkgBin = Get-VcpkgInstalledBin
-if ($VcpkgBin) {
-    $sqliteDll = Join-Path $VcpkgBin "sqlite3.dll"
+$VcpkgBins = @(Get-VcpkgInstalledBins -RepoRoot $RepoRoot -BuildDir $BuildDir)
+$sqliteCopied = $false
+foreach ($bin in $VcpkgBins) {
+    $sqliteDll = Join-Path $bin "sqlite3.dll"
     if (Test-Path -LiteralPath $sqliteDll) {
         Copy-Item -LiteralPath $sqliteDll -Destination $StagingDir
-        Write-Host "    Copied sqlite3.dll from vcpkg ($VcpkgBin)"
-    } else {
-        Write-Warning "sqlite3.dll not found under vcpkg bin: $VcpkgBin — app will fail at runtime if SQLite is dynamic."
+        Write-Host "    Copied sqlite3.dll from vcpkg ($bin)"
+        $sqliteCopied = $true
+        break
     }
-} elseif ($env:VCPKG_ROOT) {
-    Write-Warning "VCPKG_ROOT is set but installed\bin not found (check VCPKG_DEFAULT_TRIPLET)."
-} else {
-    Write-Warning "VCPKG_ROOT not set: sqlite3.dll will not be copied; use vcpkg or place sqlite3.dll next to Poker.exe."
+}
+if (-not $sqliteCopied) {
+    if ($VcpkgBins.Count -gt 0) {
+        Write-Warning "sqlite3.dll not found in any of: $($VcpkgBins -join ', ') — app will fail at runtime."
+    } elseif ($env:VCPKG_ROOT) {
+        Write-Warning "No vcpkg bin dir found (manifest: $BuildDir\vcpkg_installed\<triplet>\bin, classic: VCPKG_ROOT\installed\<triplet>\bin). Check VCPKG_DEFAULT_TRIPLET and that 'vcpkg install' ran."
+    } else {
+        Write-Warning "VCPKG_ROOT not set and no vcpkg_installed tree under BuildDir/RepoRoot: sqlite3.dll will not be copied; run vcpkg install or place sqlite3.dll next to Poker.exe."
+    }
 }
 
 Write-Host "==> windeployqt (Qt + QML + MSVC runtime)…"
@@ -340,7 +367,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $QtBin = Join-Path $QtInstall "bin"
 $extraBins = New-Object System.Collections.Generic.List[string]
-if ($VcpkgBin) { [void]$extraBins.Add($VcpkgBin) }
+foreach ($b in $VcpkgBins) { [void]$extraBins.Add($b) }
 if (Test-Path -LiteralPath $QtBin) { [void]$extraBins.Add($QtBin) }
 if ($extraBins.Count -gt 0) {
     Write-Host "==> Transitive DLLs (vcpkg + Qt bin, via dumpbin, recursive into plugins)…"

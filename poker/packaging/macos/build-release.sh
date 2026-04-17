@@ -91,6 +91,13 @@ fi
 (
   cd "${BUILD_DIR}/poker"
   "${QT_BIN}/macdeployqt" "Poker.app" -qmldir="${QML_DIR}" "${DEPLOY_EXTRA[@]}"
+  # persist_sqlite.cpp uses the SQLite3 C API directly (not QSqlDatabase), so none of
+  # the Qt SQL driver plugins (ODBC, PostgreSQL, Mimer, MySQL, …) are used at runtime.
+  # macdeployqt copies them anyway, and their LC_LOAD_DYLIB entries reference the build
+  # host's Homebrew / Postgres.app paths (/opt/homebrew/opt/libiodbc/…, /usr/local/lib/
+  # libmimerapi.dylib, /Applications/Postgres.app/…) that won't exist on user machines
+  # and break our otool verification. Drop the whole plugin dir.
+  rm -rf "Poker.app/Contents/PlugIns/sqldrivers"
   codesign --force --deep --sign - "Poker.app"
   rm -f "${DMG_NAME}"
   hdiutil create -volname "Texas Hold'em Gym" -srcfolder "Poker.app" -ov -format UDZO "${DMG_NAME}"
