@@ -46,8 +46,10 @@ void game::sync_ui()
     m_root->setProperty("actingSeat", acting_seat_);
     m_root->setProperty("decisionSecondsLeft", human_decision_ctrl_->decisionSecondsLeft());
     m_root->setProperty("humanMoreTimeAvailable",
-                         (human_decision_ctrl_->isWaitingForHuman() || human_decision_ctrl_->isWaitingForHumanCheck() || human_decision_ctrl_->isWaitingForHumanBbPreflop()) &&
-                             human_decision_ctrl_->humanMoreTimeAvailable());
+                         (human_decision_ctrl_->isWaitingForHuman() || 
+                          human_decision_ctrl_->isWaitingForHumanCheck() ||
+                          human_decision_ctrl_->isWaitingForHumanBbPreflop()) &&
+                          human_decision_ctrl_->humanMoreTimeAvailable());
     m_root->setProperty("humanCanCheck", human_decision_ctrl_->isWaitingForHumanCheck());
     m_root->setProperty("humanBbPreflopOption", human_decision_ctrl_->isWaitingForHumanBbPreflop());
     {
@@ -118,8 +120,7 @@ void game::sync_ui()
         if (human_decision_ctrl_->isWaitingForHumanBbPreflop())
         {
             const int inc = min_raise_increment_chips(big_blind, last_raise_increment_);
-            bb_can_raise = (inc > 0 && table[hi].stack >= inc
-                            && max_street_contrib() == preflop_blind_level_);
+            bb_can_raise = (inc > 0 && table[hi].stack >= inc && max_street_contrib() == preflop_blind_level_);
         }
         m_root->setProperty("humanBbCanRaise", bb_can_raise);
     }
@@ -160,10 +161,8 @@ void game::sync_ui()
         if (i < players_count())
         {
             stacks.append(table[static_cast<size_t>(i)].stack);
-            c1.append(cards_dealt_ ? card_to_qml_asset_path(table[static_cast<size_t>(i)].first_card)
-                                   : QString());
-            c2.append(cards_dealt_ ? card_to_qml_asset_path(table[static_cast<size_t>(i)].second_card)
-                                   : QString());
+            c1.append(cards_dealt_ ? card_to_qml_asset_path(table[static_cast<size_t>(i)].first_card) : QString());
+            c2.append(cards_dealt_ ? card_to_qml_asset_path(table[static_cast<size_t>(i)].second_card) : QString());
             inHand.append(in_hand_[static_cast<size_t>(i)]);
         }
         else
@@ -206,16 +205,11 @@ void game::sync_ui()
     m_root->setProperty("humanCanBuyBackIn", canBuyBackIn(kHumanSeat));
     m_root->setProperty("buyInChips", effectiveSeatBuyInChips(kHumanSeat));
 
-    m_root->setProperty("board0",
-                        (street >= Street::FLOP && flop.size() > 0) ? card_to_qml_asset_path(flop[0]) : QString());
-    m_root->setProperty("board1",
-                        (street >= Street::FLOP && flop.size() > 1) ? card_to_qml_asset_path(flop[1]) : QString());
-    m_root->setProperty("board2",
-                        (street >= Street::FLOP && flop.size() > 2) ? card_to_qml_asset_path(flop[2]) : QString());
-    m_root->setProperty("board3",
-                        (street >= Street::TURN && flop.size() >= 3) ? card_to_qml_asset_path(turn) : QString());
-    m_root->setProperty("board4",
-                        (street >= Street::RIVER && flop.size() >= 3) ? card_to_qml_asset_path(river) : QString());
+    m_root->setProperty("board0", (street >= Street::FLOP && flop.size() > 0) ? card_to_qml_asset_path(flop[0]) : QString());
+    m_root->setProperty("board1", (street >= Street::FLOP && flop.size() > 1) ? card_to_qml_asset_path(flop[1]) : QString());
+    m_root->setProperty("board2", (street >= Street::FLOP && flop.size() > 2) ? card_to_qml_asset_path(flop[2]) : QString());
+    m_root->setProperty("board3", (street >= Street::TURN && flop.size() >= 3) ? card_to_qml_asset_path(turn) : QString());
+    m_root->setProperty("board4", (street >= Street::RIVER && flop.size() >= 3) ? card_to_qml_asset_path(river) : QString());
 }
 
 void game::flush_ui()
