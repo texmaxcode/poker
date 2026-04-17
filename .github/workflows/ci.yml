@@ -139,8 +139,31 @@ jobs:
           GITHASH=$(git -C "${GITHUB_WORKSPACE}" rev-parse --short=8 HEAD)
           ARCH=$(uname -m)
           DMG_NAME="TexasHoldemGym-macOS-${ARCH}-${GITHASH}.dmg"
+          # Homebrew sqlite lives under /opt/homebrew/... — pass -libpath so macdeployqt
+          # embeds libsqlite3.dylib instead of leaving an absolute /opt/homebrew reference.
+          DEPLOY_EXTRA=()
+          if brew --prefix sqlite >/dev/null 2>&1; then
+            DEPLOY_EXTRA+=(-libpath="$(brew --prefix sqlite)/lib")
+          fi
           cd "${GITHUB_WORKSPACE}/build/poker"
-          "${QT_BIN}/macdeployqt" Poker.app -qmldir="${QML}"
+          "${QT_BIN}/macdeployqt" Poker.app -qmldir="${QML}" "${DEPLOY_EXTRA[@]}"
+          # persist_sqlite.cpp uses the SQLite3 C API directly, not QSqlDatabase, so no
+          # Qt SQL driver plugin is loaded at runtime. macdeployqt copies them anyway and
+          # their LC_LOAD_DYLIB entries point at the runner's Homebrew/Postgres.app paths
+          # (libiodbc, libmimerapi, libpq) that don't exist on user machines — drop them.
+          rm -rf Poker.app/Contents/PlugIns/sqldrivers
+          # Surface any remaining absolute Homebrew references at build time.
+          bad=0
+          while IFS= read -r -d '' macho; do
+            while IFS= read -r line; do
+              p="${line#"${line%%[![:space:]]*}"}"; p="${p%% (*}"
+              case "$p" in
+                /opt/homebrew/*|/usr/local/*)
+                  echo "UNRESOLVED: ${macho} -> ${p}" >&2; bad=1;;
+              esac
+            done < <(otool -L "$macho" 2>/dev/null | tail -n +2)
+          done < <(find Poker.app \( -name '*.dylib' -o -name Poker -o -path '*/Frameworks/*/Versions/*/*' \) -type f -print0)
+          [[ "$bad" -eq 0 ]] || { echo "bundle still references external dylibs"; exit 1; }
           codesign --force --deep --sign - Poker.app
           rm -f "${DMG_NAME}"
           hdiutil create -volname "Texas Hold'em Gym" -srcfolder Poker.app -ov -format UDZO "${DMG_NAME}"

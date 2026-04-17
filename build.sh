@@ -38,7 +38,7 @@ cmake \
 cmake --build "$DESTINATION"
 
 # Test
-ctest --test-dir "$DESTINATION" --output-on-failure
+ctest --test-dir "$DESTINATION" -V
 
 # Start app
 "$DESTINATION/poker/Poker"

@@ -78,14 +78,58 @@ rm -f "${BUILD_DIR}/poker/"*.dmg 2>/dev/null || true
 ARCH="$(uname -m)"
 DMG_NAME="TexasHoldemGym-macOS-${ARCH}-${POKER_GIT_HASH}.dmg"
 mkdir -p "${DIST_DIR}"
+
+# macdeployqt resolves linked dylibs via the Mach-O load commands, but Homebrew dylibs
+# live under /opt/homebrew/... (Apple Silicon) or /usr/local/... (Intel) which aren't
+# on dyld's default fallback path. Passing -libpath points macdeployqt at the sqlite
+# Cellar so libsqlite3.dylib is embedded and its LC_LOAD_DYLIB patched to @rpath/...
+DEPLOY_EXTRA=()
+if [[ -n "${SQLITE_ROOT}" && -d "${SQLITE_ROOT}/lib" ]]; then
+  DEPLOY_EXTRA+=(-libpath="${SQLITE_ROOT}/lib")
+fi
+
 (
   cd "${BUILD_DIR}/poker"
-  "${QT_BIN}/macdeployqt" "Poker.app" -qmldir="${QML_DIR}"
+  "${QT_BIN}/macdeployqt" "Poker.app" -qmldir="${QML_DIR}" "${DEPLOY_EXTRA[@]}"
+  # persist_sqlite.cpp uses the SQLite3 C API directly (not QSqlDatabase), so none of
+  # the Qt SQL driver plugins (ODBC, PostgreSQL, Mimer, MySQL, …) are used at runtime.
+  # macdeployqt copies them anyway, and their LC_LOAD_DYLIB entries reference the build
+  # host's Homebrew / Postgres.app paths (/opt/homebrew/opt/libiodbc/…, /usr/local/lib/
+  # libmimerapi.dylib, /Applications/Postgres.app/…) that won't exist on user machines
+  # and break our otool verification. Drop the whole plugin dir.
+  rm -rf "Poker.app/Contents/PlugIns/sqldrivers"
   codesign --force --deep --sign - "Poker.app"
   rm -f "${DMG_NAME}"
   hdiutil create -volname "Texas Hold'em Gym" -srcfolder "Poker.app" -ov -format UDZO "${DMG_NAME}"
 )
 cp -f "${BUILD_DIR}/poker/${DMG_NAME}" "${DIST_DIR}/${DMG_NAME}"
 echo "==> DMG: ${DIST_DIR}/${DMG_NAME}"
+
+# Surface any leftover absolute Homebrew/local paths at build time instead of at launch
+# (where they would show as "dyld: Library not loaded: /opt/homebrew/...").
+echo "==> Verifying bundle dylib references…"
+BUNDLE_BIN="${APP}/Contents/MacOS/Poker"
+_bad=0
+# Walk the Mach-O executable and every embedded dylib/framework binary.
+while IFS= read -r -d '' _macho; do
+  # Skip the Mach-O being asked (otool prints its own path as first line).
+  while IFS= read -r _line; do
+    # Strip leading whitespace; keep just the dylib install path before any " (compat...".
+    _path="${_line#"${_line%%[![:space:]]*}"}"
+    _path="${_path%% (*}"
+    case "${_path}" in
+      /opt/homebrew/*|/usr/local/*)
+        echo "  UNRESOLVED: ${_macho#${APP}/} depends on ${_path}" >&2
+        _bad=1
+        ;;
+    esac
+  done < <(otool -L "${_macho}" 2>/dev/null | tail -n +2)
+done < <(find "${APP}" \( -name '*.dylib' -o -name 'Poker' -o -path '*/Frameworks/*/Versions/*/*' \) -type f -print0)
+if [[ "${_bad}" -ne 0 ]]; then
+  echo "error: ${APP} still references Homebrew/local dylibs outside the bundle." >&2
+  echo "       pass -libpath to macdeployqt or install into a path it already scans." >&2
+  exit 1
+fi
+echo "    No external (Homebrew/local) dylib references remain."
 
 echo "==> Done: ${APP}"

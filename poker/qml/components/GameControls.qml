@@ -236,8 +236,7 @@ Item {
 
     function submitFacingRaise() {
         if (trainerMode) {
-            if (!game_controls.raiseSizingExpanded || !game_controls.canRaiseFacing
-                    || !game_controls.facingRaise)
+            if (!game_controls.raiseSizingExpanded || !game_controls.canRaiseFacing || !game_controls.facingRaise)
                 return
             game_controls.trainerAction("raise", Math.round(raiseSlider.value))
             game_controls.raiseSizingExpanded = false
@@ -336,8 +335,7 @@ Item {
 
             Text {
                 id: trainerMessageLine
-                visible: game_controls.trainerMode && game_controls.showHumanActions
-                        && game_controls.showWagerUi
+                visible: game_controls.trainerMode && game_controls.showHumanActions && game_controls.showWagerUi
                 width: parent.width
                 text: game_controls.statusText.length > 0 ? game_controls.statusText : qsTr("Ready.")
                 color: Theme.textPrimary
@@ -459,12 +457,10 @@ Item {
                     width: parent.width
                     height: Math.max(4, Math.round(6 * game_controls.ez))
                     padding: Math.max(1, Math.round(2 * game_controls.ez))
-                    opacity: (game_controls.humanDecisionActive
-                            || (game_controls.trainerMode && game_controls.statusSubText.length > 0)) ? 1.0 : 0.35
+                    opacity: (game_controls.humanDecisionActive || (game_controls.trainerMode && game_controls.statusSubText.length > 0)) ? 1.0 : 0.35
                     from: 0
                     to: 1
-                    value: Math.max(0, Math.min(1,
-                            game_controls.decisionSecondsLeft / Math.max(1, game_controls.decisionTimeTotal)))
+                    value: Math.max(0, Math.min(1, game_controls.decisionSecondsLeft / Math.max(1, game_controls.decisionTimeTotal)))
                     background: Rectangle {
                         implicitHeight: 6
                         implicitWidth: 200

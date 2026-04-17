@@ -134,11 +134,45 @@ function Get-PeImportDlls {
     return $deps
 }
 
+# Windows system DLLs that ship with every install; never missing, so we skip them
+# to cut log noise and avoid pointless vcpkg/Qt searches. Plugin chains (e.g. qwindows.dll)
+# import many of these, and they are resolved by the OS loader from %SystemRoot%\System32.
+$Script:WindowsSystemDlls = @(
+    'kernel32.dll','user32.dll','gdi32.dll','gdi32full.dll','advapi32.dll','shell32.dll','ole32.dll',
+    'oleaut32.dll','ws2_32.dll','msvcrt.dll','ntdll.dll','winmm.dll','imm32.dll','dwmapi.dll',
+    'uxtheme.dll','winspool.drv','netapi32.dll','userenv.dll','crypt32.dll','wintrust.dll',
+    'dbghelp.dll','comdlg32.dll','wldap32.dll','iphlpapi.dll','secur32.dll','dnsapi.dll',
+    'bcrypt.dll','bcryptprimitives.dll','ncrypt.dll','version.dll','shlwapi.dll','comctl32.dll',
+    'rpcrt4.dll','authz.dll','sspicli.dll','d3d9.dll','d3d11.dll','dxgi.dll','d2d1.dll',
+    'dwrite.dll','windowscodecs.dll','mf.dll','mfplat.dll','mfreadwrite.dll','propsys.dll',
+    'setupapi.dll','cfgmgr32.dll','powrprof.dll','dhcpcsvc.dll','ucrtbase.dll','shcore.dll',
+    'combase.dll','coremessaging.dll','kernelbase.dll','sechost.dll','cryptbase.dll',
+    'msvcp_win.dll','profapi.dll','winhttp.dll','wtsapi32.dll','userenv.dll','pdh.dll'
+) | ForEach-Object { $_.ToLowerInvariant() }
+$Script:WindowsSystemDllSet = @{}
+foreach ($n in $Script:WindowsSystemDlls) { $Script:WindowsSystemDllSet[$n] = $true }
+
+function Test-IsWindowsSystemDll {
+    param([string]$Name)
+    if (-not $Name) { return $false }
+    $lc = $Name.ToLowerInvariant()
+    if ($Script:WindowsSystemDllSet.ContainsKey($lc)) { return $true }
+    if ($lc -match '^(api-ms-|ext-ms-)') { return $true }
+    # Loader resolves these from %SystemRoot%\System32; not a packaging concern.
+    $sysDir = Join-Path $env:SystemRoot "System32\$lc"
+    if (Test-Path -LiteralPath $sysDir) { return $true }
+    return $false
+}
+
 function Copy-TransitiveDllsFromSearchBins {
     <#
     .SYNOPSIS
       For every PE in staging, copy missing dependent .dll from search roots (vcpkg bin, Qt bin).
       Catches zlib→sqlite and any Qt DLL windeployqt did not place (e.g. optional imports).
+      Scans staging RECURSIVELY so plugin DLLs in platforms\, styles\, imageformats\,
+      iconengines\, sqldrivers\, tls\, and qml\** are also walked (their transitive deps,
+      e.g. openssl for tls\qopensslbackend.dll, are copied next to Poker.exe otherwise the
+      plugin fails to load at startup with "DLL not found").
     #>
     param(
         [Parameter(Mandatory = $true)][string] $StagingDir,
@@ -155,7 +189,7 @@ function Copy-TransitiveDllsFromSearchBins {
         return
     }
     $queue = New-Object System.Collections.Queue
-    Get-ChildItem -LiteralPath $StagingDir -File -ErrorAction SilentlyContinue |
+    Get-ChildItem -LiteralPath $StagingDir -File -Recurse -ErrorAction SilentlyContinue |
         Where-Object { $_.Extension -match '(?i)^\.(exe|dll)$' } |
         ForEach-Object { $queue.Enqueue($_.FullName) }
     $processed = @{}
@@ -165,7 +199,10 @@ function Copy-TransitiveDllsFromSearchBins {
         $processed[$pe] = $true
         foreach ($dep in (Get-PeImportDlls -DumpBin $DumpBin -PePath $pe)) {
             $name = Split-Path -Leaf $dep
-            if ($name -match '(?i)^(api-ms-|ext-ms-)') { continue }
+            if (Test-IsWindowsSystemDll $name) { continue }
+            # Loader looks next to the PE first, then in Poker.exe's dir (staging root).
+            $peDir = Split-Path -Parent $pe
+            if (Test-Path -LiteralPath (Join-Path $peDir $name)) { continue }
             $dest = Join-Path $StagingDir $name
             if (Test-Path -LiteralPath $dest) { continue }
             foreach ($bin in $roots) {
@@ -181,12 +218,72 @@ function Copy-TransitiveDllsFromSearchBins {
     }
 }
 
-function Get-VcpkgInstalledBin {
-    if (-not $env:VCPKG_ROOT) { return $null }
+function Assert-StagingImportsResolved {
+    <#
+    .SYNOPSIS
+      Walk every PE in staging, enumerate its imports via dumpbin, and report any DLL
+      that is neither next to the PE, in the staging root, nor a Windows system DLL.
+      This surfaces "app won't start, DLL missing" failures at BUILD time instead of
+      runtime on a user's machine.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string] $StagingDir,
+        [string] $DumpBin = ""
+    )
+    if (-not $DumpBin) { $DumpBin = Find-DumpBin }
+    if (-not $DumpBin -or -not (Test-Path -LiteralPath $DumpBin)) {
+        Write-Host "    (skip dependency verification: dumpbin not found)"
+        return
+    }
+    $missing = New-Object System.Collections.Generic.List[string]
+    $pes = Get-ChildItem -LiteralPath $StagingDir -File -Recurse -ErrorAction SilentlyContinue |
+        Where-Object { $_.Extension -match '(?i)^\.(exe|dll)$' }
+    foreach ($pe in $pes) {
+        $peDir = $pe.Directory.FullName
+        foreach ($dep in (Get-PeImportDlls -DumpBin $DumpBin -PePath $pe.FullName)) {
+            $name = Split-Path -Leaf $dep
+            if (Test-IsWindowsSystemDll $name) { continue }
+            if (Test-Path -LiteralPath (Join-Path $peDir $name)) { continue }
+            if (Test-Path -LiteralPath (Join-Path $StagingDir $name)) { continue }
+            $rel = [System.IO.Path]::GetRelativePath($StagingDir, $pe.FullName)
+            $missing.Add("$rel → $name") | Out-Null
+        }
+    }
+    if ($missing.Count -gt 0) {
+        Write-Warning "Unresolved imports in staging (app will fail to start unless these DLLs ship elsewhere on PATH):"
+        foreach ($m in ($missing | Select-Object -Unique)) { Write-Warning "    $m" }
+        throw "Staging is incomplete: $($missing.Count) unresolved import(s). Fix deployment or extend SearchBins."
+    }
+    Write-Host "    All PE imports resolve inside the staging tree."
+}
+
+function Get-VcpkgInstalledBins {
+    <#
+    .SYNOPSIS
+      Enumerate vcpkg bin directories to search for runtime DLLs (sqlite3.dll, …).
+      Order matters: manifest-mode (vcpkg.json in repo) installs land in
+      <CMAKE_BINARY_DIR>\vcpkg_installed\<triplet>\bin and <RepoRoot>\vcpkg_installed\...,
+      NOT in $VCPKG_ROOT\installed\... — so classic-mode layout is only the last resort.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string] $RepoRoot,
+        [Parameter(Mandatory = $true)][string] $BuildDir
+    )
     $trip = if ($env:VCPKG_DEFAULT_TRIPLET) { $env:VCPKG_DEFAULT_TRIPLET } else { "x64-windows" }
-    $bin = Join-Path $env:VCPKG_ROOT "installed\$trip\bin"
-    if (Test-Path -LiteralPath $bin) { return $bin }
-    return $null
+    $candidates = @(
+        (Join-Path $BuildDir "vcpkg_installed\$trip\bin"),
+        (Join-Path $RepoRoot "vcpkg_installed\$trip\bin")
+    )
+    if ($env:VCPKG_ROOT) {
+        $candidates += (Join-Path $env:VCPKG_ROOT "installed\$trip\bin")
+    }
+    $found = New-Object System.Collections.Generic.List[string]
+    foreach ($c in $candidates) {
+        if ((Test-Path -LiteralPath $c) -and -not $found.Contains($c)) {
+            $found.Add($c) | Out-Null
+        }
+    }
+    return ,$found.ToArray()
 }
 
 $QtInstall = Find-QtRoot
@@ -242,19 +339,25 @@ New-Item -ItemType Directory -Path $StagingDir | Out-Null
 $StageExe = Join-Path $StagingDir "Poker.exe"
 Copy-Item -Path $Exe -Destination $StageExe
 
-$VcpkgBin = Get-VcpkgInstalledBin
-if ($VcpkgBin) {
-    $sqliteDll = Join-Path $VcpkgBin "sqlite3.dll"
+$VcpkgBins = @(Get-VcpkgInstalledBins -RepoRoot $RepoRoot -BuildDir $BuildDir)
+$sqliteCopied = $false
+foreach ($bin in $VcpkgBins) {
+    $sqliteDll = Join-Path $bin "sqlite3.dll"
     if (Test-Path -LiteralPath $sqliteDll) {
         Copy-Item -LiteralPath $sqliteDll -Destination $StagingDir
-        Write-Host "    Copied sqlite3.dll from vcpkg ($VcpkgBin)"
-    } else {
-        Write-Warning "sqlite3.dll not found under vcpkg bin: $VcpkgBin — app will fail at runtime if SQLite is dynamic."
+        Write-Host "    Copied sqlite3.dll from vcpkg ($bin)"
+        $sqliteCopied = $true
+        break
     }
-} elseif ($env:VCPKG_ROOT) {
-    Write-Warning "VCPKG_ROOT is set but installed\bin not found (check VCPKG_DEFAULT_TRIPLET)."
-} else {
-    Write-Warning "VCPKG_ROOT not set: sqlite3.dll will not be copied; use vcpkg or place sqlite3.dll next to Poker.exe."
+}
+if (-not $sqliteCopied) {
+    if ($VcpkgBins.Count -gt 0) {
+        Write-Warning "sqlite3.dll not found in any of: $($VcpkgBins -join ', ') — app will fail at runtime."
+    } elseif ($env:VCPKG_ROOT) {
+        Write-Warning "No vcpkg bin dir found (manifest: $BuildDir\vcpkg_installed\<triplet>\bin, classic: VCPKG_ROOT\installed\<triplet>\bin). Check VCPKG_DEFAULT_TRIPLET and that 'vcpkg install' ran."
+    } else {
+        Write-Warning "VCPKG_ROOT not set and no vcpkg_installed tree under BuildDir/RepoRoot: sqlite3.dll will not be copied; run vcpkg install or place sqlite3.dll next to Poker.exe."
+    }
 }
 
 Write-Host "==> windeployqt (Qt + QML + MSVC runtime)…"
@@ -264,12 +367,15 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $QtBin = Join-Path $QtInstall "bin"
 $extraBins = New-Object System.Collections.Generic.List[string]
-if ($VcpkgBin) { [void]$extraBins.Add($VcpkgBin) }
+foreach ($b in $VcpkgBins) { [void]$extraBins.Add($b) }
 if (Test-Path -LiteralPath $QtBin) { [void]$extraBins.Add($QtBin) }
 if ($extraBins.Count -gt 0) {
-    Write-Host "==> Transitive DLLs (vcpkg + Qt bin, via dumpbin)…"
+    Write-Host "==> Transitive DLLs (vcpkg + Qt bin, via dumpbin, recursive into plugins)…"
     Copy-TransitiveDllsFromSearchBins -StagingDir $StagingDir -SearchBins @($extraBins)
 }
+
+Write-Host "==> Verifying all imports resolve inside staging…"
+Assert-StagingImportsResolved -StagingDir $StagingDir
 
 if (-not $SkipZip) {
     $zipName = Join-Path $RepoRoot "TexasHoldemGym-Windows-x64-${gitHash}.zip"
