@@ -8,9 +8,7 @@ import PokerUi 1.0
 /// Bottom HUD (full width) or floating panel beside the human seat (`embeddedMode`).
 Item {
     id: game_controls
-    width: game_controls.embeddedMode
-          ? (game_controls.panelWidth > 0 ? game_controls.panelWidth : implicitWidth)
-          : (parent ? parent.width : implicitWidth)
+    width: game_controls.embeddedMode ? (game_controls.panelWidth > 0 ? game_controls.panelWidth : implicitWidth) : (parent ? parent.width : implicitWidth)
     /// Panel chrome: top inset (`mainColTopMargin`) + column + bottom inset (`barBottomPad`).
     height: mainCol.height + mainColTopMargin + barBottomPad
 
@@ -36,12 +34,9 @@ Item {
         return Math.min(1.0, Math.max(0.58, w / 380.0))
     }
     /// Trainer full-width dock: scaled pill targets so FOLD/CALL/RAISE fit narrow panels.
-    readonly property int actPill76: (trainerMode && !embeddedMode)
-            ? Math.max(52, Math.round(76 * trainerDockScale)) : 76
-    readonly property int actPill88: (trainerMode && !embeddedMode)
-            ? Math.max(56, Math.round(88 * trainerDockScale)) : 88
-    readonly property int actPill108: (trainerMode && !embeddedMode)
-            ? Math.max(64, Math.round(108 * trainerDockScale)) : 108
+    readonly property int actPill76: (trainerMode && !embeddedMode) ? Math.max(52, Math.round(76 * trainerDockScale)) : 76
+    readonly property int actPill88: (trainerMode && !embeddedMode) ? Math.max(56, Math.round(88 * trainerDockScale)) : 88
+    readonly property int actPill108: (trainerMode && !embeddedMode) ? Math.max(64, Math.round(108 * trainerDockScale)) : 108
     /// Matches `Player` `uiScale` / embedded `ez`: table `hudScale` + short-window boost. Used for showdown banner mini-cards (`Card.displayScaleFactor`) so SVG raster tracks hole cards.
     readonly property real bannerRasterScale: Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0))))
 
@@ -150,8 +145,7 @@ Item {
     readonly property bool showHudActTimerRow: game_controls.humanDecisionActive
             && !game_controls.trainerMode && !game_controls.embeddedMode
     /// “More” time stays in the panel beside the seat when embedded (`showHudActTimerRow` is off there).
-    readonly property bool showMoreTimeButton: game_controls.humanMoreTimeAvailable && game_controls.humanDecisionActive
-            && !game_controls.trainerMode
+    readonly property bool showMoreTimeButton: game_controls.humanMoreTimeAvailable && game_controls.humanDecisionActive && !game_controls.trainerMode
 
     readonly property bool humanDecisionActive: trainerMode
             ? (!trainerInputLocked && decisionSecondsLeft > 0)
@@ -164,8 +158,7 @@ Item {
     readonly property bool checkOrRaiseSized: humanDecisionActive && humanCanCheck && !humanBbPreflopOption
     readonly property bool canFacingCall: facingRaise && (facingNeedChips <= 0 || humanHasChips)
     readonly property bool canRaiseFacing: facingRaise && humanCanRaiseFacing && humanHasChips
-    readonly property bool canOpenRaise: checkOrRaiseSized && humanHasChips && openRaiseMinChips > 0
-            && openRaiseMaxChips >= openRaiseMinChips
+    readonly property bool canOpenRaise: checkOrRaiseSized && humanHasChips && openRaiseMinChips > 0 && openRaiseMaxChips >= openRaiseMinChips
 
     /// False while sitting out — disables action buttons; do not use alone to collapse the whole HUD.
     readonly property bool showHumanActions: !humanSitOut
@@ -349,15 +342,11 @@ Item {
                 spacing: game_controls.embeddedMode ? Math.max(4, Math.round(6 * game_controls.ez)) : 10
                 /// Table + interactive human: keep timer strip so the panel height stays stable. Table + play-as-bot:
                 /// omit the empty strip (Sit out is not shown while bot plays — same as before).
-                visible: game_controls.showTableDecisionChrome
-                        && (!game_controls.embeddedMode || game_controls.engineHumanInteractive
-                            || game_controls.trainerMode)
+                visible: game_controls.showTableDecisionChrome && (!game_controls.embeddedMode || game_controls.engineHumanInteractive || game_controls.trainerMode)
 
                 Item {
                     width: parent.width
-                    height: game_controls.embeddedMode
-                            ? Math.max(game_controls.embeddedTimerRowMinH, timerRow.implicitHeight)
-                            : timerRow.implicitHeight
+                    height: game_controls.embeddedMode ? Math.max(game_controls.embeddedTimerRowMinH, timerRow.implicitHeight) : timerRow.implicitHeight
                     RowLayout {
                         id: timerRow
                         anchors.verticalCenter: parent.verticalCenter
@@ -390,14 +379,14 @@ Item {
                     GameButton {
                         visible: game_controls.showMoreTimeButton
                         /// Wide enough for button font “More” — do not cap with `Layout.preferredWidth` (caused “M…” elide).
-                        pillWidth: Math.max(88, Math.round(112 * game_controls.ez))
-                        horizontalPadding: Math.max(14, Math.round(18 * game_controls.ez))
+                        pillWidth: Math.round(88 * game_controls.ez)
+                        horizontalPadding: Math.round(14 * game_controls.ez)
                         fontSize: game_controls.hudBtnPt
                         text: qsTr("More")
                         buttonColor: Theme.hudActionPanel
                         textColor: Theme.hudActionBright
                         overrideHeight: game_controls.hudActBtnH
-                        Layout.minimumWidth: visible ? Math.max(96, Math.round(122 * game_controls.ez)) : 0
+                        Layout.minimumWidth: visible ? Math.round(122 * game_controls.ez) : 0
                         onClicked: {
                             if (pageRoot)
                                 pageRoot.buttonClicked("MORE_TIME")
@@ -418,9 +407,9 @@ Item {
                         horizontalAlignment: Text.AlignRight
                         elide: Text.ElideLeft
                         wrapMode: Text.NoWrap
-                        Layout.minimumWidth: Math.max(72, Math.round(88 * game_controls.ez))
+                        Layout.minimumWidth: Math.round(72 * game_controls.ez)
                         /// Leave room for Act / timer / More — do not claim most of a narrow panel.
-                        Layout.preferredWidth: Math.min(320, Math.max(100, timerRow.width * 0.42))
+                        Layout.preferredWidth: Math.max(100, timerRow.width * 0.42)
                     }
 
                     ThemedCheckBox {
@@ -485,8 +474,7 @@ Item {
                         && game_controls.raiseSizingExpanded
                         && !(game_controls.trainerMode && game_controls.trainerFlopStreet)
                 width: parent.width
-                height: visible
-                        ? raiseSizerCol.implicitHeight + 2 * Theme.sizingRaisePanelPadV : 0
+                height: visible ? raiseSizerCol.implicitHeight + 2 * Theme.sizingRaisePanelPadV : 0
                 color: Theme.panelElevated
                 border.color: Theme.inputBorder
                 border.width: 1
@@ -564,8 +552,7 @@ Item {
 
             // Facing a raise: fold / call / raise (table + preflop drill), or flop drill check / bets — Flow wraps on min width.
             Flow {
-                visible: game_controls.showHumanActions && game_controls.showWagerUi
-                        && game_controls.facingRaise
+                visible: game_controls.showHumanActions && game_controls.showWagerUi && game_controls.facingRaise
                 width: parent.width
                 spacing: game_controls.actionRowSpacing
 
