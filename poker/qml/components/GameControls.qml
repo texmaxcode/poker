@@ -142,14 +142,10 @@ Item {
     /// Seat 0 is played by engine bots (vs interactive human actions).
     readonly property bool playingAsBot: pokerGame !== null && !engineHumanInteractive
     /// Act / countdown / bar live on `Player` street row when embedded or in trainers — avoid duplicate chrome.
-    readonly property bool showHudActTimerRow: game_controls.humanDecisionActive
-            && !game_controls.trainerMode && !game_controls.embeddedMode
+    readonly property bool showHudActTimerRow: game_controls.humanDecisionActive && !game_controls.trainerMode && !game_controls.embeddedMode
     /// “More” time stays in the panel beside the seat when embedded (`showHudActTimerRow` is off there).
     readonly property bool showMoreTimeButton: game_controls.humanMoreTimeAvailable && game_controls.humanDecisionActive && !game_controls.trainerMode
-
-    readonly property bool humanDecisionActive: trainerMode
-            ? (!trainerInputLocked && decisionSecondsLeft > 0)
-            : (decisionSecondsLeft > 0 && humanStackChips > 0)
+    readonly property bool humanDecisionActive: trainerMode ? (!trainerInputLocked && decisionSecondsLeft > 0) : (decisionSecondsLeft > 0 && humanStackChips > 0)
     readonly property bool humanHasChips: humanStackChips > 0
     /// Busted (0 stack) players watch but do not get the action UI.
     readonly property bool showWagerUi: !humanSitOut && humanStackChips > 0
@@ -159,13 +155,10 @@ Item {
     readonly property bool canFacingCall: facingRaise && (facingNeedChips <= 0 || humanHasChips)
     readonly property bool canRaiseFacing: facingRaise && humanCanRaiseFacing && humanHasChips
     readonly property bool canOpenRaise: checkOrRaiseSized && humanHasChips && openRaiseMinChips > 0 && openRaiseMaxChips >= openRaiseMinChips
-
     /// False while sitting out — disables action buttons; do not use alone to collapse the whole HUD.
     readonly property bool showHumanActions: !humanSitOut
     /// Timer / progress strip: table uses sit-out/watch; trainers show while the drill waits for input.
-    readonly property bool showTableDecisionChrome: trainerMode
-            ? (showHumanActions && showWagerUi)
-            : (showWagerUi || humanSitOut)
+    readonly property bool showTableDecisionChrome: trainerMode ? (showHumanActions && showWagerUi) : (showWagerUi || humanSitOut)
 
     /// Table: hand strength is shown in the dedicated row above; banner is status / showdown (+ watching when sitting out).
     readonly property string statusFullDisplay: {
@@ -300,7 +293,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         height: mainCol.height + mainColTopMargin + barBottomPad
-        radius: game_controls.embeddedMode ? Math.max(6, Math.round(10 * game_controls.ez)) : 10
+        radius: game_controls.embeddedMode ? Math.round(10 * game_controls.ez) : 10
         color: Theme.headerBg
         border.width: 1
         border.color: Qt.alpha(Theme.gold, 0.25)
@@ -339,7 +332,7 @@ Item {
             Column {
                 id: decisionChrome
                 width: parent.width
-                spacing: game_controls.embeddedMode ? Math.max(4, Math.round(6 * game_controls.ez)) : 10
+                spacing: game_controls.embeddedMode ? Math.round(4 * game_controls.ez) : 10
                 /// Table + interactive human: keep timer strip so the panel height stays stable. Table + play-as-bot:
                 /// omit the empty strip (Sit out is not shown while bot plays — same as before).
                 visible: game_controls.showTableDecisionChrome && (!game_controls.embeddedMode || game_controls.engineHumanInteractive || game_controls.trainerMode)
@@ -360,7 +353,7 @@ Item {
                         font.family: Theme.fontFamilyUi
                         font.pixelSize: game_controls.hudTimerLabelPx
                         font.bold: true
-                        Layout.minimumWidth: visible ? Math.max(26, Math.round(32 * game_controls.ez)) : 0
+                        Layout.minimumWidth: visible ? Math.round(26 * game_controls.ez) : 0
                         Layout.preferredWidth: visible ? implicitWidth : 0
                     }
 
@@ -372,17 +365,17 @@ Item {
                         font.pixelSize: game_controls.hudTimerLabelPx + 1
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
-                        Layout.minimumWidth: visible ? Math.max(34, Math.round(40 * game_controls.ez)) : 0
+                        Layout.minimumWidth: visible ? Math.round(34 * game_controls.ez) : 0
                         Layout.preferredWidth: visible ? implicitWidth : 0
                     }
 
                     GameButton {
                         visible: game_controls.showMoreTimeButton
                         /// Wide enough for button font “More” — do not cap with `Layout.preferredWidth` (caused “M…” elide).
-                        pillWidth: Math.round(88 * game_controls.ez)
-                        horizontalPadding: Math.round(14 * game_controls.ez)
+                        pillWidth: Math.round(80 * game_controls.ez)
+                        horizontalPadding: Math.round(18 * game_controls.ez)
                         fontSize: game_controls.hudBtnPt
-                        text: qsTr("More")
+                        text: qsTr("Add Time")
                         buttonColor: Theme.hudActionPanel
                         textColor: Theme.hudActionBright
                         overrideHeight: game_controls.hudActBtnH
@@ -419,10 +412,10 @@ Item {
                         text: qsTr("Sit out")
                         font.family: Theme.fontFamilyUi
                         font.pixelSize: game_controls.hudMicroPx
-                        topPadding: game_controls.embeddedMode ? Math.max(4, Math.round(8 * game_controls.ez)) : 14
-                        bottomPadding: game_controls.embeddedMode ? Math.max(4, Math.round(8 * game_controls.ez)) : 14
-                        leftPadding: game_controls.embeddedMode ? Math.max(6, Math.round(8 * game_controls.ez)) : 12
-                        rightPadding: game_controls.embeddedMode ? Math.max(6, Math.round(8 * game_controls.ez)) : 12
+                        topPadding: game_controls.embeddedMode ? Math.round(4 * game_controls.ez) : 14
+                        bottomPadding: game_controls.embeddedMode ? Math.round(4 * game_controls.ez) : 14
+                        leftPadding: game_controls.embeddedMode ? Math.round(6 * game_controls.ez) : 12
+                        rightPadding: game_controls.embeddedMode ? Math.round(6 * game_controls.ez) : 12
                         checked: game_controls.humanSitOut
                         onToggled: {
                             if (pokerGame) {
@@ -442,8 +435,8 @@ Item {
                     /// Only with legacy full-width HUD timer row; embedded + trainers use `Player` street bar.
                     visible: game_controls.showTableDecisionChrome && game_controls.showHudActTimerRow
                     width: parent.width
-                    height: Math.max(4, Math.round(6 * game_controls.ez))
-                    padding: Math.max(1, Math.round(2 * game_controls.ez))
+                    height: Math.round(4 * game_controls.ez)
+                    padding: Math.round(1 * game_controls.ez)
                     opacity: (game_controls.humanDecisionActive || (game_controls.trainerMode && game_controls.statusSubText.length > 0)) ? 1.0 : 0.35
                     from: 0
                     to: 1
@@ -817,8 +810,7 @@ Item {
                         && game_controls.canOpenRaise
                         && game_controls.openRaiseSizingExpanded
                 width: parent.width
-                height: visible
-                        ? openRaiseSizerCol.implicitHeight + 2 * Theme.sizingRaisePanelPadV : 0
+                height: visible ? openRaiseSizerCol.implicitHeight + 2 * Theme.sizingRaisePanelPadV : 0
                 color: Theme.panelElevated
                 border.color: Theme.inputBorder
                 border.width: 1
@@ -987,7 +979,7 @@ Item {
                 readonly property int statusBannerInnerTopPad: Math.max(4, Math.round(6 * game_controls.ez))
                 implicitHeight: statusTableColumn.implicitHeight + Math.max(6, Math.round(8 * game_controls.ez))
                         + statusBannerInnerTopPad
-                radius: Math.max(4, Math.round(6 * game_controls.ez))
+                radius: Math.round(6 * game_controls.ez)
                 color: Theme.inputBg
                 border.color: Theme.inputBorder
                 border.width: 1
@@ -1019,7 +1011,7 @@ Item {
 
                                 Rectangle {
                                     anchors.fill: parent
-                                    radius: Math.max(4, Math.round(6 * _br))
+                                    radius: Math.round(6 * _br)
                                     color: Qt.alpha(Theme.panelElevated, 0.92)
                                     border.width: 1
                                     border.color: Qt.alpha(Theme.chromeLineGold, 0.38)
@@ -1059,7 +1051,7 @@ Item {
                 width: parent.width
                 implicitHeight: Math.max(Math.round(44 * game_controls.ez),
                         handRowLayout.implicitHeight + Math.max(10, Math.round(16 * game_controls.ez)))
-                radius: Math.max(4, Math.round(6 * game_controls.ez))
+                radius: Math.round(6 * game_controls.ez)
                 color: Theme.panelElevated
                 border.width: 1
                 border.color: Qt.alpha(Theme.gold, 0.42)

@@ -121,23 +121,23 @@ QtObject {
     readonly property int panelGap: 16
 
     /// Playing cards (~1 : 1.48 width:height). Pair width matches 204px seat inner (margins 4).
-    readonly property int holeCardWidth: 96
-    readonly property int holeCardHeight: 142
-    readonly property int holeCardGap: 4
-    readonly property int holePairTotalWidth: 2 * holeCardWidth + holeCardGap
+    readonly property int holeCardWidth:  96
+    readonly property int holeCardHeight: 135
+    readonly property int holeCardGap: 2
+    readonly property int holePairTotalWidth: 2 * (holeCardWidth + holeCardGap)
     /// Board / default `Card` footprint — five across + spacing fits centered on typical table width.
-    readonly property int boardCardWidth: 108
-    readonly property int boardCardHeight: 160
+    readonly property int boardCardWidth: 128
+    readonly property int boardCardHeight: 179
 
     /// Training / drill screens: keep readable line length and controls off ultra-wide edges.
-    readonly property int trainerContentMaxWidth: 920
+    readonly property int trainerContentMaxWidth: 720
     /// Extra inset below the app header on training drill pages (keeps content off the toolbar rule).
     readonly property int trainerPageTopPadding: 4
     /// Floor for `GameControls.hudScale` on trainers — must stay below ~0.5 or the action dock steals too much height on short windows.
     readonly property real trainerHudMinScale: 0.38
     /// Flop trainer: community cards match table scale so pot + board + seat fit without overlap.
     readonly property int trainerFlopBoardCardWidth: 100
-    readonly property int trainerFlopBoardCardHeight: 148
+    readonly property int trainerFlopBoardCardHeight: 149
     /// Gap between drill cards and between HUD action rows — matches `GameControls` action spacing (12).
     readonly property int trainerDrillHudSpacing: 12
     /// Hero seat is centered; action dock sits below (no side-floating HUD).
@@ -300,26 +300,27 @@ QtObject {
         return Math.max(0.34, Math.min(ts, (row - 8.0) / 218.0))
     }
     /// Embedded `GameControls` must fit FOLD/CALL/RAISE (or CHECK / bet / bet) in one row (~300px + margins).
-    readonly property int trainerEmbeddedHudMinWidth: 340
+    readonly property int trainerEmbeddedHudMinWidth: 280
     /// Win-line banner: mini cards beside one-line result text (`GameControls` embedded HUD).
     /// Showdown strip in HUD status — slightly larger than before; aspect ~1 : 1.45 (hole cards).
-    readonly property int resultBannerCardW: 44
-    readonly property int resultBannerCardH: 64
+
+    readonly property int resultBannerCardW: 78
+    readonly property int resultBannerCardH: 100
     readonly property int trainerSpinBoxWidth: 140
 
     /// Lobby / setup / stats / solver / training scroll pages (not the in-game table/HUD).
-    readonly property int uiPagePadding: 15
+    readonly property int uiPagePadding: 13
     /// Space between the toolbar (or window top on lobby) and the first line of scroll content.
     readonly property int uiScrollViewTopPadding: 18
     /// GroupBox and grouped panels outside the poker table (matches training panel padding).
     readonly property int uiGroupedPanelPadding: 14
     /// Vertical spacing inside GroupBox ColumnLayouts (setup, stats, solver).
-    readonly property int uiGroupInnerSpacing: 11
+    readonly property int uiGroupInnerSpacing: 9
     /// Application-wide UI (lobby, stats, setup, solver, table, HUD).
-    readonly property int uiBasePt: 13
-    readonly property int uiToolBarTitlePt: 18
+    readonly property int uiBasePt: 12
+    readonly property int uiToolBarTitlePt: 14
     /// Lobby chrome chip label + icon (smaller than centered page title).
-    readonly property int uiToolBarChromePt: 13
+    readonly property int uiToolBarChromePt: 11
     readonly property int uiBodyPx: 13
     readonly property int uiSmallPx: 12
     readonly property int uiMicroPx: 11
@@ -346,11 +347,11 @@ QtObject {
     readonly property int uiPotSepPt: 18
     readonly property int uiPotCallPt: 18
     readonly property int uiSeatFoldPt: 12
-    readonly property int uiSeatStreetPt: 11
-    readonly property int uiSeatNamePt: 12
-    readonly property int uiSeatPosPt: 13
-    readonly property int uiStackPt: 18
-    readonly property int uiHudButtonPt: 11
+    readonly property int uiSeatStreetPt: 9
+    readonly property int uiSeatNamePt: 13
+    readonly property int uiSeatPosPt: 11
+    readonly property int uiStackPt: 16
+    readonly property int uiHudButtonPt: 10
     readonly property int uiChartCanvasPx: 12
     readonly property int uiRangeGridAxisPx: 14
     readonly property int uiRangeGridLegendPx: 13

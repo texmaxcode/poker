@@ -40,7 +40,8 @@ Item {
     readonly property real boardRowScale: Math.min(widthScale, heightScale) * centerScale
 
     readonly property real _tableShort: Math.min(table_container.width, table_container.height)
-    /// Pot bar + typography: same shrink as the board on tight layouts, but can grow past 1× on large table areas (bar was width-capped at 340px before).
+    /// Pot bar + typography: same shrink as the board on tight layouts,
+    /// but can grow past 1× on large table areas (bar was width-capped at 340px before).
     readonly property real potHudScale: Math.max(0.38, Math.min(1.42,
             boardRowScale * Math.min(1.4, Math.max(0.9, _tableShort / 780.0))))
     /// Slightly smaller than pre-trainer restyle so the pill matches the old compact strip footprint.
@@ -73,8 +74,7 @@ Item {
 
     Column {
         id: col
-        spacing: Math.max(10, Math.round(18 * Math.max(table_container.boardRowScale,
-                table_container.potHudScale * 0.92)))
+        spacing: Math.max(10, Math.round(18 * Math.max(table_container.boardRowScale, table_container.potHudScale * 0.92)))
         anchors.centerIn: parent
 
         /// Stakes as section label above the pill; pill holds **one line** (Pot $N) only.
@@ -106,8 +106,7 @@ Item {
                 font.bold: true
                 font.capitalization: Font.AllUppercase
                 font.letterSpacing: 0.5
-                font.pixelSize: Math.max(7, Math.round((Theme.trainerCaptionPx - 4)
-                        * Math.max(0.72, table_container.potBoxScale)))
+                font.pixelSize: Math.max(7, Math.round((Theme.trainerCaptionPx - 4) * Math.max(0.72, table_container.potBoxScale)))
                 horizontalAlignment: Text.AlignLeft
             }
 

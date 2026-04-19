@@ -79,7 +79,7 @@ Item {
     /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
     readonly property int seatInnerPad: Math.round(6 * _s)
     /// cardRowH matches hole card height (no extra band); see `cardRowH` / `cardRow` anchors.
-    implicitHeight: Math.round(288 * _s)
+    implicitHeight: Math.round(300 * _s)
     implicitWidth: Math.round(Theme.holePairTotalWidth * _s)
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
@@ -294,7 +294,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     visible: root.inHand && root.seatAtTable && (root.showHumanDecisionTimer || root.showBotDecisionTimer || root.streetActionText.length > 0 || root.isActing)
-                    radius: Math.round(3 * _s)
+                    radius: Math.round(5 * _s)
                     /// Blend into seat panel — avoid a heavy HUD slab (`hudBg1`).
                     color: Qt.alpha(Theme.textPrimary, 0.035)
                     border.width: (root.showHumanDecisionTimer || root.showBotDecisionTimer) ? 0 : 1

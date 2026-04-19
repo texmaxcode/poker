@@ -141,10 +141,8 @@ Page {
             readonly property real seatGap: 10 * tableScale
             /// Pull corner seats slightly inward on small viewports (was fixed 1.09).
             readonly property real cornerBoost: 1.0 + 0.09 * Math.min(1.0, tableScale * 1.15)
-            readonly property real maxLayoutOvalW: Math.max(240 * tableScale,
-                    width - 4 * seatHalfW - 2 * seatGap - 36 * tableScale - 2 * edgeMargin)
-            readonly property real maxLayoutOvalH: Math.max(180 * tableScale,
-                    height - 4 * seatHalfH - 2 * seatGap - 48 * tableScale - 2 * edgeMargin)
+            readonly property real maxLayoutOvalW: Math.max(240 * tableScale, width - 4 * seatHalfW - 2 * seatGap - 36 * tableScale - 2 * edgeMargin)
+            readonly property real maxLayoutOvalH: Math.max(180 * tableScale, height - 4 * seatHalfH - 2 * seatGap - 48 * tableScale - 2 * edgeMargin)
             readonly property real layoutOvalW: Math.min(Math.min(width * 0.98, height * 1.32), maxLayoutOvalW)
             readonly property real layoutOvalH: Math.min(Math.min(height * 0.74, width * 0.46), maxLayoutOvalH)
             readonly property real feltBleedW: Math.max(320 * tableScale, width * 0.2)
@@ -220,17 +218,14 @@ Page {
                 delegate: Item {
                 id: seatWrap
                 required property int index
-                width: Math.round(218 * tableArea.tableScale)
-                height: Math.round(312 * tableArea.tableScale)
+                width: Math.round(208 * tableArea.tableScale)
+                height: Math.round(302 * tableArea.tableScale)
                 readonly property real angle: Math.PI / 2 - index * 2 * Math.PI / 6
-                readonly property real cornerMul: (index === 1 || index === 2 || index === 4 || index === 5)
-                        ? tableArea.cornerBoost : 1.0
+                readonly property real cornerMul: (index === 1 || index === 2 || index === 4 || index === 5) ? tableArea.cornerBoost : 1.0
                 readonly property real scx: tableArea.feltCenter.x + tableArea.orbitRx * Math.cos(angle) * cornerMul
                 readonly property real scy: tableArea.feltCenter.y + tableArea.orbitRy * Math.sin(angle) * cornerMul
-                x: Math.min(tableArea.width - width - tableArea.edgeMargin,
-                            Math.max(tableArea.edgeMargin, scx - width / 2))
-                y: Math.min(tableArea.height - height - tableArea.edgeMargin,
-                            Math.max(tableArea.edgeMargin, scy - height / 2))
+                x: Math.min(tableArea.width - width - tableArea.edgeMargin, Math.max(tableArea.edgeMargin, scx - width / 2))
+                y: Math.min(tableArea.height - height - tableArea.edgeMargin, Math.max(tableArea.edgeMargin, scy - height / 2))
 
                 Player {
                     anchors.fill: parent
