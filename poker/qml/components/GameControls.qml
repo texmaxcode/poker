@@ -25,9 +25,7 @@ Item {
         var w = Window.window
         return (w && w.width > 0) ? Math.min(w.width, w.height) : 720
     }
-    readonly property real ez: embeddedMode
-            ? Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0))))
-            : 1.0
+    readonly property real ez: embeddedMode ? Math.max(0.58, Math.min(1.0, hudScale * (1.0 + 0.06 * Math.min(1.0, _winShort / 900.0)))) : 1.0
     /// Full-width trainer dock: shrink buttons / spacing on narrow columns (min window / small drill panel).
     readonly property real trainerDockScale: {
         if (!trainerMode || embeddedMode)

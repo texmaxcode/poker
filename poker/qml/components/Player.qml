@@ -77,47 +77,40 @@ Item {
 
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
     /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
-    readonly property int seatInnerPad: Math.max(4, Math.round(11 * _s))
+    readonly property int seatInnerPad: Math.round(6 * _s)
     /// cardRowH matches hole card height (no extra band); see `cardRowH` / `cardRow` anchors.
     implicitHeight: Math.round(288 * _s)
-    implicitWidth: Math.round((Theme.holePairTotalWidth + 22) * _s)
+    implicitWidth: Math.round(Theme.holePairTotalWidth * _s)
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
     /// When the seat is squeezed (trainers, tight HUD), never exceed real width — avoids clipping BTN/Rye badge.
     readonly property int contentWidth: {
         var design = Math.round(Theme.holePairTotalWidth * _s)
-        var inner = Math.floor(root.width - 2 * seatInnerPad)
+        var inner = Math.floor(root.width * seatInnerPad)
         if (root.width <= 0 || inner >= design)
             return design
         return Math.max(96, inner)
     }
     readonly property int cardW: Math.round(Theme.holeCardWidth * _s)
     readonly property int cardH: Math.round(Theme.holeCardHeight * _s)
-    readonly property int cardGap: Math.max(2, Math.round(Theme.holeCardGap * _s))
+    readonly property int cardGap: Math.round(Theme.holeCardGap * _s)
     readonly property int cardRowH: Math.round(Theme.holeCardHeight * _s)
-    readonly property int namePosSpacing: Math.max(2, Math.round(4 * _s))
+    readonly property int namePosSpacing: Math.round(2 * _s)
     /// Horizontal gap between name and position badges (slightly wider than `namePosSpacing` for clear separation).
-    readonly property int namePosGap: Math.max(namePosSpacing, Math.round(6 * _s))
+    readonly property int namePosGap: Math.round(4 * _s)
     /// Street / timer band: one text line + optional thin progress (timer when thinking, action after).
-    readonly property int streetRowH: Math.max(28, Math.round(22 * _s) + Math.max(4, Math.round(5 * _s)) + 6)
+    readonly property int streetRowH: Math.round(28 * _s)
     readonly property bool seatUsesHumanDecisionUi: root.isHumanSeat && root.interactiveHuman
-    readonly property bool showHumanDecisionTimer: root.seatUsesHumanDecisionUi && root.isActing
-            && root.decisionSecondsLeft > 0 && root.inHand && root.seatAtTable
+    readonly property bool showHumanDecisionTimer: root.seatUsesHumanDecisionUi && root.isActing && root.decisionSecondsLeft > 0 && root.inHand && root.seatAtTable
     /// Bots and seat 0 autoplay — UI-thread pacing aligned with `botDecisionDelaySec` / `bot_action_pause`.
     readonly property bool showBotDecisionTimer: !root.seatUsesHumanDecisionUi && root.isActing && root.inHand
             && root.seatAtTable
-    readonly property int botTimerSecondsShown: Math.max(0, Math.min(root.botDecisionDelaySec,
-            Math.ceil(root.botTurnFrac * root.botDecisionDelaySec)))
+    readonly property int botTimerSecondsShown: Math.max(0, Math.min(root.botDecisionDelaySec, Math.ceil(root.botTurnFrac * root.botDecisionDelaySec)))
     /// Position badge — shrink when `contentWidth` is tight so name + BTN stay inside clip bounds.
-    readonly property int posBox: {
-        var design = Math.max(38, Math.round(50 * _s))
-        var minPx = Math.max(26, Math.round(36 * _s))
-        var cap = Math.floor((contentWidth - namePosGap) * 0.44)
-        return Math.max(minPx, Math.min(design, Math.max(minPx, cap)))
-    }
+    readonly property int posBox: Math.round(46 * _s)
     /// Name strip uses the same height as the position badge (`posBox`).
     readonly property int nameRowH: root.posBox
-    readonly property int stackRowH: Math.max(22, Math.round(30 * _s))
+    readonly property int stackRowH: Math.round(28 * _s)
 
     opacity: (foldedDim && seatAtTable) ? 0.52 : 1.0
     Behavior on opacity {
@@ -300,24 +293,20 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    visible: root.inHand && root.seatAtTable
-                            && (root.showHumanDecisionTimer || root.showBotDecisionTimer
-                                || root.streetActionText.length > 0 || root.isActing)
+                    visible: root.inHand && root.seatAtTable && (root.showHumanDecisionTimer || root.showBotDecisionTimer || root.streetActionText.length > 0 || root.isActing)
                     radius: Math.max(3, Math.round(4 * _s))
                     /// Blend into seat panel — avoid a heavy HUD slab (`hudBg1`).
                     color: Qt.alpha(Theme.textPrimary, 0.035)
                     border.width: (root.showHumanDecisionTimer || root.showBotDecisionTimer) ? 0 : 1
-                    border.color: root.isActing
-                            ? Qt.alpha(Theme.panelBorderMuted, 0.28)
-                            : Qt.alpha(root.streetActionColor, 0.55)
+                    border.color: root.isActing ? Qt.alpha(Theme.panelBorderMuted, 0.28) : Qt.alpha(root.streetActionColor, 0.55)
 
                     Column {
                         anchors.fill: parent
-                        anchors.leftMargin: Math.max(4, Math.round(7 * _s))
-                        anchors.rightMargin: Math.max(4, Math.round(7 * _s))
-                        anchors.topMargin: Math.max(2, Math.round(4 * _s))
-                        anchors.bottomMargin: Math.max(2, Math.round(4 * _s))
-                        spacing: Math.max(3, Math.round(4 * _s))
+                        anchors.leftMargin: Math.round(4 * _s)
+                        anchors.rightMargin: Math.round(4 * _s)
+                        anchors.topMargin: Math.round(2 * _s)
+                        anchors.bottomMargin: Math.round(2 * _s)
+                        spacing: Math.round(2 * _s)
 
                         Text {
                             width: parent.width
