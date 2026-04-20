@@ -89,5 +89,13 @@ fi
 echo "==> stapler staple…"
 xcrun stapler staple "${APP}"
 
+echo "==> stapler validate…"
+xcrun stapler validate "${APP}" || die "stapler validate failed (ticket missing or corrupt)"
+
+echo "==> Gatekeeper assessment (same family of check as opening a downloaded .app)…"
+if ! spctl -a -vv -t exec "${APP}"; then
+  die "spctl rejected the bundle after notarization — distribution copies may still be blocked."
+fi
+
 echo "==> Done: signed + notarized + stapled. Users can open the app without manual Gatekeeper overrides."
 exit 0

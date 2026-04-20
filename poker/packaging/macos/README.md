@@ -73,6 +73,17 @@ chmod +x poker/packaging/macos/build-release.sh poker/packaging/macos/sign-notar
 
 If **`MACOS_SIGN_IDENTITY` is unset**, the script keeps **ad-hoc** signing (current default). If it **is** set, `build-release.sh` calls **`sign-notarize-release.sh`**, which uses **`entitlements.plist`** (hardened runtime + Qt-friendly flags), then optionally **`notarytool submit --wait`** and **`stapler staple`**.
 
+**Important:** **Developer ID signing without notarization** is *not* enough for builds you distribute (download, AirDrop, USB). macOS will still show **“could not verify … free of malware”** with only **Done**. You must complete **notarization** and **`stapler staple`** (the script does both when credentials are set). Ad-hoc signing (`codesign -`) has the same limitation.
+
+**Check what you actually shipped** (on a Mac, on the `.app` you are testing):
+
+```bash
+codesign -dv --verbose=4 Poker.app   # expect "Authority=Developer ID Application: …" not "adhoc"
+xcrun stapler validate Poker.app     # must succeed after notarization
+spctl -a -vv -t exec Poker.app       # expect "accepted" / source=Notarized Developer ID
+xattr -l Poker.app                   # com.apple.quarantine explains first-open from downloads
+```
+
 ### GitHub Actions (optional repository secrets)
 
 The **macOS** CI job will **Developer ID–sign and notarize** when you add secrets (fork PRs from contributors will not have them, and will keep ad-hoc signing).
@@ -82,7 +93,7 @@ The **macOS** CI job will **Developer ID–sign and notarize** when you add secr
 | `MACOS_SIGN_IDENTITY` | Full string, e.g. `Developer ID Application: Name (TEAMID)` |
 | `MACOS_CERTIFICATE_P12` | Base64-encoded `.p12` export of the Developer ID **Application** cert + private key |
 | `MACOS_CERTIFICATE_PASSWORD` | Password for that `.p12` |
-| `MACOS_NOTARIZE` | Set to `1` to run notarization when credentials below are present |
+| `MACOS_NOTARIZE` | Set to `1` to force notarization (also runs when a full API-key or Apple-ID notary credential set is present without this) |
 | `APP_STORE_CONNECT_API_KEY_P8` | Base64-encoded contents of the API key `.p8` file |
 | `APP_STORE_CONNECT_KEY_ID` | API Key ID |
 | `APP_STORE_CONNECT_ISSUER_ID` | Issuer UUID |

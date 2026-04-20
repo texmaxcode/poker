@@ -141,11 +141,23 @@ fi
 echo "    No external (Homebrew/local) dylib references remain."
 
 # Sign + optional notarization (Developer ID) — see packaging/macos/sign-notarize-release.sh
+# Developer ID without notarization still fails Gatekeeper for quarantined downloads (browser, AirDrop, etc.).
 if [[ -n "${MACOS_SIGN_IDENTITY:-}" ]]; then
-  _sn_flags=()
-  if [[ "${NOTARIZE:-0}" == "1" ]] || [[ -n "${NOTARY_KEY_PATH:-}${APPLE_ID:-}" ]]; then
-    _sn_flags+=(--notarize)
+  _want_notarize=0
+  [[ "${NOTARIZE:-0}" == "1" ]] && _want_notarize=1
+  if [[ -n "${NOTARY_KEY_PATH:-}" && -n "${NOTARY_KEY_ID:-}" && -n "${NOTARY_ISSUER_ID:-}" ]]; then
+    _want_notarize=1
   fi
+  if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]]; then
+    _want_notarize=1
+  fi
+  if [[ "${_want_notarize}" -eq 0 ]]; then
+    echo "warning: MACOS_SIGN_IDENTITY is set but notarization will be skipped." >&2
+    echo "         Developer ID alone does not satisfy Gatekeeper for distributed builds — add NOTARIZE=1" >&2
+    echo "         plus App Store Connect API key (or Apple ID + team + app-specific password). See packaging/macos/README.md" >&2
+  fi
+  _sn_flags=()
+  [[ "${_want_notarize}" -ne 0 ]] && _sn_flags+=(--notarize)
   "${SCRIPT_DIR}/sign-notarize-release.sh" "${_sn_flags[@]}" "${APP}"
 else
   echo "==> ad-hoc codesign (set MACOS_SIGN_IDENTITY for Developer ID + optional notarization)"

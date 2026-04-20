@@ -206,10 +206,19 @@ jobs:
           done < <(find Poker.app \( -name '*.dylib' -o -name Poker -o -path '*/Frameworks/*/Versions/*/*' \) -type f -print0)
           [[ "$bad" -eq 0 ]] || { echo "bundle still references external dylibs"; exit 1; }
           if [[ -n "${MACOS_SIGN_IDENTITY:-}" ]]; then
-            _args=()
-            if [[ "${NOTARIZE:-0}" == "1" ]] || [[ -n "${NOTARY_KEY_PATH:-}${APPLE_ID:-}" ]]; then
-              _args+=(--notarize)
+            _want_notarize=0
+            [[ "${NOTARIZE:-0}" == "1" ]] && _want_notarize=1
+            if [[ -n "${NOTARY_KEY_PATH:-}" && -n "${NOTARY_KEY_ID:-}" && -n "${NOTARY_ISSUER_ID:-}" ]]; then
+              _want_notarize=1
             fi
+            if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]]; then
+              _want_notarize=1
+            fi
+            if [[ "${_want_notarize}" -eq 0 ]]; then
+              echo "::warning::MACOS_SIGN_IDENTITY is set but notarization will be skipped. Developer ID alone does not satisfy Gatekeeper for downloaded DMGs — add MACOS_NOTARIZE=1 plus App Store Connect API key secrets (or Apple ID notary secrets). See poker/packaging/macos/README.md"
+            fi
+            _args=()
+            [[ "${_want_notarize}" -ne 0 ]] && _args+=(--notarize)
             bash "${GITHUB_WORKSPACE}/poker/packaging/macos/sign-notarize-release.sh" "${_args[@]}" "${GITHUB_WORKSPACE}/build/poker/Poker.app"
           else
             codesign --force --deep --sign - Poker.app
