@@ -105,6 +105,16 @@ jobs:
   macos:
     name: macOS (Ninja + macdeployqt DMG)
     runs-on: macos-latest
+    env:
+      # Optional: set repository secrets to produce a Gatekeeper-friendly DMG (Developer ID + notarization).
+      # See poker/packaging/macos/README.md — when empty, CI keeps ad-hoc signing (same as before).
+      MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+      NOTARIZE: ${{ secrets.MACOS_NOTARIZE }}
+      NOTARY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      NOTARY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APPLE_ID: ${{ secrets.APPLE_ID_FOR_NOTARY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -118,6 +128,37 @@ jobs:
           host: mac
           target: desktop
           arch: clang_64
+
+      - name: Import Developer ID certificate (optional)
+        env:
+          P12_B64: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${P12_B64:-}" ]]; then
+            echo "MACOS_CERTIFICATE_P12 not set; skipping Developer ID import."
+            exit 0
+          fi
+          echo "$P12_B64" | base64 --decode > /tmp/devid.p12
+          security create-keychain -p actions temp-signing.keychain-db
+          security default-keychain -s temp-signing.keychain-db
+          security unlock-keychain -p actions temp-signing.keychain-db
+          security import /tmp/devid.p12 -k temp-signing.keychain-db -P "$P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions temp-signing.keychain-db
+          rm -f /tmp/devid.p12
+
+      - name: App Store Connect API key for notarization (optional)
+        env:
+          KEY_B64: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${KEY_B64:-}" ]]; then
+            echo "APP_STORE_CONNECT_API_KEY_P8 not set; skipping notary API key decode."
+            exit 0
+          fi
+          echo "$KEY_B64" | base64 --decode > "${RUNNER_TEMP}/AuthKey.p8"
+          chmod 600 "${RUNNER_TEMP}/AuthKey.p8"
+          echo "NOTARY_KEY_PATH=${RUNNER_TEMP}/AuthKey.p8" >> "$GITHUB_ENV"
 
       - name: Configure & build
         env:
@@ -164,7 +205,24 @@ jobs:
             done < <(otool -L "$macho" 2>/dev/null | tail -n +2)
           done < <(find Poker.app \( -name '*.dylib' -o -name Poker -o -path '*/Frameworks/*/Versions/*/*' \) -type f -print0)
           [[ "$bad" -eq 0 ]] || { echo "bundle still references external dylibs"; exit 1; }
-          codesign --force --deep --sign - Poker.app
+          if [[ -n "${MACOS_SIGN_IDENTITY:-}" ]]; then
+            _want_notarize=0
+            [[ "${NOTARIZE:-0}" == "1" ]] && _want_notarize=1
+            if [[ -n "${NOTARY_KEY_PATH:-}" && -n "${NOTARY_KEY_ID:-}" && -n "${NOTARY_ISSUER_ID:-}" ]]; then
+              _want_notarize=1
+            fi
+            if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]]; then
+              _want_notarize=1
+            fi
+            if [[ "${_want_notarize}" -eq 0 ]]; then
+              echo "::warning::MACOS_SIGN_IDENTITY is set but notarization will be skipped. Developer ID alone does not satisfy Gatekeeper for downloaded DMGs — add MACOS_NOTARIZE=1 plus App Store Connect API key secrets (or Apple ID notary secrets). See poker/packaging/macos/README.md"
+            fi
+            _args=()
+            [[ "${_want_notarize}" -ne 0 ]] && _args+=(--notarize)
+            bash "${GITHUB_WORKSPACE}/poker/packaging/macos/sign-notarize-release.sh" "${_args[@]}" "${GITHUB_WORKSPACE}/build/poker/Poker.app"
+          else
+            codesign --force --deep --sign - Poker.app
+          fi
           rm -f "${DMG_NAME}"
           hdiutil create -volname "Texas Hold'em Gym" -srcfolder Poker.app -ov -format UDZO "${DMG_NAME}"
           mkdir -p "${GITHUB_WORKSPACE}/dist/macos"

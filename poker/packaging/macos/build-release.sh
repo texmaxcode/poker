@@ -116,23 +116,13 @@ fi
   # libmimerapi.dylib, /Applications/Postgres.app/…) that won't exist on user machines
   # and break our otool verification. Drop the whole plugin dir.
   rm -rf "Poker.app/Contents/PlugIns/sqldrivers"
-  codesign --force --deep --sign - "Poker.app"
-  rm -f "${DMG_NAME}"
-  hdiutil create -volname "Texas Hold'em Gym" -srcfolder "Poker.app" -ov -format UDZO "${DMG_NAME}"
 )
-cp -f "${BUILD_DIR}/poker/${DMG_NAME}" "${DIST_DIR}/${DMG_NAME}"
-echo "==> DMG: ${DIST_DIR}/${DMG_NAME}"
 
-# Surface any leftover absolute Homebrew/local paths at build time instead of at launch
-# (where they would show as "dyld: Library not loaded: /opt/homebrew/...").
+# Verify embedded dylibs before signing / notarization (fail fast).
 echo "==> Verifying bundle dylib references…"
-BUNDLE_BIN="${APP}/Contents/MacOS/Poker"
 _bad=0
-# Walk the Mach-O executable and every embedded dylib/framework binary.
 while IFS= read -r -d '' _macho; do
-  # Skip the Mach-O being asked (otool prints its own path as first line).
   while IFS= read -r _line; do
-    # Strip leading whitespace; keep just the dylib install path before any " (compat...".
     _path="${_line#"${_line%%[![:space:]]*}"}"
     _path="${_path%% (*}"
     case "${_path}" in
@@ -149,5 +139,36 @@ if [[ "${_bad}" -ne 0 ]]; then
   exit 1
 fi
 echo "    No external (Homebrew/local) dylib references remain."
+
+# Sign + optional notarization (Developer ID) — see packaging/macos/sign-notarize-release.sh
+# Developer ID without notarization still fails Gatekeeper for quarantined downloads (browser, AirDrop, etc.).
+if [[ -n "${MACOS_SIGN_IDENTITY:-}" ]]; then
+  _want_notarize=0
+  [[ "${NOTARIZE:-0}" == "1" ]] && _want_notarize=1
+  if [[ -n "${NOTARY_KEY_PATH:-}" && -n "${NOTARY_KEY_ID:-}" && -n "${NOTARY_ISSUER_ID:-}" ]]; then
+    _want_notarize=1
+  fi
+  if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]]; then
+    _want_notarize=1
+  fi
+  if [[ "${_want_notarize}" -eq 0 ]]; then
+    echo "warning: MACOS_SIGN_IDENTITY is set but notarization will be skipped." >&2
+    echo "         Developer ID alone does not satisfy Gatekeeper for distributed builds — add NOTARIZE=1" >&2
+    echo "         plus App Store Connect API key (or Apple ID + team + app-specific password). See packaging/macos/README.md" >&2
+  fi
+  _sn_flags=()
+  [[ "${_want_notarize}" -ne 0 ]] && _sn_flags+=(--notarize)
+  "${SCRIPT_DIR}/sign-notarize-release.sh" "${_sn_flags[@]}" "${APP}"
+else
+  echo "==> ad-hoc codesign (set MACOS_SIGN_IDENTITY for Developer ID + optional notarization)"
+  codesign --force --deep --sign - "${APP}"
+fi
+(
+  cd "${BUILD_DIR}/poker"
+  rm -f "${DMG_NAME}"
+  hdiutil create -volname "Texas Hold'em Gym" -srcfolder "Poker.app" -ov -format UDZO "${DMG_NAME}"
+)
+cp -f "${BUILD_DIR}/poker/${DMG_NAME}" "${DIST_DIR}/${DMG_NAME}"
+echo "==> DMG: ${DIST_DIR}/${DMG_NAME}"
 
 echo "==> Done: ${APP}"
