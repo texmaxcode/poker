@@ -68,7 +68,6 @@ The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, *
 
 Table stakes, per-seat bot strategy and range text (exported form), per-seat **buy-in** and related bankroll fields, **sit out**, **solver & equity** field values, **trainer** auto-advance / decision time, and **training progress** are persisted as **JSON rows** in a **`kv`** table. Completed hands are also stored in normalized **`hands`**, **`actions`**, and **`players`** tables (see [SQLite → Parquet](docs/sqlite-parquet-python.md)). The primary file is **`~/.local/share/TexasHoldemGym/Texas Hold'em Gym/texas-holdem-gym.sqlite`** (override with **`TEXAS_HOLDEM_GYM_SQLITE`**). If SQLite cannot be opened, the app falls back to **`QSettings`** INI under **`~/.config/TexasHoldemGym/`** (relational hand-log tables exist only in SQLite). Legacy INI data is migrated into SQLite on first open when possible.
 
-
 ## Documentation
 
 | Document | Contents |
