@@ -132,7 +132,7 @@ QtObject {
     /// Training / drill screens: keep readable line length and controls off ultra-wide edges.
     readonly property int trainerContentMaxWidth: 720
     /// Extra inset below the app header on training drill pages (keeps content off the toolbar rule).
-    readonly property int trainerPageTopPadding: 4
+    readonly property int trainerPageTopPadding: 15
     /// Floor for `GameControls.hudScale` on trainers — must stay below ~0.5 or the action dock steals too much height on short windows.
     readonly property real trainerHudMinScale: 0.38
     /// Flop trainer: community cards match table scale so pot + board + seat fit without overlap.
@@ -311,11 +311,11 @@ QtObject {
     /// Lobby / setup / stats / solver / training scroll pages (not the in-game table/HUD).
     readonly property int uiPagePadding: 13
     /// Space between the toolbar (or window top on lobby) and the first line of scroll content.
-    readonly property int uiScrollViewTopPadding: 18
+    readonly property int uiScrollViewTopPadding: 15
     /// GroupBox and grouped panels outside the poker table (matches training panel padding).
-    readonly property int uiGroupedPanelPadding: 14
+    readonly property int uiGroupedPanelPadding: 13
     /// Vertical spacing inside GroupBox ColumnLayouts (setup, stats, solver).
-    readonly property int uiGroupInnerSpacing: 6
+    readonly property int uiGroupInnerSpacing: 5
     /// Application-wide UI (lobby, stats, setup, solver, table, HUD).
     readonly property int uiBasePt: 12
     readonly property int uiToolBarTitlePt: 14

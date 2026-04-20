@@ -98,15 +98,14 @@ Item {
                 width: potBlindsHud.width - potBlindsHud._stakesMarginL - potBlindsHud._stakesMarginR
                 x: potBlindsHud._stakesMarginL
                 topPadding: potBlindsHud._stakesMarginT
-                text: qsTr("Pot for $%1 / $%2 game").arg(table_container.smallBlind).arg(table_container.bigBlind)
+                text: qsTr("$%1 / $%2 game").arg(table_container.smallBlind).arg(table_container.bigBlind)
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
                 color: Theme.sectionTitle
                 font.family: Theme.fontFamilyDisplay
-                font.bold: true
                 font.capitalization: Font.AllUppercase
                 font.letterSpacing: 0.5
-                font.pixelSize: Math.max(7, Math.round((Theme.trainerCaptionPx - 4) * Math.max(0.72, table_container.potBoxScale)))
+                font.pixelSize: Math.max(6, Math.round((Theme.trainerCaptionPx - 4) * Math.max(0.72, table_container.potBoxScale)))
                 horizontalAlignment: Text.AlignLeft
             }
 
@@ -135,7 +134,7 @@ Item {
                     anchors.rightMargin: Math.round(potBlindsHud._potPadW * 0.5)
                     anchors.topMargin: Math.round(potBlindsHud._potPadH * 0.5)
                     anchors.bottomMargin: Math.round(potBlindsHud._potPadH * 0.5)
-                    text: qsTr("$%1").arg(Math.round(table_container.potShown))
+                    text: qsTr("Pot $%1 / $%2 to call").arg(Math.round(table_container.potShown)).arg(Math.round(table_container.facingNeedChips))
                     wrapMode: Text.NoWrap
                     maximumLineCount: 1
                     clip: true
@@ -146,28 +145,6 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
-                }
-            }
-
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: Math.max(4, Math.round(6 * table_container.potBoxScale))
-                visible: table_container.showToCallHint
-
-                Text {
-                    text: qsTr("·")
-                    color: Theme.textMuted
-                    font.family: Theme.fontFamilyMono
-                    font.bold: true
-                    font.pixelSize: Math.max(7, Math.round(Theme.uiPotSepPt * table_container.potBoxScale))
-                }
-
-                Text {
-                    text: qsTr("Call $%1").arg(table_container.facingNeedChips)
-                    color: Theme.focusGold
-                    font.family: Theme.fontFamilyMono
-                    font.bold: true
-                    font.pixelSize: Math.max(8, Math.round(Theme.uiPotCallPt * table_container.potBoxScale))
                 }
             }
 
