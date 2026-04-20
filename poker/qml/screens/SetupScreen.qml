@@ -407,11 +407,12 @@ Page {
                         color: Theme.sectionTitle
                     }
 
-                    RowLayout {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 10
+                        //spacing: 10
 
                         RowLayout {
+                          RowLayout {
                             spacing: 4
                             Label {
                                 text: qsTr("SB ($)")
@@ -424,11 +425,11 @@ Page {
                                 to: 50
                                 value: 1
                                 editable: true
-                                Layout.preferredWidth: 104
-                                Layout.maximumWidth: 120
+                                Layout.preferredWidth: 94
+                                Layout.maximumWidth: 110
                             }
-                        }
-                        RowLayout {
+                          }
+                          RowLayout {
                             spacing: 4
                             Label {
                                 text: qsTr("BB ($)")
@@ -441,11 +442,13 @@ Page {
                                 to: 100
                                 value: 3
                                 editable: true
-                                Layout.preferredWidth: 104
-                                Layout.maximumWidth: 120
+                                Layout.preferredWidth: 94
+                                Layout.maximumWidth: 110
                             }
+                          }
                         }
                         RowLayout {
+                          RowLayout {
                             spacing: 4
                             Label {
                                 text: qsTr("Min open ($)")
@@ -458,11 +461,11 @@ Page {
                                 to: 200
                                 value: 9
                                 editable: true
-                                Layout.preferredWidth: 104
-                                Layout.maximumWidth: 120
+                                Layout.preferredWidth: 94
+                                Layout.maximumWidth: 110
                             }
-                        }
-                        RowLayout {
+                          }
+                          RowLayout {
                             spacing: 4
                             Label {
                                 text: qsTr("Max on table (BB)")
@@ -475,9 +478,10 @@ Page {
                                 to: 5000
                                 value: 100
                                 editable: true
-                                Layout.preferredWidth: 104
-                                Layout.maximumWidth: 120
+                                Layout.preferredWidth: 94
+                                Layout.maximumWidth: 110
                             }
+                          }
                         }
                         RangeActionButton {
                             text: qsTr("SET")

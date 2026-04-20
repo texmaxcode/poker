@@ -315,12 +315,12 @@ QtObject {
     /// GroupBox and grouped panels outside the poker table (matches training panel padding).
     readonly property int uiGroupedPanelPadding: 14
     /// Vertical spacing inside GroupBox ColumnLayouts (setup, stats, solver).
-    readonly property int uiGroupInnerSpacing: 9
+    readonly property int uiGroupInnerSpacing: 6
     /// Application-wide UI (lobby, stats, setup, solver, table, HUD).
     readonly property int uiBasePt: 12
     readonly property int uiToolBarTitlePt: 14
     /// Lobby chrome chip label + icon (smaller than centered page title).
-    readonly property int uiToolBarChromePt: 11
+    readonly property int uiToolBarChromePt: 5
     readonly property int uiBodyPx: 13
     readonly property int uiSmallPx: 12
     readonly property int uiMicroPx: 11
@@ -328,20 +328,20 @@ QtObject {
     /// Lobby framed panel heading (“What would you like to do?”).
     readonly property int uiLobbyPanelTitlePx: 18
     /// Nav tiles: title + sub use `pixelSize`; two-line caps; fixed block heights keep every tile aligned.
-    readonly property int uiLobbyNavTileTitlePx: 14
-    readonly property int uiLobbyNavSubPx: 14
+    readonly property int uiLobbyNavTileTitlePx: 15
+    readonly property int uiLobbyNavSubPx: 10
     readonly property real uiLobbyNavTileTitleLineHeight: 1.2
     readonly property real uiLobbyNavTileSubLineHeight: 1.2
     /// Fixed content height for title block (two lines at `titlePx` × line height).
-    readonly property int uiLobbyNavTitleBlockH: 36
+    readonly property int uiLobbyNavTitleBlockH: 30
     /// Sub block must fit two wrapped lines at `uiLobbyNavSubPx` × `uiLobbyNavTileSubLineHeight` (display fonts are wide).
-    readonly property int uiLobbyNavSubBlockH: 40
-    readonly property int uiLobbyNavTilePadding: 19
+    readonly property int uiLobbyNavSubBlockH: 30
+    readonly property int uiLobbyNavTilePadding: 8
     /// Space between icon / title / sub stacks inside a tile.
-    readonly property int uiLobbyNavTileStackSpacing: 8
+    readonly property int uiLobbyNavTileStackSpacing: 7
     /// Gap between lobby nav tiles (lobby nav row).
-    readonly property int uiLobbyNavRowSpacing: 20
-    readonly property int uiLobbyNavTileMinHeight: 176
+    readonly property int uiLobbyNavRowSpacing: 10
+    readonly property int uiLobbyNavTileMinHeight: 136
     readonly property int uiLobbyNavIconPx: 40
     readonly property int uiPotMainPt: 22
     readonly property int uiPotSepPt: 18
