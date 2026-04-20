@@ -39,6 +39,7 @@ elif [[ -n "${CMAKE_PREFIX_PATH:-}" ]]; then
   QT_BIN="${_first}/bin"
 fi
 [[ -n "${QT_BIN}" && -x "${QT_BIN}/macdeployqt" ]] || die "Set QT_ROOT_DIR or CMAKE_PREFIX_PATH to Qt 6 (need bin/macdeployqt)"
+QT_ROOT="$(cd "${QT_BIN}/.." && pwd)"
 
 SQLITE_ROOT=""
 if command -v brew >/dev/null 2>&1 && brew --prefix sqlite &>/dev/null; then
@@ -90,6 +91,23 @@ fi
 
 (
   cd "${BUILD_DIR}/poker"
+  # macdeployqt tries to analyze/copy *all* Qt SQL driver plugins it can see
+  # (ODBC/PostgreSQL/Mimer/...), even if the app never loads them. Those plugins
+  # often have optional third‑party dependencies installed only on the build host
+  # (e.g. Homebrew's libiodbc, Postgres.app's libpq), which makes macdeployqt emit
+  # noisy "can't open file" / "no file at ..." errors during inspection.
+  #
+  # Since this project doesn't use QtSql drivers at runtime (we delete them from the
+  # bundle below), temporarily hide Qt's sqldrivers folder so macdeployqt won't
+  # attempt to process them in the first place. Always restore it on exit.
+  _qt_sqldrivers="${QT_ROOT}/plugins/sqldrivers"
+  _qt_sqldrivers_stash=""
+  if [[ -d "${_qt_sqldrivers}" ]]; then
+    _qt_sqldrivers_stash="$(mktemp -d)"
+    mv "${_qt_sqldrivers}" "${_qt_sqldrivers_stash}/sqldrivers"
+    trap 'if [[ -n "${_qt_sqldrivers_stash}" && -d "${_qt_sqldrivers_stash}/sqldrivers" ]]; then mkdir -p "$(dirname "${_qt_sqldrivers}")"; mv "${_qt_sqldrivers_stash}/sqldrivers" "${_qt_sqldrivers}"; rmdir "${_qt_sqldrivers_stash}" 2>/dev/null || true; fi' EXIT
+  fi
+
   "${QT_BIN}/macdeployqt" "Poker.app" -qmldir="${QML_DIR}" "${DEPLOY_EXTRA[@]}"
   # persist_sqlite.cpp uses the SQLite3 C API directly (not QSqlDatabase), so none of
   # the Qt SQL driver plugins (ODBC, PostgreSQL, Mimer, MySQL, …) are used at runtime.
