@@ -15,14 +15,15 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 │       ├── equity_engine, poker_solver (may use threads)        │
 │       ├── training_store, training_controller, toy_nash_solver │
 │       ├── session_store (solver UI fields)                       │
-│       └── persist_sqlite (AppStateSqlite KV backend)             │
+│       ├── hand_log_store / hand_history_query (SQLite hand log)   │
+│       └── persist_sqlite (AppStateSqlite: kv + hand schema)       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Application shell
 
-- **`poker/main.cpp`** sets `QCoreApplication` organization/name (used by the INI fallback), calls **`AppStateSqlite::init()`**, creates **`game`**, **`loadPersistedSettings()`**, optionally **`seedMissingPersistedSettings()`** when the store is open but core keys are absent, then **`PokerSolver`**, **`ToyNashSolver`**, **`TrainingStore`**, **`TrainingController`**, **`SessionStore`**, and exposes **`pokerGame`**, **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`**, **`trainingStore`**, **`trainer`**, and bundled-font family strings to QML: **`appFontFamily`** (Merriweather — UI body), **`appFontFamilyDisplay`** (Rye — titles), **`appFontFamilyButton`** (Holtwood One SC — buttons / seat names), **`appFontFamilyMono`** (Roboto Mono — stacks, pot, sliders). Fonts are loaded from **`application.qrc`** via `QFontDatabase::addApplicationFont`; the app default `QFont` uses the UI family. **`aboutToQuit`** calls **`savePersistedSettings()`** on the game.
-- The UI entry is **`qrc:/Main.qml`**: an `ApplicationWindow` with a **stack** of pages (lobby, table, bot/range setup, solver/equity, bankroll/stats, training hub, preflop–river trainers, range viewer). **`Metrics.qml`** defines **`windowMinWidth` / `windowMinHeight`** (currently **1280×720**), default window size, and toolbar/HUD geometry tokens; the window applies those as **`minimumWidth` / `minimumHeight`**. Fonts and the header/toolbar live on the window; **`Theme.qml`** maps the four `appFontFamily*` context properties to **`fontFamilyUi`**, **`fontFamilyDisplay`**, **`fontFamilyButton`**, **`fontFamilyMono`** plus colors, spacing, and trainer/table tokens.
+- **`poker/main.cpp`** sets `QCoreApplication` organization/name (used by the INI fallback), calls **`AppStateSqlite::init()`**, creates **`game`**, **`loadPersistedSettings()`**, optionally **`seedMissingPersistedSettings()`** when the store is open but core keys are absent, then **`PokerSolver`**, **`ToyNashSolver`**, **`TrainingStore`**, **`TrainingController`**, **`SessionStore`**, **`HandHistoryQuery`**, and exposes **`pokerGame`**, **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`**, **`trainingStore`**, **`trainer`**, **`handHistory`**, plus bundled-font family strings to QML: **`appFontFamily`** (Merriweather — UI body), **`appFontFamilyDisplay`** (Rye — titles), **`appFontFamilyButton`** (Holtwood One SC — buttons / seat names), **`appFontFamilyMono`** (Roboto Mono — stacks, pot, sliders). Fonts are loaded from **`application.qrc`** via `QFontDatabase::addApplicationFont`; the app default `QFont` uses the UI family. **`aboutToQuit`** calls **`savePersistedSettings()`** on the game.
+- The UI entry is **`qrc:/Main.qml`**: an `ApplicationWindow` with a **stack** of pages (lobby, table, bot/range setup, solver/equity, bankroll/stats, **hand history**, training hub, preflop–river trainers, range viewer). **`Metrics.qml`** defines **`windowMinWidth` / `windowMinHeight`** (currently **1280×720**), default window size, and toolbar/HUD geometry tokens; the window applies those as **`minimumWidth` / `minimumHeight`**. Fonts and the header/toolbar live on the window; **`Theme.qml`** maps the four `appFontFamily*` context properties to **`fontFamilyUi`**, **`fontFamilyDisplay`**, **`fontFamilyButton`**, **`fontFamilyMono`** plus colors, spacing, and trainer/table tokens.
 
 ## UI layout and styling (QML)
 
@@ -30,7 +31,7 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 - **`theme/Metrics.qml`** (singleton) — window chrome dimensions, HUD button heights, minimum window size (see above).
 - **`BrandedBackground.qml`** — full-page charcoal/burgundy **gradient** + light **film grain** (`Canvas`).
 - **`ThemedPanel.qml`** — framed panels with **uppercase** section titles in **`Theme.fontFamilyDisplay`** (Rye).
-- **Lobby** — **`LobbyScreen.qml`**: logo + **`ThemedPanel`** with **five nav tiles in one row** (banner art + subtitle); content width is capped by **`Theme.trainerContentMaxWidth`** with side gutters.
+- **Lobby** — **`LobbyScreen.qml`**: logo + **`ThemedPanel`** with **six nav tiles in one row** (banner art + subtitle); content width is capped by **`Theme.trainerContentMaxWidth`** with side gutters.
 - **Table** — **`GameScreen.qml`**: six **`Player`** seats on an oval; **`GameControls`** uses **`embeddedMode: !hudBottomDock`**. By default **`hudBottomDock`** is **false**, so the HUD is a floating panel beside **seat 0** (`panelWidth` from **`tableArea.hudPanelW`**, position from **`floatHudX` / `floatHudY`**, **`hudStacked`** when narrow). If **`hudBottomDock`** is **true**, the HUD spans the bottom of the table area. **`tableArea.tableScale`** shrinks the felt and seats on short viewports.
 - **Buttons** — **`GameButton.qml`** implements HUD, toolbar chrome, form, and chip styles; standard **`Button`** / **`TabBar`** in setup/solver/stats use **`Theme.fontFamilyButton`** where styled explicitly. **`SizingPresetBar`** preset chips use the button font.
 - **Trainer / solver / stats** — scroll views with **`ThemedPanel`** sections; solver and setup use **`GridLayout`** / forms; stats use **`ThemedPanel`** + tables and a **Canvas** bankroll chart.
@@ -38,11 +39,11 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 ## Persistence
 
-- **`AppStateSqlite`** (`persist_sqlite.*`) is the shared key–value store. The default database file is **`AppLocalDataLocation/texas-holdem-gym.sqlite`**.
+- **`AppStateSqlite`** (`persist_sqlite.*`) opens a single SQLite file (or **`QSettings`** INI fallback). Default path: **`AppLocalDataLocation/texas-holdem-gym.sqlite`**.
 - Set **`TEXAS_HOLDEM_GYM_SQLITE`** to an absolute path to override the database location (tests and debugging).
-- **Logical keys** use a versioned prefix, e.g. **`v1/smallBlind`**, **`v1/seat0/strategy`**, **`v1/training/…`**. Bulk deletes use prefix removal (e.g. `v1/training/`).
-- **Values** are stored as **JSON** (compact): objects and arrays as JSON documents; scalars are encoded so reads round-trip reliably (including a shim for bare primitives when needed).
-- If SQLite cannot be opened, the code falls back to **`QSettings`** in **INI** form under the usual **`~/.config/TexasHoldemGym/`** layout. On first open, an **empty** SQLite database may **migrate** legacy **`v1/*`** data from native QSettings into the DB.
+- **Key–value settings** live in table **`kv`**: **`k`** is a dotted key (`v1/smallBlind`, `v1/seat0/strategy`, `v1/training/…`), **`v`** is **JSON text**. Hot-path reads/writes reuse **long-lived `sqlite3_stmt`** instances (`SELECT v`, `SELECT 1` for existence-only **`contains`**, `INSERT OR REPLACE`). Bulk deletes use **`removeKeysWithPrefix`** (e.g. `v1/training/`).
+- **Hand log (relational)** — when SQLite is active, schema version **`PRAGMA user_version = 1`** adds **`players`**, **`hands`**, and **`actions`** (integer-heavy schema; WAL + tuning PRAGMAs applied at open). Rows are written in batches via **`HandLogBatch`** (`hand_log_store.*`) from **`game`** at end-of-hand; QML reads through **`HandHistoryQuery`** (`hand_history_query.*`, context property **`handHistory`**). The INI fallback has **no** hand-log tables.
+- For **offline analytics** (Parquet, pandas, DuckDB), see **[sqlite-parquet-python.md](sqlite-parquet-python.md)**.
 
 ## Data flow (startup → first hand)
 
@@ -63,12 +64,14 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 | Module | Responsibility |
 |--------|----------------|
-| **`persist_sqlite.*`** | **`AppStateSqlite`**: SQLite KV (JSON values), INI fallback, migration from legacy QSettings |
+| **`persist_sqlite.*`** | **`AppStateSqlite`**: SQLite **`kv`** (JSON values), hand-log DDL, INI fallback, migration from legacy QSettings |
+| **`hand_log_store.*`** | **`HandLogBatch`**: transactional batched inserts into **`hands` / `actions` / `players`** |
+| **`hand_history_query.*`** | **`HandHistoryQuery`**: QML read API over the hand-log tables |
 | **`cards.*`** | Ranks, suits, deck; compact string form + **`card_to_qml_asset_path`** for SVG resource names |
 | **`player.*`** | Hole cards, stack, **`pay`** / **`take_from_stack`** (clamped) |
 | **`hand_eval.*`** | Best 5 of 7, comparison, human-readable descriptions (order-invariant best-of-seven) |
 | **`holdem_side_pot.*`** | Table-stakes **main + side pot** slices — `do_payouts` |
-| **`game.*` / `game_ui_sync.cpp`** | Table vector, button, blinds, streets, **`in_hand`**, betting loop, bots, persistence via **`AppStateSqlite`**, QML API; **`sync_ui`** / **`flush_ui`** |
+| **`game.*` / `game_payouts.cpp` / `game_ui_sync.cpp`** | Table vector, button, blinds, streets, **`in_hand`**, betting loop, bots, **`do_payouts`** (payout TU), persistence via **`AppStateSqlite`**, QML API; **`sync_ui`** / **`flush_ui`** |
 | **`session_store.*`** | Load/save solver screen fields through **`AppStateSqlite`** |
 | **`training_store.*`** | Persisted training progress; drill-related data |
 | **`training_controller.*`** | Preflop/flop drill generation and scoring |
@@ -82,13 +85,14 @@ Texas Hold’em Gym is a **single-process** desktop app: a **Qt Quick** UI drive
 
 | File / area | Role |
 |-------------|------|
-| **`Main.qml`** | Shell: navigation, **`pokerGame`** / **`pokerSolver`** / **`trainer`** bindings |
-| **`screens/LobbyScreen.qml`** | Entry: logo + single-row nav tiles to table, setup, solver, training, stats |
+| **`Main.qml`** | Shell: navigation; context **`pokerGame`**, **`pokerSolver`**, **`trainer`**, **`handHistory`**, … |
+| **`screens/LobbyScreen.qml`** | Entry: logo + single-row nav tiles (table, setup, solver, drills, stats, hand history) |
 | **`screens/GameScreen.qml`** | Table layout, **`game_screen`**, **`Player`** delegates, floating **`GameControls`** beside seat 0 |
 | **`components/GameControls.qml`**, **`components/SizingPresetBar.qml`** | Fold / call / raise / check / bet, timers, sit-out; Min / ⅓ / ½ / ⅔ / Pot / All presets |
 | **`components/Table.qml`** | Pot HUD (with call amount), community board cards |
 | **`screens/SetupScreen.qml`**, **`screens/SolverScreen.qml`** | Ranges, strategies, solver/equity UI |
 | **`screens/StatsScreen.qml`** | Bankroll tables, leaderboard, chart |
+| **`screens/HandHistoryScreen.qml`** | List/detail for logged **`hands`** / **`actions`** |
 | **`screens/TrainerHome.qml`**, **`PreflopTrainer.qml`**, **`FlopTrainer.qml`** | Training hub and drills |
 | **`components/GameButton.qml`** | Shared **`hud` / `chrome` / `form` / `chip`** buttons (toolbar, HUD, trainers) |
 | **`PokerUi/qmldir`** | QML module registering **`components/`** and **`screens/`** types |
@@ -98,6 +102,17 @@ Bundled training JSON lives under **`poker/qml/assets/training/`** (e.g. `preflo
 ## Game behavior (what the code does)
 
 Blinds (including **heads-up**), **clockwise** button rotation and action/deal order (see `game-in-code.md`), burns, NL betting, showdown and **side-pot** payouts, **HUD total pot only**, stake cap, bankroll/rebuy, and what is **not** implemented are summarized in **[game-in-code.md](game-in-code.md)**.
+
+## Larger refactors (not scheduled here)
+
+These need product/architecture decisions or multi-week effort: **async / state-machine** hand runner so `game::start()` does not block the UI thread; **partial `kv` saves** (dirty keys) to shrink write amplification; **bankroll history** as an append-only table instead of one JSON blob per snapshot; **per-seat dirty flags** in `sync_ui`; **shared QML base** for flop/turn/river trainers; **RangeGrid** input consolidation; **pre-solved GTO** import path; **training mistake dashboards**; **daily-challenge** style progression.
+
+## Recently landed (engineering)
+
+- **`AppStateSqlite`**: prepared statements for **`kv`** access; **`contains()`** uses **`SELECT 1`** (row existence only).
+- **`game_payouts.cpp`**: houses **`game::do_payouts`**.
+- **`TableFelt.qml`**: debounced **Canvas** grain repaint on resize.
+- **`test_training_store.cpp`**: clamps on trainer timing settings.
 
 ## Tests
 

@@ -6,7 +6,8 @@ This describes **no-limit Texas Hold’em** as it actually runs in **Texas Hold�
 
 ## Table and stakes
 
-- **Blinds** — You set **small blind**, **big blind**, and **street bet** (used as a default open/raise unit for bots). Values are persisted via `AppStateSqlite`.
+- **Blinds** — You set **small blind**, **big blind**, and **street bet** (used as a default open/raise unit for bots). Values are persisted via `AppStateSqlite` (`kv` table as JSON).
+- **Hand log** — Completed hands and actions are appended to SQLite tables **`hands`**, **`actions`**, and **`players`** (see [sqlite-parquet-python.md](sqlite-parquet-python.md) for schema and export to Parquet).
 - **Buy-in** — Each seat has a target **buy-in** (chips on the table). Amount is capped at **100× the current big blind** (`maxBuyInChips()`). Anything above that stays **off the table** as wallet chips until applied or used for rebuy.
 - **Rebuy** — If a seat’s stack hits **0** and the wallet still covers one full buy-in, the player can **buy back in** when the table is idle (human uses the HUD button; bots auto-rebuy from a synthetic reserve when configured).
 
@@ -102,4 +103,4 @@ Rules above describe the **engine**. The **Qt Quick** shell (fonts, minimum wind
 
 ## Tests
 
-- `poker/poker/tests/test_*.cpp` — Boost.Test (`Test_poker`): cards/deck, game smoke, hand eval, equity, range matrix, side pots, bots, SQLite persistence. Build with `BUILD_TESTING=ON`; run `ctest -R poker.unit -V` or `./build/poker/poker/tests/Test_poker --log_level=test_suite`.
+- `poker/poker/tests/test_*.cpp` — Boost.Test (`Test_poker`): cards/deck, game smoke, hand eval, equity, range matrix, side pots, bots, SQLite persistence (including KV prepared-statement stress), hand log / history, **training store** clamps. Build with `BUILD_TESTING=ON`; run `ctest -R poker.unit -V` or `./build/poker/poker/tests/Test_poker --log_level=test_suite`.

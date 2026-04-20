@@ -17,11 +17,12 @@ Page {
     readonly property real lobbyShortSide: Math.min(lobbyPage.width, lobbyPage.height)
     readonly property real lobbyUiScale: Theme.compactUiScale(lobbyShortSide)
     readonly property int lobbyNavRowSpacing: Math.max(8, Math.round(Theme.uiLobbyNavRowSpacing * lobbyPage.lobbyUiScale))
-    /// Banner height scales with the actual tile width (5 tiles in a single row).
+    /// Banner height scales with the actual tile width (6 tiles in a single row).
+    readonly property int lobbyNavTileCount: 6
     readonly property int lobbyBannerMaxH: {
         var panPad = Math.max(14, Math.round((Theme.trainerPanelPadding + 6) * lobbyPage.lobbyUiScale))
         var avail = mainCol.width > 8 ? mainCol.width - 2 * panPad : 280
-        var tileW = Math.max(60, (avail - 4 * lobbyNavRowSpacing) / 5)
+        var tileW = Math.max(60, (avail - (lobbyNavTileCount - 1) * lobbyNavRowSpacing) / lobbyNavTileCount)
         return Math.max(52, Math.min(160, Math.round(tileW * 0.55)))
     }
 
@@ -157,6 +158,14 @@ Page {
                                     "Stack rankings and profit vs baseline ($ chip dollars), plus a line chart after each hand. "
                                     + "In Setup, wallet and on-table stacks are $; max-on-table and bot buy-in use BB (big-blind multiples).")
                                 onClicked: lobbyPage.go(4)
+                            }
+                            LobbyNavTile {
+                                bannerSource: "qrc:/assets/images/hands.png"
+                                sub: qsTr("Hands")
+                                detailTip: qsTr(
+                                    "Replay log of previously played hands — board, seats, blinds, and every action with chip size. "
+                                    + "Stored locally in the SQLite app database.")
+                                onClicked: lobbyPage.go(11)
                             }
                         }
                     }

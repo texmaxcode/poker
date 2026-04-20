@@ -13,6 +13,7 @@
 - **Solver & equity** — Monte Carlo equity vs a range or exact villain cards, with optional pot-odds and chip-EV (work is off the UI thread where applicable); toy Nash (Kuhn-style) solver for study.
 - **Training** — **Preflop** through **river** drills with strategy-based grading, progress stats (accuracy, EV loss in bb), and configurable auto-advance delay.
 - **Bankroll & stats** — seat stacks, off-table bankroll, leaderboard, and bankroll-over-time chart after each completed hand.
+- **Hand history** — browse completed hands and actions from the embedded SQLite log (Setup also offers a factory reset that clears this data).
 - **Core engine** — full hand from deal through showdown: blinds, streets, betting order, hand evaluation (best five of seven), side-pot–aware payouts. Details: **[Game in code](docs/game-in-code.md)**.
 
 ## Repository layout
@@ -21,7 +22,7 @@
 |------|------|
 | `CMakeLists.txt` | Top-level CMake: Qt 6, C++17, optional tests |
 | `build.sh` | Optional script: clean configure, **Ninja** build, `ctest`, then runs the app |
-| `poker/main.cpp` | `QGuiApplication`, QML engine; exposes **`pokerGame`** (`game`), **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`** (solver fields), **`trainingStore`**, **`trainer`** (`TrainingController`), **`appFontFamily`** |
+| `poker/main.cpp` | `QGuiApplication`, QML engine; exposes **`pokerGame`**, **`pokerSolver`**, **`toyNashSolver`**, **`sessionStore`**, **`trainingStore`**, **`trainer`**, **`handHistory`** (read-only hand log), and bundled **`appFontFamily*`** strings |
 | `poker/qml/` | QML UI; assets and `application.qrc` |
 | `poker/poker/` | Cards, player, `game` + `game_ui_sync`, hand eval, bots, ranges, equity, solver, toy Nash, **training** store/controller, session store; **Boost.Test** smoke tests (optional) |
 
@@ -61,22 +62,22 @@ CMAKE_PREFIX_PATH=/path/to/Qt/6.10.0/gcc_64 ./build.sh
 ./build/poker/Poker
 ```
 
-The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, **solver & equity**, **training**, or **bankroll & stats**. The live table page is `screens/GameScreen.qml` (`objectName: game_screen`), connected after load so the engine can sync state.
+The app starts on the **lobby**; navigate to the **table**, **bots & ranges**, **solver & equity**, **training**, **bankroll & stats**, or **hand history**. The live table page is `screens/GameScreen.qml` (`objectName: game_screen`), connected after load so the engine can sync state.
 
 ### Saved configuration
 
-Table stakes, per-seat bot strategy and range text (exported form), per-seat **buy-in** and related bankroll fields, **sit out**, **solver & equity** field values, **trainer** auto-advance / decision time, and **training progress** are persisted. The primary store is a **SQLite** database at **`~/.local/share/TexasHoldemGym/Texas Hold'em Gym/texas-holdem-gym.sqlite`** (override the path with the **`TEXAS_HOLDEM_GYM_SQLITE`** environment variable). If SQLite cannot be opened, the app falls back to **`QSettings`** INI files under **`~/.config/TexasHoldemGym/`**. On first run, legacy **QSettings** data is migrated into SQLite automatically. Values load at startup and save on quit and when you apply stakes, change a bot strategy, apply range text, reset a seat to full range, toggle sit out, close the window (solver tab), or when training/session stores persist.
+Table stakes, per-seat bot strategy and range text (exported form), per-seat **buy-in** and related bankroll fields, **sit out**, **solver & equity** field values, **trainer** auto-advance / decision time, and **training progress** are persisted as **JSON rows** in a **`kv`** table. Completed hands are also stored in normalized **`hands`**, **`actions`**, and **`players`** tables (see [SQLite → Parquet](docs/sqlite-parquet-python.md)). The primary file is **`~/.local/share/TexasHoldemGym/Texas Hold'em Gym/texas-holdem-gym.sqlite`** (override with **`TEXAS_HOLDEM_GYM_SQLITE`**). If SQLite cannot be opened, the app falls back to **`QSettings`** INI under **`~/.config/TexasHoldemGym/`** (relational hand-log tables exist only in SQLite). Legacy INI data is migrated into SQLite on first open when possible.
 
 ## Documentation
 
 | Document | Contents |
 |----------|----------|
-| [docs/ci.md](docs/ci.md) | GitHub Actions: which jobs run on which branches (Linux vs Windows/macOS/snap) |
-| [docs/github-actions-aws-amplify.md](docs/github-actions-aws-amplify.md) | **Setup:** GitHub Actions secrets and deploy to AWS Amplify (marketing site) |
 | [docs/building.md](docs/building.md) | Dependencies, CMake configure, tests, card assets script, troubleshooting |
-| [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, persistence |
+| [docs/architecture.md](docs/architecture.md) | App shell, QML ↔ C++, modules, persistence (KV + hand log) |
 | [docs/game-in-code.md](docs/game-in-code.md) | NLHE as implemented: blinds, streets, side pots, stake cap, bankroll |
-| [docs/next-steps.md](docs/next-steps.md) | Engineering backlog (performance, refactors, future features) |
+| [docs/sqlite-parquet-python.md](docs/sqlite-parquet-python.md) | Export SQLite (settings + hand log) to **Parquet** for **Python** / DuckDB / Polars |
+| [docs/ci.md](docs/ci.md) | GitHub Actions: which jobs run on which branches |
+| [docs/github-actions-aws-amplify.md](docs/github-actions-aws-amplify.md) | GitHub Actions secrets and deploy to AWS Amplify (marketing site) |
 
 ## Tests
 
@@ -96,4 +97,4 @@ Or run the binary directly:
 ./build/poker/poker/tests/Test_poker --log_level=test_suite --report_level=detailed
 ```
 
-When `BUILD_TESTING` is on, **Boost.Test** builds `Test_poker` from several translation units under `poker/poker/tests/`: `test_main.cpp` (module entry only), `test_smoke_cards_deck_player.cpp`, `test_smoke_game_engine.cpp`, `test_hand_evaluation.cpp`, `test_equity_engine.cpp`, `test_range_matrix.cpp`, `test_side_pots.cpp`, `test_bot_decisions.cpp`, `test_persistence_sqlite.cpp`.
+When `BUILD_TESTING` is on, **Boost.Test** builds `Test_poker` from translation units under `poker/poker/tests/` (see `CMakeLists.txt`), including persistence, hand-log batching, hand-history integration, engine smoke tests, bots, and equity.

@@ -135,3 +135,7 @@ If filenames change, update `application.qrc` accordingly.
 ### OpenGL / graphics at runtime
 
 - Ensure GPU drivers and (on Linux) Mesa/libGL are installed so **Qt Quick** can create a scene graph window.
+
+## See also
+
+- **[sqlite-parquet-python.md](sqlite-parquet-python.md)** — read the app SQLite file (settings + hand log) from Python and write Parquet for analysis.

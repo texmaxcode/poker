@@ -220,6 +220,8 @@ ApplicationWindow {
             return qsTr("River trainer")
         case 10:
             return qsTr("Opening ranges")
+        case 11:
+            return qsTr("Hand history")
         default:
             return ""
         }
@@ -265,6 +267,8 @@ ApplicationWindow {
                         break
                     case 10:
                         rangeViewerPage.scrollMainToTop()
+                        break
+                    case 11:
                         break
                     }
                 })
@@ -321,6 +325,11 @@ ApplicationWindow {
 
         RangeViewer {
             id: rangeViewerPage
+            stackLayout: stack
+        }
+
+        HandHistoryScreen {
+            id: handHistoryPage
             stackLayout: stack
         }
     }

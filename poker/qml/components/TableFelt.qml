@@ -111,6 +111,18 @@ Item {
                 id: feltGrain
                 anchors.fill: parent
                 opacity: 0.22
+
+                /// Coalesce rapid resize events so we do not repaint the grain canvas dozens of times per frame.
+                Timer {
+                    id: grainPaintDebounce
+                    interval: 48
+                    repeat: false
+                    onTriggered: feltGrain.requestPaint()
+                }
+                function scheduleGrainPaint() {
+                    grainPaintDebounce.restart()
+                }
+
                 onPaint: {
                     if (width < 4 || height < 4)
                         return
@@ -135,9 +147,9 @@ Item {
                         ctx.fillRect(Math.floor(x3), Math.floor(y3), 1, 1)
                     }
                 }
-                onWidthChanged: Qt.callLater(requestPaint)
-                onHeightChanged: Qt.callLater(requestPaint)
-                Component.onCompleted: Qt.callLater(requestPaint)
+                onWidthChanged: scheduleGrainPaint()
+                onHeightChanged: scheduleGrainPaint()
+                Component.onCompleted: scheduleGrainPaint()
             }
         }
 

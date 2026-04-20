@@ -252,14 +252,20 @@ Page {
         anchors.fill: parent
         anchors.topMargin: Theme.trainerPageTopPadding
 
-        RowLayout {
+        ScrollView {
+            id: trainerScroll
             anchors.fill: parent
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+        RowLayout {
+            id: trainerRow
+            width: trainerScroll.availableWidth
             spacing: 0
 
             Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                Layout.fillHeight: true
                 Layout.alignment: Qt.AlignTop
             }
 
@@ -267,9 +273,23 @@ Page {
                 id: trainerMainCol
                 Layout.preferredWidth: Math.min(Theme.trainerContentMaxWidth, Math.max(260, trainerRoot.width - (trainerRoot.width < 600 ? 16 : 40)))
                 Layout.maximumWidth: Theme.trainerContentMaxWidth
-                Layout.fillHeight: true
                 Layout.alignment: Qt.AlignTop
                 spacing: Theme.trainerColumnSpacing
+
+                readonly property int _hudReserveQuantized: Math.max(172, Math.ceil(flopExerciseHud.height / 4) * 4)
+                readonly property int drillViewportCap: Math.max(
+                    Theme.trainerDrillPanelMinH,
+                    Math.min(
+                        Theme.trainerDrillPanelMaxH,
+                        Math.round(Theme.trainerDrillPanelMaxHeightForViewport(
+                            trainerRoot.height,
+                            trainerChromeAboveDrill.implicitHeight + _hudReserveQuantized
+                                + 2 * Theme.trainerColumnSpacing + 24) / 12) * 12))
+
+                ColumnLayout {
+                    id: trainerChromeAboveDrill
+                    Layout.fillWidth: true
+                    spacing: Theme.trainerColumnSpacing
 
                 Text {
                     Layout.fillWidth: true
@@ -350,12 +370,14 @@ Page {
                     }
                 }
 
+                }
+
                 Rectangle {
                     id: drillPanel
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
                     Layout.minimumHeight: Theme.trainerDrillPanelMinH
-                    Layout.maximumHeight: Theme.trainerDrillPanelMaxH
+                    Layout.preferredHeight: trainerMainCol.drillViewportCap
+                    Layout.maximumHeight: trainerMainCol.drillViewportCap
                     radius: Theme.trainerPanelRadius
                     color: Qt.alpha(Theme.panel, 0.35)
                     border.width: 1
@@ -568,9 +590,9 @@ Page {
             Item {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                Layout.fillHeight: true
                 Layout.alignment: Qt.AlignTop
             }
+        }
         }
     }
 

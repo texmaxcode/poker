@@ -5,7 +5,7 @@ GitHub Actions workflows live under [`.github/workflows/`](../.github/workflows/
 ## `ci.yml` — desktop CI
 
 | Job | When it runs | Purpose |
-|-----|----------------|--------|
+|-----|----------------|---------|
 | **Linux** (`build-linux`) | Every **push**, **pull request**, and **workflow_dispatch** | Configure with Ninja, build, run `ctest`. |
 | **Windows** | Same triggers as Linux | MSVC + vcpkg, `windeployqt`, ZIP artifact. |
 | **macOS** | Same triggers as Linux | Ninja build, `macdeployqt`, DMG artifact. |

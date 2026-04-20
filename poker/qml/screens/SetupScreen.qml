@@ -218,6 +218,23 @@ Page {
         rangeTextEditorOpen = false
     }
 
+    function applyFactoryReset() {
+        pokerGame.factoryResetToDefaultsAndClearHistory()
+        if (typeof handHistory !== "undefined" && handHistory.notifyHistoryChanged)
+            handHistory.notifyHistoryChanged()
+        sbSpin.value = pokerGame.configuredSmallBlind()
+        bbSpin.value = pokerGame.configuredBigBlind()
+        streetSpin.value = pokerGame.configuredStreetBet()
+        maxTableBbSpin.value = pokerGame.configuredMaxOnTableBb()
+        syncPlayAsBotCheckboxFromEngine()
+        totalBankSpin.refreshFromGame()
+        seatBankSpin.refreshFromGame()
+        reloadSeatEditor()
+        const w = ApplicationWindow.window
+        if (w && typeof w.showAppToast === "function")
+            w.showAppToast(qsTr("All session data cleared. Defaults restored ($0 bankrolls, GTO heuristic bots)."))
+    }
+
     function reloadAllGrids() {
         reloadSeatEditor()
     }
@@ -1242,13 +1259,18 @@ Page {
                 }
             }
 
-            Button {
-                text: qsTr("Reload from engine")
+            RowLayout {
                 Layout.alignment: Qt.AlignLeft
-                flat: true
-                font.family: Theme.fontFamilyButton
-                font.pixelSize: Theme.trainerCaptionPx
-                onClicked: reloadSeatEditor()
+                spacing: 10
+                GameButton {
+                    text: qsTr("Reset app & clear data")
+                    pillWidth: 220
+                    overrideHeight: 32
+                    fontSize: Theme.trainerCaptionPx
+                    buttonColor: Theme.dangerRed
+                    textColor: Theme.onAccentText
+                    onClicked: factoryResetDialog.open()
+                }
             }
             }
 
@@ -1264,6 +1286,29 @@ Page {
         function onCurrentIndexChanged() {
             setup.syncPlayAsBotCheckboxFromEngine()
             setup.reloadSeatEditor()
+        }
+    }
+
+    Dialog {
+        id: factoryResetDialog
+        title: qsTr("Reset everything?")
+        modal: true
+        anchors.centerIn: parent
+        width: Math.min(Math.max(setup.width - 48, 280), 520)
+        standardButtons: Dialog.Yes | Dialog.No
+        onAccepted: setup.applyFactoryReset()
+        contentItem: Column {
+            spacing: 0
+            width: Math.max(200, factoryResetDialog.width - 64)
+            Label {
+                width: parent.width
+                text: qsTr(
+                    "This deletes recorded hands, bankroll history, and all chip balances. "
+                    + "Stakes return to $1 / $3 ($9 opens); max on-table stays at 100 BB; seat 0 is Always-call; "
+                    + "every bot uses the GTO (heuristic) preset. You can set buy-ins again and tap Apply.")
+                wrapMode: Text.WordWrap
+                color: Theme.textPrimary
+            }
         }
     }
 

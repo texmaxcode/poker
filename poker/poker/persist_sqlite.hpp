@@ -5,6 +5,8 @@
 #include <QString>
 #include <QVariant>
 
+struct sqlite3;
+
 /// Key–value store: SQLite at `TEXAS_HOLDEM_GYM_SQLITE` or `AppLocalDataLocation/texas-holdem-gym.sqlite`;
 /// if SQLite cannot open, `QSettings` INI under `~/.config/TexasHoldemGym/`. Values are JSON-encoded.
 class AppStateSqlite
@@ -21,6 +23,9 @@ public:
     /// Deletes all keys with the given prefix (e.g. `v1/training/`).
     static void removeKeysWithPrefix(const QString &prefix);
 
+    /// Clears normalized hand-log tables (`actions`, `hands`, `players`). No-op when not using SQLite.
+    static void clearHandLogTables();
+
     static void sync();
 
     /// Wrap many `setValue` calls in one atomic batch (SQLite only; no-op on INI fallback).
@@ -32,6 +37,12 @@ public:
 
     static QByteArray testVariantToJson(const QVariant &v);
     static bool testJsonToVariant(const QByteArray &json, QVariant *out);
+
+    /// Open `sqlite3` handle when the store uses SQLite; `nullptr` on INI fallback or before `init()`.
+    static sqlite3 *sqliteHandle();
+
+    /// Unit tests only: closes SQLite and clears state so `init()` can run again (e.g. after changing env path).
+    static void resetForTesting();
 
 private:
     static void migrateFromQSettingsIfEmpty();

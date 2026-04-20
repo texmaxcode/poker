@@ -36,6 +36,7 @@
         <file>screens/TurnTrainer.qml</file>
         <file>screens/RiverTrainer.qml</file>
         <file>screens/RangeViewer.qml</file>
+        <file>screens/HandHistoryScreen.qml</file>
 
         <file>assets/fonts/Merriweather-opsz-wdth-wght.ttf</file>
         <file>assets/fonts/RobotoMono-wght.ttf</file>
@@ -45,8 +46,6 @@
         <file>assets/icons/home.svg</file>
         <file>assets/icons/table.svg</file>
         <file>assets/icons/bots.svg</file>
-        <file>assets/icons/solver.svg</file>
-        <file>assets/icons/stats.svg</file>
 
         <file>assets/images/logo.png</file>
         <file>assets/images/texas_holdem_icn.png</file>
@@ -54,6 +53,7 @@
         <file>assets/images/solver_and_equity.png</file>
         <file>assets/images/training.png</file>
         <file>assets/images/stats.png</file>
+        <file>assets/images/hands.png</file>
 
         <file>assets/training/preflop_ranges_v1.json</file>
         <file>assets/training/spots_v1.json</file>
