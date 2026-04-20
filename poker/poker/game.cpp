@@ -4,8 +4,10 @@
 #include "game.hpp"
 
 #include "hand_eval.hpp"
+#include "hand_log_store.hpp"
 #include "holdem_side_pot.hpp"
 #include "human_decision_controller.hpp"
+#include "persist_sqlite.hpp"
 
 #include "cards.hpp"
 
@@ -1113,167 +1115,6 @@ void game::decide_the_payout()
     do_payouts();
 }
 
-void game::do_payouts()
-{
-    const int n = players_count();
-    if (n < 2 || pot <= 0)
-        return;
-
-    std::vector<int> contenders;
-    contenders.reserve(static_cast<size_t>(n));
-    for (int i = 0; i < n; ++i)
-    {
-        if (in_hand_[static_cast<size_t>(i)])
-            contenders.push_back(i);
-    }
-
-    if (contenders.empty())
-        return;
-
-    std::vector<std::vector<card>> hole_vecs;
-    hole_vecs.reserve(contenders.size());
-    for (int s : contenders)
-        hole_vecs.push_back(get_hand_vector(s));
-
-    if (contenders.size() == 1)
-    {
-        const int s = contenders.front();
-        const int won = pot;
-        table[static_cast<size_t>(s)].stack += pot;
-        const QString msg = fold_win_status_line(s, won);
-        pot = 0;
-        emit pot_changed();
-        set_hand_result_status(msg, result_banner_card_assets_for_seat(s));
-        return;
-    }
-
-    std::vector<int> contrib(static_cast<size_t>(n));
-    for (int i = 0; i < n; ++i)
-        contrib[static_cast<size_t>(i)] = hand_contrib_[static_cast<size_t>(i)];
-
-    std::vector<NlheSidePotSlice> side_pots;
-    const bool use_side_pots = nlhe_build_side_pot_slices(contrib, pot, &side_pots);
-
-    if (use_side_pots)
-    {
-        std::array<int, kMaxPlayers> stack_gain{};
-        stack_gain.fill(0);
-        int distributed = 0;
-
-        auto best_hands_among = [this](std::vector<int> seats) -> std::vector<int> {
-            if (seats.empty())
-                return {};
-            std::sort(seats.begin(), seats.end());
-            std::vector<int> winners = {seats.front()};
-            for (size_t e = 1; e < seats.size(); ++e)
-            {
-                const int cmp = compare_holdem_hands(get_hand_vector(seats[e]), get_hand_vector(winners.front()));
-                if (cmp > 0)
-                    winners = {seats[e]};
-                else if (cmp == 0)
-                    winners.push_back(seats[e]);
-            }
-            std::sort(winners.begin(), winners.end());
-            return winners;
-        };
-
-        for (size_t ti = 0; ti < side_pots.size(); ++ti)
-        {
-            const int level = side_pots[ti].contribution_threshold;
-            const int side_pot = side_pots[ti].amount;
-            if (side_pot <= 0)
-                continue;
-
-            /// Table stakes: only seats with total hand contribution ≥ this pot’s threshold may win it.
-            /// If every such seat folded, award among remaining contenders (orphan side pot).
-            std::vector<int> eligible;
-            for (int s : contenders)
-            {
-                if (contrib[static_cast<size_t>(s)] >= level)
-                    eligible.push_back(s);
-            }
-            if (eligible.empty())
-                eligible = contenders;
-
-            const std::vector<int> pot_winners = best_hands_among(std::move(eligible));
-
-            const int nw = static_cast<int>(pot_winners.size());
-            const int share = side_pot / nw;
-            const int rem = side_pot % nw;
-            for (int w = 0; w < nw; ++w)
-                stack_gain[static_cast<size_t>(pot_winners[static_cast<size_t>(w)])] += share + (w < rem ? 1 : 0);
-            distributed += side_pot;
-        }
-
-        if (distributed < pot)
-        {
-            const int remainder = pot - distributed;
-            if (remainder > 0)
-            {
-                const std::vector<int> rw = best_hands_among(contenders);
-                if (!rw.empty())
-                {
-                    const int nw = static_cast<int>(rw.size());
-                    const int share = remainder / nw;
-                    const int rem = remainder % nw;
-                    for (int w = 0; w < nw; ++w)
-                        stack_gain[static_cast<size_t>(rw[static_cast<size_t>(w)])] += share + (w < rem ? 1 : 0);
-                    distributed += remainder;
-                }
-            }
-        }
-
-        if (distributed == pot)
-        {
-            for (int i = 0; i < n; ++i)
-                table[static_cast<size_t>(i)].stack += stack_gain[static_cast<size_t>(i)];
-            pot = 0;
-            emit pot_changed();
-
-            const QString msg = format_showdown_payout_lines_from_gains(stack_gain, n);
-            const int banner_seat = banner_seat_from_showdown_gains(stack_gain, n);
-            set_hand_result_status(msg, result_banner_card_assets_for_seat(banner_seat));
-            return;
-        }
-    }
-
-    std::vector<size_t> win_idx = {0};
-    for (size_t w = 1; w < contenders.size(); ++w)
-    {
-        const int cmp = compare_holdem_hands(hole_vecs[w], hole_vecs[win_idx.front()]);
-        if (cmp > 0)
-            win_idx = {w};
-        else if (cmp == 0)
-            win_idx.push_back(w);
-    }
-
-    std::vector<int> winners;
-    winners.reserve(win_idx.size());
-    for (size_t i : win_idx)
-        winners.push_back(contenders[i]);
-
-    const int nw = static_cast<int>(winners.size());
-    const int share = pot / nw;
-    const int rem = pot % nw;
-    std::array<int, kMaxPlayers> gain{};
-    gain.fill(0);
-    for (int i = 0; i < nw; ++i)
-    {
-        const int seat = winners[static_cast<size_t>(i)];
-        const int add = share + (i < rem ? 1 : 0);
-        table[static_cast<size_t>(seat)].stack += add;
-        gain[static_cast<size_t>(seat)] = add;
-    }
-
-    const QString msg = format_showdown_payout_lines_from_gains(gain, n);
-    const int banner_seat = banner_seat_from_showdown_gains(gain, n);
-
-    pot = 0;
-    emit pot_changed();
-
-    set_hand_result_status(msg, result_banner_card_assets_for_seat(banner_seat));
-}
-
 void game::switch_button()
 {
     const int n = players_count();
@@ -1324,6 +1165,7 @@ void game::start()
     clear_for_new_hand();
     in_progress = true;
     street = Street::PRE_FLOP;
+    hand_log_begin();
     flush_ui();
 
     collect_blinds();
@@ -1425,6 +1267,228 @@ void game::set_seat_street_action(int seat, const QString &label)
 {
     if (seat >= 0 && seat < kMaxPlayers)
         seat_street_action_label_[static_cast<size_t>(seat)] = label;
+    hand_log_record_action(seat, label);
+}
+
+namespace {
+
+int encode_card_int(const card &c)
+{
+    const int r = static_cast<int>(c.rank) - 2; // 0..12
+    const int s = static_cast<int>(c.suite) - 1; // 0..3
+    if (r < 0 || r > 12 || s < 0 || s > 3)
+        return -1;
+    return r * 4 + s;
+}
+
+int street_to_handlog_street(Street st)
+{
+    switch (st)
+    {
+    case Street::PRE_FLOP:
+        return HandLogStreet::kPreflop;
+    case Street::FLOP:
+        return HandLogStreet::kFlop;
+    case Street::TURN:
+        return HandLogStreet::kTurn;
+    case Street::RIVER:
+        return HandLogStreet::kRiver;
+    }
+    return HandLogStreet::kPreflop;
+}
+
+int parse_chips_in_label(const QString &label)
+{
+    const int n = label.size();
+    int i = 0;
+    while (i < n && label.at(i) != QLatin1Char('$'))
+        ++i;
+    if (i >= n)
+        return 0;
+    ++i;
+    int v = 0;
+    bool any = false;
+    while (i < n)
+    {
+        const QChar c = label.at(i);
+        if (c >= QLatin1Char('0') && c <= QLatin1Char('9'))
+        {
+            v = v * 10 + (c.unicode() - u'0');
+            any = true;
+            ++i;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return any ? v : 0;
+}
+
+} // namespace
+
+void game::hand_log_begin()
+{
+    hand_log_actions_.clear();
+    hand_log_start_stacks_.fill(0);
+    hand_log_started_ms_ = QDateTime::currentMSecsSinceEpoch();
+    if (hand_log_session_id_ == 0)
+        hand_log_session_id_ = hand_log_started_ms_;
+    const int n = players_count();
+    int ih = 0;
+    for (int i = 0; i < n && i < kMaxPlayers; ++i)
+    {
+        hand_log_start_stacks_[static_cast<size_t>(i)] = table[static_cast<size_t>(i)].stack;
+        if (in_hand_[static_cast<size_t>(i)])
+            ++ih;
+    }
+    hand_log_num_players_ = ih;
+    hand_log_button_ = button;
+    hand_log_sb_seat_ = -1;
+    hand_log_bb_seat_ = -1;
+    hand_log_sb_size_ = small_blind;
+    hand_log_bb_size_ = big_blind;
+}
+
+void game::hand_log_record_action(int seat, const QString &label)
+{
+    if (hand_log_started_ms_ == 0 || seat < 0 || seat >= kMaxPlayers)
+        return;
+    if (label.isEmpty())
+        return;
+
+    BufferedAction a;
+    a.seat = seat;
+    a.street = street_to_handlog_street(street);
+    a.chips = parse_chips_in_label(label);
+
+    if (label.startsWith(QStringLiteral("SB ")))
+    {
+        a.kind = HandLogAction::kBet;
+        a.extra = 1; // blind post
+        if (hand_log_sb_seat_ < 0)
+        {
+            hand_log_sb_seat_ = seat;
+            hand_log_sb_size_ = a.chips > 0 ? a.chips : small_blind;
+        }
+    }
+    else if (label.startsWith(QStringLiteral("BB ")))
+    {
+        a.kind = HandLogAction::kBet;
+        a.extra = 1;
+        if (hand_log_bb_seat_ < 0)
+        {
+            hand_log_bb_seat_ = seat;
+            hand_log_bb_size_ = a.chips > 0 ? a.chips : big_blind;
+        }
+    }
+    else if (label.startsWith(QStringLiteral("Fold")))
+        a.kind = HandLogAction::kFold;
+    else if (label.startsWith(QStringLiteral("Check")))
+        a.kind = HandLogAction::kCheck;
+    else if (label.startsWith(QStringLiteral("Call")))
+        a.kind = HandLogAction::kCall;
+    else if (label.startsWith(QStringLiteral("Raise")))
+        a.kind = HandLogAction::kRaise;
+    else if (label.startsWith(QStringLiteral("All-in")))
+        a.kind = HandLogAction::kAllIn;
+    else
+        return;
+
+    hand_log_actions_.push_back(a);
+}
+
+void game::hand_log_flush_if_active()
+{
+    if (hand_log_started_ms_ == 0)
+        return;
+    const qint64 started_ms = hand_log_started_ms_;
+    hand_log_started_ms_ = 0;
+
+    if (!AppStateSqlite::sqliteHandle())
+    {
+        hand_log_actions_.clear();
+        return;
+    }
+
+    HandLogBatch batch;
+    if (!batch.isActive())
+    {
+        hand_log_actions_.clear();
+        return;
+    }
+
+    std::array<qint64, kMaxPlayers> player_ids{};
+    player_ids.fill(0);
+    const int n = players_count();
+    for (int seat = 0; seat < n && seat < kMaxPlayers; ++seat)
+    {
+        const qint64 key = static_cast<qint64>(hand_log_session_id_) * 64 + seat;
+        player_ids[static_cast<size_t>(seat)] =
+            batch.upsertPlayerByKey(key, started_ms);
+    }
+
+    qint64 result_flags = 0;
+    for (int seat = 0; seat < n && seat < kMaxPlayers; ++seat)
+    {
+        const int start_stack = hand_log_start_stacks_[static_cast<size_t>(seat)];
+        const int end_stack = table[static_cast<size_t>(seat)].stack;
+        if (end_stack > start_stack)
+            result_flags |= (1LL << seat);
+    }
+
+    const int b0 = flop.size() > 0 ? encode_card_int(flop[0]) : -1;
+    const int b1 = flop.size() > 1 ? encode_card_int(flop[1]) : -1;
+    const int b2 = flop.size() > 2 ? encode_card_int(flop[2]) : -1;
+    const int b3 = (street >= Street::TURN) ? encode_card_int(turn) : -1;
+    const int b4 = (street >= Street::RIVER) ? encode_card_int(river) : -1;
+
+    const qint64 ended_ms = QDateTime::currentMSecsSinceEpoch();
+    const qint64 hand_id = batch.insertHand(
+        started_ms,
+        ended_ms,
+        hand_log_session_id_,
+        hand_log_button_,
+        hand_log_sb_seat_,
+        hand_log_bb_seat_,
+        hand_log_num_players_,
+        hand_log_sb_size_,
+        hand_log_bb_size_,
+        b0,
+        b1,
+        b2,
+        b3,
+        b4,
+        result_flags);
+    if (hand_id <= 0)
+    {
+        hand_log_actions_.clear();
+        return;
+    }
+
+    int seq = 0;
+    int facing = 0;
+    int last_street = -1;
+    for (const BufferedAction &a : hand_log_actions_)
+    {
+        if (a.street != last_street)
+        {
+            facing = 0;
+            last_street = a.street;
+        }
+        if (a.seat < 0 || a.seat >= kMaxPlayers)
+            continue;
+        const qint64 pid = player_ids[static_cast<size_t>(a.seat)];
+        if (pid <= 0)
+            continue;
+        batch.insertAction(hand_id, ++seq, pid, a.street, a.kind, a.chips, facing, a.extra);
+        if (a.kind == HandLogAction::kBet || a.kind == HandLogAction::kRaise
+            || a.kind == HandLogAction::kAllIn)
+            facing = std::max(facing, a.chips);
+    }
+
+    batch.commit();
+    hand_log_actions_.clear();
 }
 
 QString game::board_compact_for_result() const
@@ -1534,7 +1598,7 @@ void game::applySeatBuyInsToStacks()
 
 void game::configure(int sb, int bb, int streetBet, int startStack)
 {
-    configureImpl(sb, bb, streetBet, startStack, true);
+    configureImpl(sb, bb, streetBet, startStack, true, true);
 }
 
 int game::effectiveSeatBuyInChips(int seat) const
@@ -1558,7 +1622,7 @@ void game::setMaxOnTableBb(int maxBb)
         savePersistedSettings();
 }
 
-void game::configureImpl(int sb, int bb, int streetBet, int startStack, bool resetBankrollOnStackApply)
+void game::configureImpl(int sb, int bb, int streetBet, int startStack, bool resetBankrollOnStackApply, bool materializeBuyIns)
 {
     small_blind = sb;
     big_blind = bb;
@@ -1581,7 +1645,8 @@ void game::configureImpl(int sb, int bb, int streetBet, int startStack, bool res
         seat_cfg_[szi].params = clamp_bot_params(seat_cfg_[szi].params);
         seat_mgr_.seat_buy_in_[szi] = effectiveSeatBuyInChips(i);
     }
-    seat_mgr_.apply_seat_buy_ins_to_table(resetBankrollOnStackApply);
+    if (materializeBuyIns)
+        seat_mgr_.apply_seat_buy_ins_to_table(resetBankrollOnStackApply);
     if (m_root)
     {
         m_root->setProperty("smallBlind", small_blind);
@@ -1878,6 +1943,7 @@ void game::notifySessionStatsChanged()
 
 void game::complete_hand_idle()
 {
+    hand_log_flush_if_active();
     seat_mgr_.flush_pending_cash_outs_after_hand();
     seat_mgr_.try_auto_rebuys_for_busted_bots();
     seat_mgr_.flush_pending_bankroll_totals();
@@ -1967,6 +2033,50 @@ void game::resetBankrollSession()
     bankroll_tracker_.resetBankrollSession();
     if (persist_loaded_ && !suppress_persist_)
         savePersistedSettings();
+    flush_ui();
+}
+
+void game::factoryResetToDefaultsAndClearHistory()
+{
+    hand_log_started_ms_ = 0;
+    hand_log_actions_.clear();
+    in_progress = false;
+    clear_for_new_hand();
+    set_hand_result_status(QString(), {});
+
+    AppStateSqlite::clearHandLogTables();
+
+    const bool prevSuppress = suppress_persist_;
+    suppress_persist_ = true;
+
+    max_on_table_bb_ = 100;
+    setInteractiveHuman(true);
+    setHumanSitOut(false);
+
+    for (int s = 1; s < kMaxPlayers; ++s)
+        setSeatStrategy(s, static_cast<int>(BotStrategy::GTOHeuristic));
+    setSeatStrategy(0, static_cast<int>(BotStrategy::AlwaysCall));
+
+    configureImpl(1, 3, 9, 100, false, false);
+
+    for (int i = 0; i < kMaxPlayers; ++i)
+    {
+        const size_t si = static_cast<size_t>(i);
+        table[si].reset_stack(0);
+        seat_mgr_.seat_wallet_[si] = 0;
+        seat_mgr_.seat_buy_in_[si] = 0;
+        seat_mgr_.pending_bankroll_total_[si] = -1;
+        seat_mgr_.pending_cash_out_after_hand_[si] = false;
+    }
+    seat_mgr_.pending_seat_buyins_apply_ = false;
+    for (int s = 1; s < kMaxPlayers; ++s)
+        seat_mgr_.seat_participating_[static_cast<size_t>(s)] = true;
+
+    suppress_persist_ = prevSuppress;
+    bankroll_tracker_.init_bankroll_after_configure();
+    if (persist_loaded_)
+        savePersistedSettings();
+    notifySessionStatsChanged();
     flush_ui();
 }
 

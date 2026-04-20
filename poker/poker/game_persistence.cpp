@@ -224,7 +224,7 @@ void GamePersistence::loadPersistedSettings()
         const int bb = clamp_int(AppStateSqlite::value(QStringLiteral("v1/bigBlind")).toInt(), 1, 500);
         const int st = clamp_int(AppStateSqlite::value(QStringLiteral("v1/streetBet")).toInt(), 1, 100000);
         const int stack = clamp_int(AppStateSqlite::value(QStringLiteral("v1/startStack")).toInt(), 20, 1000000);
-        game_.configureImpl(sb, bb, st, stack, false);
+        game_.configureImpl(sb, bb, st, stack, false, true);
 
         const int cap = game_.maxBuyInChips();
         for (int i = 0; i < game::kMaxPlayers; ++i)

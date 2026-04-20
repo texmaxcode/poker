@@ -65,6 +65,8 @@ QtObject {
     readonly property color insetDark: "#222"
     readonly property color dangerBg: "#4a2020"
     readonly property color dangerText: "#f5d0d0"
+    /// Solid red for destructive primary actions (factory reset, clear-all).
+    readonly property color dangerRed: "#b71c1c"
     readonly property color successGreen: "#1a6b45"
     readonly property color focusGold: "#a89248"
     /// Seat street-action strip (Call / Raise / Check / All-in / Fold).

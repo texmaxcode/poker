@@ -248,6 +248,9 @@ public:
     Q_INVOKABLE int sessionBaselineTableStack(int seat) const;
     /// Clear history and re-baseline from current stacks (one snapshot).
     Q_INVOKABLE void resetBankrollSession();
+    /// Clears hand history DB rows, bankroll charts, and all seat stacks/wallets/buy-ins to zero; restores default
+    /// stakes (1/3/9/100), max table BB 100, interactive human on; seats 1–5 use `GTOHeuristic`, seat 0 `AlwaysCall`.
+    Q_INVOKABLE void factoryResetToDefaultsAndClearHistory();
     /// Sets total chips for `seat` (table stack up to `maxBuyInChips()`, rest off-table; buy-in = on-table amount).
     /// When a hand is in progress, the change is deferred until the next hand (like `setSeatBuyIn`).
     Q_INVOKABLE void setSeatBankrollTotal(int seat, int totalChips);
@@ -309,6 +312,32 @@ private:
     bool persist_loaded_ = false;
     /// QML `statusText`: last pot result; kept visible until the next hand awards the pot.
     QString last_hand_result_message_{};
+
+    /// Hand-log buffered action (flushed to `hands` + `actions` tables in `complete_hand_idle()`).
+    /// `street` follows `HandLogStreet::*`; `kind` follows `HandLogAction::*`; `extra` is bit-flagged
+    /// (bit 0 = blind post, so SB/BB don’t look like mid-street bets in the log UI).
+    struct BufferedAction
+    {
+        int seat = -1;
+        int street = 0;
+        int kind = 0;
+        int chips = 0;
+        int extra = 0;
+    };
+    std::vector<BufferedAction> hand_log_actions_{};
+    std::array<int, kMaxPlayers> hand_log_start_stacks_{};
+    qint64 hand_log_started_ms_ = 0;
+    qint64 hand_log_session_id_ = 0;
+    int hand_log_num_players_ = 0;
+    int hand_log_button_ = -1;
+    int hand_log_sb_seat_ = -1;
+    int hand_log_bb_seat_ = -1;
+    int hand_log_sb_size_ = 0;
+    int hand_log_bb_size_ = 0;
+
+    void hand_log_begin();
+    void hand_log_record_action(int seat, const QString &label);
+    void hand_log_flush_if_active();
     /// QML `resultBannerCardAssets`: best 5-card combination (`qrc:/assets/cards/` filenames).
     QStringList last_hand_result_card_assets_{};
     SeatManager seat_mgr_;
@@ -320,7 +349,12 @@ private:
     static int min_raise_increment_chips(int big_blind, int last_raise_increment);
     void schedule_next_hand_if_idle();
     void complete_hand_idle();
-    void configureImpl(int smallBlind, int bigBlind, int streetBet, int startStack, bool resetBankrollOnStackApply);
+    void configureImpl(int smallBlind,
+                         int bigBlind,
+                         int streetBet,
+                         int startStack,
+                         bool resetBankrollOnStackApply,
+                         bool materializeBuyIns = true);
     /// Stack target for rebuy / apply: seat 0 uses `seat_buy_in_` when interactive; otherwise `buy_in_bb ×` BB (capped).
     int effectiveSeatBuyInChips(int seat) const;
     void bot_action_pause();

@@ -16,6 +16,17 @@
 
 BOOST_AUTO_TEST_SUITE(PERSISTENCE_SQLITE)
 
+namespace {
+struct ResetSqliteAfterTest
+{
+  ~ResetSqliteAfterTest()
+  {
+    AppStateSqlite::resetForTesting();
+    qunsetenv("TEXAS_HOLDEM_GYM_SQLITE");
+  }
+};
+} // namespace
+
 BOOST_AUTO_TEST_CASE(test_variant_to_json_int)
 {
   QVariant out;
@@ -90,6 +101,8 @@ BOOST_AUTO_TEST_CASE(test_variant_to_json_nan)
 /// Bankroll history + stakes survive a save/load round-trip when the app store is open.
 BOOST_AUTO_TEST_CASE(test_bankroll_survives_save_load)
 {
+  ResetSqliteAfterTest cleanup;
+
   /// `game::loadPersistedSettings` / persistence assume a `QCoreApplication` exists (same as `main.cpp`).
   static int qtArgc = 1;
   static char qtArg0[] = "Test_poker";
@@ -108,6 +121,7 @@ BOOST_AUTO_TEST_CASE(test_bankroll_survives_save_load)
   const QString dbPath = tmp.fileName();
   tmp.close();
 
+  AppStateSqlite::resetForTesting();
   qputenv("TEXAS_HOLDEM_GYM_SQLITE", dbPath.toUtf8());
   AppStateSqlite::init();
   BOOST_REQUIRE(AppStateSqlite::isOpen());
@@ -147,6 +161,41 @@ BOOST_AUTO_TEST_CASE(test_bankroll_survives_save_load)
   const QVariantList tableSer = g2.tableStackSeries(0);
   BOOST_REQUIRE(!tableSer.isEmpty());
   BOOST_CHECK_EQUAL(tableSer.last().toInt(), 130);
+}
+
+BOOST_AUTO_TEST_CASE(kv_contains_reflects_row_and_repeated_value_reads_round_trip)
+{
+  static int qtArgc = 1;
+  static char qtArg0[] = "Test_poker_persist_kv";
+  static char *qtArgv[] = {qtArg0, nullptr};
+  std::unique_ptr<QCoreApplication> qtApp;
+  if (QCoreApplication::instance() == nullptr)
+  {
+    qtApp = std::make_unique<QCoreApplication>(qtArgc, qtArgv);
+    QCoreApplication::setOrganizationName(QStringLiteral("TexasHoldemGym"));
+    QCoreApplication::setApplicationName(QStringLiteral("Texas Hold'em Gym"));
+  }
+
+  QTemporaryFile tmp(QDir::tempPath() + QStringLiteral("/poker_kv_stmt_XXXXXX.sqlite"));
+  tmp.setAutoRemove(true);
+  BOOST_REQUIRE(tmp.open());
+  const QString dbPath = tmp.fileName();
+  tmp.close();
+
+  AppStateSqlite::resetForTesting();
+  qputenv("TEXAS_HOLDEM_GYM_SQLITE", dbPath.toUtf8());
+  AppStateSqlite::init();
+  BOOST_REQUIRE(AppStateSqlite::sqliteHandle() != nullptr);
+
+  const QString k = QStringLiteral("v1/__kv_stmt_test");
+  BOOST_CHECK(!AppStateSqlite::contains(k));
+  AppStateSqlite::setValue(k, 42);
+  BOOST_CHECK(AppStateSqlite::contains(k));
+  for (int i = 0; i < 500; ++i)
+    BOOST_CHECK_EQUAL(AppStateSqlite::value(k).toInt(), 42);
+
+  AppStateSqlite::resetForTesting();
+  qunsetenv("TEXAS_HOLDEM_GYM_SQLITE");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

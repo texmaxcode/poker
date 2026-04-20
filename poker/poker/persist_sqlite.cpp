@@ -114,8 +114,53 @@ QByteArray variantToJson(const QVariant &v)
     return b;
 }
 
+/// Reused across `value` / `contains` / `setValue` to avoid per-call `sqlite3_prepare_v2` on hot paths.
+static sqlite3_stmt *g_stmt_kv_select_v = nullptr;
+static sqlite3_stmt *g_stmt_kv_exists = nullptr;
+static sqlite3_stmt *g_stmt_kv_upsert = nullptr;
+
+static void finalizeKvPreparedStatements()
+{
+    if (g_stmt_kv_select_v)
+    {
+        sqlite3_finalize(g_stmt_kv_select_v);
+        g_stmt_kv_select_v = nullptr;
+    }
+    if (g_stmt_kv_exists)
+    {
+        sqlite3_finalize(g_stmt_kv_exists);
+        g_stmt_kv_exists = nullptr;
+    }
+    if (g_stmt_kv_upsert)
+    {
+        sqlite3_finalize(g_stmt_kv_upsert);
+        g_stmt_kv_upsert = nullptr;
+    }
+}
+
+static bool prepareKvPreparedStatements(sqlite3 *db)
+{
+    finalizeKvPreparedStatements();
+    if (!db)
+        return false;
+    if (sqlite3_prepare_v2(db, "SELECT v FROM kv WHERE k = ?", -1, &g_stmt_kv_select_v, nullptr) != SQLITE_OK)
+        return false;
+    if (sqlite3_prepare_v2(db, "SELECT 1 FROM kv WHERE k = ? LIMIT 1", -1, &g_stmt_kv_exists, nullptr) != SQLITE_OK)
+    {
+        finalizeKvPreparedStatements();
+        return false;
+    }
+    if (sqlite3_prepare_v2(db, "INSERT OR REPLACE INTO kv (k, v) VALUES (?, ?)", -1, &g_stmt_kv_upsert, nullptr) != SQLITE_OK)
+    {
+        finalizeKvPreparedStatements();
+        return false;
+    }
+    return true;
+}
+
 void closeDb()
 {
+    finalizeKvPreparedStatements();
     if (g_db)
     {
         sqlite3_close(g_db);
@@ -392,7 +437,123 @@ void cleanupNullRows()
     qInfo().noquote() << QStringLiteral("AppStateSqlite: cleaned %1 null rows").arg(n);
 }
 
+/// Unit tests only: close the DB and allow `AppStateSqlite::init()` to run again.
+void appStateSqliteResetForTesting()
+{
+    closeDb();
+    g_backend = Backend::None;
+    g_dbPath.clear();
+}
+
 } // namespace
+
+static void warnPragma(sqlite3 *db, const char *sql, const char *label)
+{
+    char *errmsg = nullptr;
+    const int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errmsg);
+    if (rc != SQLITE_OK)
+    {
+        qWarning().noquote() << QStringLiteral("AppStateSqlite: %1 failed — %2")
+                                    .arg(QLatin1String(label),
+                                         QLatin1String(errmsg ? errmsg : sqlite3_errmsg(db)));
+        sqlite3_free(errmsg);
+    }
+}
+
+/// Embedded primary-store tuning (WAL + cache) for the single app database file.
+static void applyEmbeddedDbTuningPragmas(sqlite3 *db)
+{
+    if (!db)
+        return;
+    warnPragma(db, "PRAGMA foreign_keys = ON;", "PRAGMA foreign_keys");
+    warnPragma(db, "PRAGMA journal_mode = WAL;", "PRAGMA journal_mode");
+    warnPragma(db, "PRAGMA synchronous = NORMAL;", "PRAGMA synchronous");
+    warnPragma(db, "PRAGMA temp_store = MEMORY;", "PRAGMA temp_store");
+    warnPragma(db, "PRAGMA mmap_size = 30000000000;", "PRAGMA mmap_size");
+    warnPragma(db, "PRAGMA cache_size = -200000;", "PRAGMA cache_size");
+}
+
+static bool ensureHandLogSchemaV1(sqlite3 *db)
+{
+    if (!db)
+        return false;
+
+    sqlite3_stmt *st = nullptr;
+    if (sqlite3_prepare_v2(db, "PRAGMA user_version", -1, &st, nullptr) != SQLITE_OK)
+        return false;
+    if (sqlite3_step(st) != SQLITE_ROW)
+    {
+        sqlite3_finalize(st);
+        return false;
+    }
+    const int ver = sqlite3_column_int(st, 0);
+    sqlite3_finalize(st);
+    if (ver >= 1)
+        return true;
+
+    static const char kSql[] = R"SQL(
+CREATE TABLE IF NOT EXISTS players (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  created_ms INTEGER NOT NULL,
+  player_key INTEGER NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS hands (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  started_ms INTEGER NOT NULL,
+  ended_ms INTEGER NOT NULL DEFAULT 0,
+  session_key INTEGER NOT NULL DEFAULT 0,
+  button_seat INTEGER NOT NULL,
+  sb_seat INTEGER NOT NULL,
+  bb_seat INTEGER NOT NULL,
+  num_players INTEGER NOT NULL,
+  sb_size INTEGER NOT NULL,
+  bb_size INTEGER NOT NULL,
+  board_c0 INTEGER NOT NULL DEFAULT -1,
+  board_c1 INTEGER NOT NULL DEFAULT -1,
+  board_c2 INTEGER NOT NULL DEFAULT -1,
+  board_c3 INTEGER NOT NULL DEFAULT -1,
+  board_c4 INTEGER NOT NULL DEFAULT -1,
+  result_flags INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  hand_id INTEGER NOT NULL REFERENCES hands(id) ON DELETE CASCADE,
+  seq INTEGER NOT NULL,
+  player_id INTEGER NOT NULL REFERENCES players(id),
+  street INTEGER NOT NULL,
+  action_kind INTEGER NOT NULL,
+  size_chips INTEGER NOT NULL DEFAULT 0,
+  facing_size INTEGER NOT NULL DEFAULT 0,
+  extra INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(hand_id, seq)
+);
+
+CREATE INDEX IF NOT EXISTS idx_actions_hand_player ON actions(hand_id, player_id);
+CREATE INDEX IF NOT EXISTS idx_actions_hand_seq ON actions(hand_id, seq);
+CREATE INDEX IF NOT EXISTS idx_hands_started ON hands(started_ms);
+)SQL";
+
+    char *errmsg = nullptr;
+    if (sqlite3_exec(db, kSql, nullptr, nullptr, &errmsg) != SQLITE_OK)
+    {
+        qWarning() << "AppStateSqlite: hand log DDL" << (errmsg ? errmsg : sqlite3_errmsg(db));
+        sqlite3_free(errmsg);
+        return false;
+    }
+    sqlite3_free(errmsg);
+
+    char *err2 = nullptr;
+    if (sqlite3_exec(db, "PRAGMA user_version = 1", nullptr, nullptr, &err2) != SQLITE_OK)
+    {
+        qWarning() << "AppStateSqlite: PRAGMA user_version" << (err2 ? err2 : sqlite3_errmsg(db));
+        sqlite3_free(err2);
+        return false;
+    }
+    sqlite3_free(err2);
+    return true;
+}
 
 static bool tryOpenSqliteAtPath(const QString &path)
 {
@@ -430,6 +591,21 @@ static bool tryOpenSqliteAtPath(const QString &path)
         sqlite3_free(errmsg);
         sqlite3_close(g_db);
         g_db = nullptr;
+        return false;
+    }
+
+    applyEmbeddedDbTuningPragmas(g_db);
+    if (!ensureHandLogSchemaV1(g_db))
+    {
+        qWarning() << "AppStateSqlite: hand log schema migration failed";
+        closeDb();
+        return false;
+    }
+
+    if (!prepareKvPreparedStatements(g_db))
+    {
+        qWarning() << "AppStateSqlite: prepare KV statements failed" << sqlite3_errmsg(g_db);
+        closeDb();
         return false;
     }
 
@@ -510,6 +686,18 @@ bool AppStateSqlite::isOpen()
     return g_backend == Backend::Sqlite || g_backend == Backend::QSettingsFallback;
 }
 
+sqlite3 *AppStateSqlite::sqliteHandle()
+{
+    if (g_backend != Backend::Sqlite || !g_db)
+        return nullptr;
+    return g_db;
+}
+
+void AppStateSqlite::resetForTesting()
+{
+    appStateSqliteResetForTesting();
+}
+
 QString AppStateSqlite::databasePath()
 {
     return g_dbPath;
@@ -546,21 +734,20 @@ void AppStateSqlite::setValue(const QString &key, const QVariant &value)
         return;
     }
 
-    /// DML uses bound parameters (`sqlite3_prepare_v2` + `sqlite3_bind_*`); no string-built SQL for values.
-    sqlite3_stmt *st = nullptr;
-    if (sqlite3_prepare_v2(g_db, "INSERT OR REPLACE INTO kv (k, v) VALUES (?, ?)", -1, &st, nullptr) != SQLITE_OK)
+    if (!g_stmt_kv_upsert)
     {
-        qWarning() << "AppStateSqlite::setValue prepare" << key << sqlite3_errmsg(g_db);
+        qWarning() << "AppStateSqlite::setValue: KV upsert statement not prepared";
         return;
     }
-
+    sqlite3_stmt *st = g_stmt_kv_upsert;
+    sqlite3_reset(st);
+    sqlite3_clear_bindings(st);
     const QByteArray k = key.toUtf8();
     const QByteArray json = variantToJson(value);
     sqlite3_bind_text(st, 1, k.constData(), k.size(), SQLITE_TRANSIENT);
     sqlite3_bind_text(st, 2, json.constData(), json.size(), SQLITE_TRANSIENT);
 
     const int stepRc = sqlite3_step(st);
-    sqlite3_finalize(st);
     if (stepRc != SQLITE_DONE)
         qWarning() << "AppStateSqlite::setValue" << key << sqlite3_errmsg(g_db);
 }
@@ -573,30 +760,25 @@ QVariant AppStateSqlite::value(const QString &key, const QVariant &defaultValue)
     if (g_backend == Backend::QSettingsFallback)
         return qsettingsFallbackValue(key, defaultValue);
 
-    sqlite3_stmt *st = nullptr;
-    if (sqlite3_prepare_v2(g_db, "SELECT v FROM kv WHERE k = ?", -1, &st, nullptr) != SQLITE_OK)
+    if (!g_stmt_kv_select_v)
         return defaultValue;
 
+    sqlite3_stmt *st = g_stmt_kv_select_v;
+    sqlite3_reset(st);
+    sqlite3_clear_bindings(st);
     const QByteArray k = key.toUtf8();
     sqlite3_bind_text(st, 1, k.constData(), k.size(), SQLITE_TRANSIENT);
 
     const int stepRc = sqlite3_step(st);
     if (stepRc != SQLITE_ROW)
-    {
-        sqlite3_finalize(st);
         return defaultValue;
-    }
 
     const char *v = reinterpret_cast<const char *>(sqlite3_column_text(st, 0));
     const int nbytes = sqlite3_column_bytes(st, 0);
 
     if (!v || nbytes < 0)
-    {
-        sqlite3_finalize(st);
         return defaultValue;
-    }
     const QByteArray jsonBytes(v, nbytes);
-    sqlite3_finalize(st);
 
     QVariant out;
     if (!jsonToVariant(jsonBytes, &out))
@@ -614,34 +796,30 @@ bool AppStateSqlite::contains(const QString &key)
     if (g_backend == Backend::QSettingsFallback)
         return qsettingsFallbackContains(key);
 
-    sqlite3_stmt *st = nullptr;
-    if (sqlite3_prepare_v2(g_db, "SELECT v FROM kv WHERE k = ? LIMIT 1", -1, &st, nullptr) != SQLITE_OK)
+    if (!g_stmt_kv_exists)
         return false;
 
+    sqlite3_stmt *st = g_stmt_kv_exists;
+    sqlite3_reset(st);
+    sqlite3_clear_bindings(st);
     const QByteArray k = key.toUtf8();
     sqlite3_bind_text(st, 1, k.constData(), k.size(), SQLITE_TRANSIENT);
-    const int stepRc = sqlite3_step(st);
-    if (stepRc != SQLITE_ROW)
-    {
-        sqlite3_finalize(st);
-        return false;
-    }
+    return sqlite3_step(st) == SQLITE_ROW;
+}
 
-    const char *v = reinterpret_cast<const char *>(sqlite3_column_text(st, 0));
-    const int nbytes = sqlite3_column_bytes(st, 0);
-
-    if (!v || nbytes < 0)
-    {
-        sqlite3_finalize(st);
-        return false;
-    }
-    const QByteArray jsonBytes(v, nbytes);
-    sqlite3_finalize(st);
-
-    QVariant out;
-    if (!jsonToVariant(jsonBytes, &out))
-        return false;
-    return out.isValid();
+void AppStateSqlite::clearHandLogTables()
+{
+    if (!g_db || g_backend != Backend::Sqlite)
+        return;
+    char *err = nullptr;
+    sqlite3_exec(g_db, "DELETE FROM actions", nullptr, nullptr, &err);
+    sqlite3_free(err);
+    err = nullptr;
+    sqlite3_exec(g_db, "DELETE FROM hands", nullptr, nullptr, &err);
+    sqlite3_free(err);
+    err = nullptr;
+    sqlite3_exec(g_db, "DELETE FROM players", nullptr, nullptr, &err);
+    sqlite3_free(err);
 }
 
 void AppStateSqlite::removeKeysWithPrefix(const QString &prefix)

@@ -10,12 +10,16 @@ add_executable(Test_poker
   test_side_pots.cpp
   test_bot_decisions.cpp
   test_persistence_sqlite.cpp
+  test_hand_log_store.cpp
+  test_hand_history.cpp
+  test_training_store.cpp
 )
 
 target_link_libraries(Test_poker
     poker
     Boost::unit_test_framework
     Qt${QT_VERSION_MAJOR}::Qml
+    SQLite::SQLite3
 )
 
 # Single CTest entry runs the full binary; Boost.Test prints each suite/case when log level is set.

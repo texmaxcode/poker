@@ -11,6 +11,7 @@ qt_add_library(poker
   holdem_side_pot.cpp
   bankroll_tracker.cpp
   game.cpp
+  game_payouts.cpp
   game_persistence.cpp
   seat_manager.cpp
   human_decision_controller.cpp
@@ -25,6 +26,8 @@ qt_add_library(poker
   training_controller.cpp
   session_store.cpp
   persist_sqlite.cpp
+  hand_log_store.cpp
+  hand_history_query.cpp
 )
 
 target_link_libraries(poker PRIVATE

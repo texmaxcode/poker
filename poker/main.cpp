@@ -6,10 +6,12 @@
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QtQml>
 #include <QQuickWindow>
 #include <QTimer>
 
 #include "game.hpp"
+#include "hand_history_query.hpp"
 #include "persist_sqlite.hpp"
 #include "poker_solver.hpp"
 #include "session_store.hpp"
@@ -86,9 +88,13 @@ int main(int argc, char *argv[])
     TrainingStore training_store;
     TrainingController trainer(&training_store);
     SessionStore session_store;
+    HandHistoryQuery hand_history;
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/"));
+    // Ensures `HandHistoryScreen` resolves for `import PokerUi 1.0` (avoids relying on qrc-only qmldir discovery).
+    qmlRegisterType(QUrl(QStringLiteral("qrc:/screens/HandHistoryScreen.qml")),
+                    "PokerUi", 1, 0, "HandHistoryScreen");
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamily"), appFontFamily);
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyDisplay"), appFontFamilyDisplay);
     engine.rootContext()->setContextProperty(QStringLiteral("appFontFamilyButton"), appFontFamilyButton);
@@ -100,6 +106,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("trainingStore"), &training_store);
     engine.rootContext()->setContextProperty(QStringLiteral("trainer"), &trainer);
     engine.rootContext()->setContextProperty(QStringLiteral("sessionStore"), &session_store);
+    engine.rootContext()->setContextProperty(QStringLiteral("handHistory"), &hand_history);
 
     QObject::connect(&app, &QGuiApplication::aboutToQuit, &poker_game, [&poker_game]() {
         poker_game.savePersistedSettings();
