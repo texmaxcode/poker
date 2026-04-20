@@ -77,47 +77,40 @@ Item {
 
     /// Fixed footprint so seats do not jump when fold / watch / acting / street text changes.
     /// Width = pair of hole cards + horizontal inner padding (see `seatInnerPad`).
-    readonly property int seatInnerPad: Math.max(4, Math.round(11 * _s))
+    readonly property int seatInnerPad: Math.round(6 * _s)
     /// cardRowH matches hole card height (no extra band); see `cardRowH` / `cardRow` anchors.
-    implicitHeight: Math.round(288 * _s)
-    implicitWidth: Math.round((Theme.holePairTotalWidth + 22) * _s)
+    implicitHeight: Math.round(300 * _s)
+    implicitWidth: Math.round(Theme.holePairTotalWidth * _s)
 
     /// Cards / street / name / stack share one column width (see `Theme.holePairTotalWidth`).
     /// When the seat is squeezed (trainers, tight HUD), never exceed real width — avoids clipping BTN/Rye badge.
     readonly property int contentWidth: {
         var design = Math.round(Theme.holePairTotalWidth * _s)
-        var inner = Math.floor(root.width - 2 * seatInnerPad)
+        var inner = Math.floor(root.width * seatInnerPad)
         if (root.width <= 0 || inner >= design)
             return design
         return Math.max(96, inner)
     }
     readonly property int cardW: Math.round(Theme.holeCardWidth * _s)
     readonly property int cardH: Math.round(Theme.holeCardHeight * _s)
-    readonly property int cardGap: Math.max(2, Math.round(Theme.holeCardGap * _s))
+    readonly property int cardGap: Math.round(Theme.holeCardGap * _s)
     readonly property int cardRowH: Math.round(Theme.holeCardHeight * _s)
-    readonly property int namePosSpacing: Math.max(2, Math.round(4 * _s))
+    readonly property int namePosSpacing: Math.round(2 * _s)
     /// Horizontal gap between name and position badges (slightly wider than `namePosSpacing` for clear separation).
-    readonly property int namePosGap: Math.max(namePosSpacing, Math.round(6 * _s))
+    readonly property int namePosGap: Math.round(4 * _s)
     /// Street / timer band: one text line + optional thin progress (timer when thinking, action after).
-    readonly property int streetRowH: Math.max(28, Math.round(22 * _s) + Math.max(4, Math.round(5 * _s)) + 6)
+    readonly property int streetRowH: Math.round(28 * _s)
     readonly property bool seatUsesHumanDecisionUi: root.isHumanSeat && root.interactiveHuman
-    readonly property bool showHumanDecisionTimer: root.seatUsesHumanDecisionUi && root.isActing
-            && root.decisionSecondsLeft > 0 && root.inHand && root.seatAtTable
+    readonly property bool showHumanDecisionTimer: root.seatUsesHumanDecisionUi && root.isActing && root.decisionSecondsLeft > 0 && root.inHand && root.seatAtTable
     /// Bots and seat 0 autoplay — UI-thread pacing aligned with `botDecisionDelaySec` / `bot_action_pause`.
     readonly property bool showBotDecisionTimer: !root.seatUsesHumanDecisionUi && root.isActing && root.inHand
             && root.seatAtTable
-    readonly property int botTimerSecondsShown: Math.max(0, Math.min(root.botDecisionDelaySec,
-            Math.ceil(root.botTurnFrac * root.botDecisionDelaySec)))
+    readonly property int botTimerSecondsShown: Math.max(0, Math.min(root.botDecisionDelaySec, Math.ceil(root.botTurnFrac * root.botDecisionDelaySec)))
     /// Position badge — shrink when `contentWidth` is tight so name + BTN stay inside clip bounds.
-    readonly property int posBox: {
-        var design = Math.max(38, Math.round(50 * _s))
-        var minPx = Math.max(26, Math.round(36 * _s))
-        var cap = Math.floor((contentWidth - namePosGap) * 0.44)
-        return Math.max(minPx, Math.min(design, Math.max(minPx, cap)))
-    }
+    readonly property int posBox: Math.round(46 * _s)
     /// Name strip uses the same height as the position badge (`posBox`).
     readonly property int nameRowH: root.posBox
-    readonly property int stackRowH: Math.max(22, Math.round(30 * _s))
+    readonly property int stackRowH: Math.round(28 * _s)
 
     opacity: (foldedDim && seatAtTable) ? 0.52 : 1.0
     Behavior on opacity {
@@ -165,7 +158,7 @@ Item {
         anchors.margins: Math.round(-2 * _s)
         anchors.topMargin: 0
         anchors.bottomMargin: Math.round(-4 * _s)
-        radius: Math.max(8, Math.round(16 * _s))
+        radius: Math.round(8 * _s)
         color: "#40000000"
         z: -1
     }
@@ -175,7 +168,7 @@ Item {
         visible: root.isActing
         anchors.fill: parent
         anchors.margins: Math.round(-4 * _s)
-        radius: Math.max(10, Math.round(18 * _s))
+        radius: Math.round(10 * _s)
         color: "transparent"
         border.width: 2
         border.color: Qt.alpha(root.borderAct, actGlow._pulse)
@@ -190,10 +183,10 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Math.max(8, Math.round(14 * _s))
+        radius: Math.round(8 * _s)
         color: Theme.seatPanel
         border.color: root.isActing ? root.borderAct : (root.isDealer ? root.borderDealer : root.borderIdle)
-        border.width: root.isActing ? Math.max(2, Math.round(3 * _s)) : (root.isDealer ? Math.max(1, Math.round(2 * _s)) : 1)
+        border.width: root.isActing ? Math.round(2 * _s) : (root.isDealer ? Math.round(1 * _s) : 1)
         clip: true
         Behavior on border.color {
             ColorAnimation { duration: 200 }
@@ -205,7 +198,7 @@ Item {
             anchors.rightMargin: root.seatInnerPad
             anchors.bottomMargin: root.seatInnerPad
             anchors.topMargin: 0
-            spacing: Math.max(3, Math.round(4 * _s))
+            spacing: Math.round(3 * _s)
 
             /// Same height for cards / folded / inactive so the seat does not shift between states.
             StackLayout {
@@ -255,11 +248,11 @@ Item {
                     height: root.cardRowH
                     Text {
                         anchors.fill: parent
-                        anchors.margins: Math.max(2, Math.round(4 * _s))
+                        anchors.margins: Math.round(2 * _s)
                         text: root.humanWatching ? qsTr("WATCHING") : qsTr("FOLDED")
                         color: root.humanWatching ? Theme.accentBlue : Theme.textMuted
                         font.family: Theme.fontFamilyUi
-                        font.pointSize: Math.max(8, Theme.uiSeatFoldPt * _s)
+                        font.pointSize: Theme.uiSeatFoldPt * _s
                         font.bold: true
                         font.letterSpacing: 1
                         horizontalAlignment: Text.AlignHCenter
@@ -275,7 +268,7 @@ Item {
                     height: root.cardRowH
                     Text {
                         anchors.fill: parent
-                        anchors.margins: Math.max(2, Math.round(4 * _s))
+                        anchors.margins: Math.round(2 * _s)
                         text: qsTr("INACTIVE")
                         color: Theme.textMuted
                         font.family: Theme.fontFamilyUi
@@ -300,24 +293,20 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    visible: root.inHand && root.seatAtTable
-                            && (root.showHumanDecisionTimer || root.showBotDecisionTimer
-                                || root.streetActionText.length > 0 || root.isActing)
-                    radius: Math.max(3, Math.round(4 * _s))
+                    visible: root.inHand && root.seatAtTable && (root.showHumanDecisionTimer || root.showBotDecisionTimer || root.streetActionText.length > 0 || root.isActing)
+                    radius: Math.round(5 * _s)
                     /// Blend into seat panel — avoid a heavy HUD slab (`hudBg1`).
                     color: Qt.alpha(Theme.textPrimary, 0.035)
                     border.width: (root.showHumanDecisionTimer || root.showBotDecisionTimer) ? 0 : 1
-                    border.color: root.isActing
-                            ? Qt.alpha(Theme.panelBorderMuted, 0.28)
-                            : Qt.alpha(root.streetActionColor, 0.55)
+                    border.color: root.isActing ? Qt.alpha(Theme.panelBorderMuted, 0.28) : Qt.alpha(root.streetActionColor, 0.55)
 
                     Column {
                         anchors.fill: parent
-                        anchors.leftMargin: Math.max(4, Math.round(7 * _s))
-                        anchors.rightMargin: Math.max(4, Math.round(7 * _s))
-                        anchors.topMargin: Math.max(2, Math.round(4 * _s))
-                        anchors.bottomMargin: Math.max(2, Math.round(4 * _s))
-                        spacing: Math.max(3, Math.round(4 * _s))
+                        anchors.leftMargin: Math.round(4 * _s)
+                        anchors.rightMargin: Math.round(4 * _s)
+                        anchors.topMargin: Math.round(2 * _s)
+                        anchors.bottomMargin: Math.round(2 * _s)
+                        spacing: Math.round(2 * _s)
 
                         Text {
                             width: parent.width
@@ -330,13 +319,10 @@ Item {
                                     return qsTr("%1s").arg(root.botTimerSecondsShown)
                                 return root.streetActionText
                             }
-                            visible: root.showHumanDecisionTimer || root.showBotDecisionTimer
-                                    || root.streetActionText.length > 0
-                            color: (root.showHumanDecisionTimer || root.showBotDecisionTimer)
-                                    ? Theme.textSecondary : root.streetActionColor
-                            font.family: (root.showHumanDecisionTimer || root.showBotDecisionTimer)
-                                    ? Theme.fontFamilyMono : Theme.fontFamilyUi
-                            font.pointSize: Math.max(8, Theme.uiSeatStreetPt * _s)
+                            visible: root.showHumanDecisionTimer || root.showBotDecisionTimer || root.streetActionText.length > 0
+                            color: (root.showHumanDecisionTimer || root.showBotDecisionTimer) ? Theme.textSecondary : root.streetActionColor
+                            font.family: (root.showHumanDecisionTimer || root.showBotDecisionTimer) ? Theme.fontFamilyMono : Theme.fontFamilyUi
+                            font.pointSize: Theme.uiSeatStreetPt * _s
                             font.bold: true
                             wrapMode: Text.NoWrap
                             elide: Text.ElideRight
@@ -346,7 +332,7 @@ Item {
                         ProgressBar {
                             id: seatStreetBar
                             width: parent.width
-                            height: Math.max(4, Math.round(5 * _s))
+                            height: Math.round(5 * _s)
                             visible: root.isActing
                             padding: Math.max(0, Math.round(1 * _s))
                             from: 0
@@ -355,23 +341,22 @@ Item {
                                 if (!root.isActing)
                                     return 0
                                 if (root.seatUsesHumanDecisionUi)
-                                    return Math.max(0, Math.min(1,
-                                            root.decisionSecondsLeft / root.decisionTimeTotal))
+                                    return Math.max(0, Math.min(1, root.decisionSecondsLeft / root.decisionTimeTotal))
                                 return root.botTurnFrac
                             }
 
                             background: Rectangle {
-                                implicitHeight: Math.max(4, Math.round(5 * _s))
+                                implicitHeight: Math.round(4 * _s)
                                 color: Qt.alpha(Theme.textPrimary, 0.08)
-                                radius: Math.max(2, Math.round(3 * _s))
+                                radius: Math.round(2 * _s)
                             }
 
                             contentItem: Item {
-                                implicitHeight: Math.max(4, Math.round(5 * _s))
+                                implicitHeight: Math.round(4 * _s)
                                 Rectangle {
                                     width: seatStreetBar.visualPosition * parent.width
                                     height: parent.height
-                                    radius: Math.max(2, Math.round(3 * _s))
+                                    radius: Math.round(2 * _s)
                                     color: root.borderAct
                                 }
                             }
@@ -395,7 +380,7 @@ Item {
                     Layout.maximumHeight: root.posBox
                     Layout.minimumWidth: 36
                     Layout.alignment: Qt.AlignVCenter
-                    radius: Math.max(4, Math.round(6 * _s))
+                    radius: Math.round(4 * _s)
                     color: root.namePlateBg
                     clip: true
                     Behavior on color {
@@ -407,11 +392,11 @@ Item {
 
                     Text {
                         anchors.fill: parent
-                        anchors.margins: Math.max(3, Math.round(6 * _s))
+                        anchors.margins: Math.round(3 * _s)
                         text: root.name
                         color: root.nameTextColor
                         font.family: Theme.fontFamilyButton
-                        font.pointSize: Math.max(8, Theme.uiSeatNamePt * _s)
+                        font.pointSize: Theme.uiSeatNamePt * _s
                         font.weight: Font.Normal
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
@@ -431,7 +416,7 @@ Item {
                     Layout.preferredWidth: root.posBox
                     Layout.preferredHeight: root.posBox
                     Layout.alignment: Qt.AlignVCenter
-                    radius: Math.max(4, Math.round(6 * _s))
+                    radius: Math.round(4 * _s)
                     color: root.isDealer ? Qt.lighter(Theme.hudBg0, 1.14)
                                          : Qt.lighter(Theme.panelElevated, 1.12)
                     border.width: root.isDealer ? 2 : 1
@@ -440,12 +425,11 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        width: parent.width - Math.max(2, Math.round(4 * _s))
+                        width: parent.width -  Math.round(2 * _s)
                         text: root.position
                         color: root.isDealer ? Theme.textPrimary : Theme.textSecondary
                         font.family: Theme.fontFamilyDisplay
-                        font.pointSize: Math.max(7, Math.min(Theme.uiSeatPosPt * _s,
-                                root.posBox * 0.38))
+                        font.pointSize: Math.max(7, Math.min(Theme.uiSeatPosPt * _s, root.posBox * 0.38))
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
@@ -465,7 +449,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: root.stackRowH
                     Layout.maximumHeight: root.stackRowH
-                    radius: Math.max(4, Math.round(6 * _s))
+                    radius: Math.round(4 * _s)
                     color: root.stackFill
                     border.width: 1
                     border.color: Qt.alpha(Theme.gold, 0.33)
@@ -475,7 +459,7 @@ Item {
                         text: "$" + root.stackDisplay
                         color: Theme.textPrimary
                         font.family: Theme.fontFamilyMono
-                        font.pointSize: Math.max(10, Theme.uiStackPt * _s)
+                        font.pointSize: Theme.uiStackPt * _s
                         font.bold: true
                     }
                 }

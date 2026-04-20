@@ -120,7 +120,7 @@ ApplicationWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     style: "chrome"
                     chromeScale: win.chromeScale
-                    overrideHeight: Math.max(26, Math.round(Metrics.toolbarChromeHeight * win.chromeScale))
+                    overrideHeight: Math.round(Metrics.toolbarChromeHeight * win.chromeScale)
                     text: qsTr("Lobby")
                     iconSource: "qrc:/assets/icons/home.svg"
                     chromeFontFamily: Theme.fontFamilyButton
