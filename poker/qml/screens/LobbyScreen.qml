@@ -160,7 +160,7 @@ Page {
                                 onClicked: lobbyPage.go(4)
                             }
                             LobbyNavTile {
-                                bannerSource: "qrc:/assets/images/stats.png"
+                                bannerSource: "qrc:/assets/images/hands.png"
                                 sub: qsTr("Hands")
                                 detailTip: qsTr(
                                     "Replay log of previously played hands — board, seats, blinds, and every action with chip size. "

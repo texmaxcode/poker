@@ -53,6 +53,7 @@
         <file>assets/images/solver_and_equity.png</file>
         <file>assets/images/training.png</file>
         <file>assets/images/stats.png</file>
+        <file>assets/images/hands.png</file>
 
         <file>assets/training/preflop_ranges_v1.json</file>
         <file>assets/training/spots_v1.json</file>
