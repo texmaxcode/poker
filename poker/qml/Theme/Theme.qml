@@ -277,6 +277,19 @@ QtObject {
     readonly property int trainerDrillPanelMinH: 100
     /// Drill panel: maximum height — prevents the drill from dominating ultra-tall windows.
     readonly property int trainerDrillPanelMaxH: 580
+    /// Clamp drill height so headers + full-width trainer HUD still fit (e.g. at `Metrics.windowMinHeight`).
+    function trainerDrillPanelMaxHeightForViewport(viewportHeight, chromeReserve) {
+        var vh = Number(viewportHeight)
+        var cr = Number(chromeReserve)
+        if (!(vh > 0) || cr < 0)
+            return trainerDrillPanelMaxH
+        if (vh <= cr) {
+            // Reserve already exceeds viewport — never return the tall design max or layout blows past min window.
+            return Math.max(trainerDrillPanelMinH, Math.min(trainerDrillPanelMaxH, Math.floor(vh * 0.42)))
+        }
+        var avail = vh - cr
+        return Math.max(trainerDrillPanelMinH, Math.min(trainerDrillPanelMaxH, Math.floor(avail)))
+    }
     /// Shrinks seat `uiScale` when the seat row is shorter than the design-height seat (avoids clipping).
     function trainerSeatUiScaleClamped(seatScale, wrapHeight) {
         var s = seatScale > 0 ? seatScale : 1.0
